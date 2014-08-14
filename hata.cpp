@@ -37,17 +37,18 @@ compromise for increased speed which adds a realistic diffraction effect.
 double ked(double freq, double elev[], double rxh, double dkm){
 double obh,obd,rxobaoi=0,d;
 
-obh=0;
-obd=0;
+obh=0; // Obstacle height
+obd=0; // Obstacle distance
 
 dkm=dkm*1000; // KM to metres
 
+	// walk along path 
 	for(int n=2;n<(dkm/elev[1]);n++){
 	
 	d = (n-2)*elev[1]; // no of points * delta = km
 	
 	    //Find dip(s)
-		if(elev[n] > 0 && elev[n]<(obh+10)){
+		if(elev[n]<(obh+20)){
 		
 		// Angle from Rx point to obstacle
 		rxobaoi = incidenceAngle((obh-(elev[n]+rxh)),d-obd);
@@ -65,7 +66,7 @@ dkm=dkm*1000; // KM to metres
 	}
 	
 if(rxobaoi >= 0){
-return (rxobaoi * 3) / (300/freq); // Exaggerate diffraction angle and divide by wavelength (m)
+return rxobaoi / (300/freq); // Diffraction angle divided by wavelength (m)
 }else{
 return 0;
 }

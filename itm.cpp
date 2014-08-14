@@ -1204,7 +1204,7 @@ void point_to_point(double elev[], double tht_m, double rht_m, double eps_dielec
 	double zc, zr;
 	double eno, enso, q;
 	long ja, jb, i, np;
-	double dkm, xkm;
+	//double dkm, xkm;
 	double fs;
 
 	prop.hg[0]=tht_m;
@@ -1216,8 +1216,8 @@ void point_to_point(double elev[], double tht_m, double rht_m, double eps_dielec
 	zc=qerfi(conf);
 	zr=qerfi(rel);
 	np=(long)elev[0]; //number of points
-	dkm=(elev[1]*elev[0])/1000.0; // total distance in km. elev[1]=90(m) (default)
-	xkm=elev[1]/1000.0; // distance between points in km
+	//dkm=(elev[1]*elev[0])/1000.0; // total distance in km. elev[1]=90(m) (default)
+	//xkm=elev[1]/1000.0; // distance between points in km
 	eno=eno_ns_surfref;
 	enso=0.0;
 	q=enso;
@@ -1295,7 +1295,7 @@ void point_to_pointMDH (double elev[], double tht_m, double rht_m, double eps_di
 	double ztime, zloc, zconf;
 	double eno, enso, q;
 	long ja, jb, i, np;
-	double dkm, xkm;
+	//double dkm, xkm;
 	double fs;
 
 	propmode=-1;  // mode is undefined
@@ -1310,8 +1310,8 @@ void point_to_pointMDH (double elev[], double tht_m, double rht_m, double eps_di
 	zconf=qerfi(confpct);
 
 	np=(long)elev[0];
-	dkm=(elev[1]*elev[0])/1000.0;
-	xkm=elev[1]/1000.0;
+	//dkm=(elev[1]*elev[0])/1000.0;
+	//xkm=elev[1]/1000.0;
 	eno=eno_ns_surfref;
 	enso=0.0;
 	q=enso;
@@ -1382,7 +1382,7 @@ void point_to_pointDH (double elev[], double tht_m, double rht_m, double eps_die
 	double zc, zr;
 	double eno, enso, q;
 	long ja, jb, i, np;
-	double dkm, xkm;
+	//double dkm, xkm;
 	double fs;
 
 	prop.hg[0]=tht_m;
@@ -1394,8 +1394,8 @@ void point_to_pointDH (double elev[], double tht_m, double rht_m, double eps_die
 	zc=qerfi(conf);
 	zr=qerfi(rel);
 	np=(long)elev[0];
-	dkm=(elev[1]*elev[0])/1000.0;
-	xkm=elev[1]/1000.0;
+	//dkm=(elev[1]*elev[0])/1000.0;
+	//xkm=elev[1]/1000.0;
 	eno=eno_ns_surfref;
 	enso=0.0;
 	q=enso;
