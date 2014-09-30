@@ -1,5 +1,8 @@
 Signal Server changelog 
 
+v2.3 - 29 September 2014
+Replaced itm.cpp with itwom3.0.cpp and added ITWOM model as result
+
 v2.23 - 14 August 2014
 Improved diffraction model to work only for dips deeper than 20m and not to exaggerate result by an arbitrary figure (3)
 Fixed false 'frequency too low' error message for FSPL model which was intended for Hata models only.

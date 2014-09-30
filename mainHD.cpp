@@ -35,9 +35,9 @@ double version=2.3;
 #include <ctype.h>
 #include <unistd.h>
 
-#define MAXPAGES 64
-#define ARRAYSIZE 76810
-#define IPPD 1200
+#define MAXPAGES 9
+#define ARRAYSIZE 14844
+#define IPPD 3600
 #define GAMMA 2.5
 
 #ifndef PI

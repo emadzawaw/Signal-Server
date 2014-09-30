@@ -2,7 +2,7 @@ Signal-Server RF coverage calculator
 ====================================
 
 /****************************************************************************\
-*	   Signal Server 1.3.8: Server optimised SPLAT! by Alex Farrant          *
+*	   Signal Server: Server optimised SPLAT! by Alex Farrant                *
 ******************************************************************************
 *	SPLAT! Project started in 1997 by John A. Magliacane, KD2BD 	         *
 *					                                                         *
