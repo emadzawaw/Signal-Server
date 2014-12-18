@@ -1,4 +1,4 @@
-double version=2.3;
+double version=2.31;
 /****************************************************************************\
 *	   Signal Server: Server optimised SPLAT! by Alex Farrant       	     *
 ******************************************************************************
@@ -20,9 +20,10 @@ double version=2.3;
 *  for more details.							                             *
 *									                                         *
 ******************************************************************************
-* g++ -Wall -O3 -s -lm -fomit-frame-pointer itm.cpp hata.cpp cost.cpp fspl.cpp main.cpp -o ss  * 
+* g++ -Wall -O3 -s -lm -fomit-frame-pointer itwom3.0.cpp hata.cpp cost.cpp fspl.cpp main.cpp -o ss  * 
 \****************************************************************************/
 /*
+2.31 - ERP up to 5MW for Mexican TV!
 2.3 - Added ITWOM3.0
 2.22 - Fixed LOS not outputting bounds
 2.2 - Made .dot output opt in to save some disk space
@@ -5460,7 +5461,7 @@ int main(int argc, char *argv[])
                     fprintf(stdout,"ERROR: Either the Frequency was missing or out of range!");
                       exit(0);
                 }
-                if (LR.erp>2000000)
+                if (LR.erp>5000000)
                 {
                      fprintf(stdout,"ERROR: Power was out of range!");
                       exit(0);

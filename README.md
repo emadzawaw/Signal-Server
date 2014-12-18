@@ -22,19 +22,19 @@ Signal-Server RF coverage calculator
 *  for more details.							     *
 *									     *
 ******************************************************************************
-* g++ -Wall -O3 -s -lm -fomit-frame-pointer itm.cpp cost.cpp hata.cpp fspl.cpp main.cpp -o ss  * 
+* g++ -Wall -O3 -s -lm -fomit-frame-pointer itwom3.0.cpp cost.cpp hata.cpp fspl.cpp main.cpp -o ss  * 
 \****************************************************************************/
 
-	Usage: Signalserver (options)
+	Usage: signalserver (options)
 	
 			
                        -d Directory containing .sdf tiles
                      -lat Tx Latitude (decimal degrees)
                      -lon Tx Longitude (decimal degrees) Positive 0-360 
-                     -txh Tx Height (above ground)
-                       -f Tx Frequency (MHz) 20MHz to 100Ghz (LOS after 20Ghz)
-                     -erp Tx Effective Radiated Power (Watts)
-		             -rxh Rx Height(s) (optional. Default=0.1)
+                     -txh Tx Height (above ground), 0 to 60,000 f/m
+                       -f Tx Frequency, 20MHz to 100GHz
+                     -erp Tx Effective Radiated Power, 0.01 to 5,000,000 Watts
+		             -rxh Rx Height(s) (optional. Default=0.1), 0 to 60,000 f/m
                       -rt Rx Threshold (dB / dBm / dBuV/m)
                       -hp Horizontal Polarisation (default=vertical)
 		              -gc Ground clutter (feet/meters)
