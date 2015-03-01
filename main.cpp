@@ -1,4 +1,4 @@
-double version=2.41;
+double version=2.42;
 /****************************************************************************\
 *       Signal Server: Server optimised SPLAT! by Alex Farrant               *
 ******************************************************************************
@@ -24,8 +24,8 @@ double version=2.41;
 /*
 REQUIRES GCC >= 4.7
 90m mode
-g++ -Wall -Ofast -s -lm itwom3.0.cpp models.cpp main.cpp -o signalserver          
-30m HD mode   
+g++ -Wall -Ofast -s -lm itwom3.0.cpp models.cpp main.cpp -o signalserver
+30m HD mode
 g++ -Wall -Ofast -s -lm itwom3.0.cpp models.cpp main.cpp -DHD -o signalserverHD
 */
 

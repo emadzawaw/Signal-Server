@@ -1,15 +1,15 @@
 /*****************************************************************************
-*  RF propagation models for Signal Server by Alex Farrant, CloudRF.com      *  
-*                   									                     *
+*  RF propagation models for Signal Server by Alex Farrant, CloudRF.com      *
+*                   							     *
 *  This program is free software; you can redistribute it and/or modify it   *
 *  under the terms of the GNU General Public License as published by the     *
 *  Free Software Foundation; either version 2 of the License or any later    *
-*  version.								   								     *
-* 									    									 *
+*  version.								     *
+* 									     *
 *  This program is distributed in the hope that it will useful, but WITHOUT  *
 *  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or     *
 *  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License     *
-*  for more details.													     *
+*  for more details.							     *
 *****************************************************************************/
 
 #include <stdlib.h>
@@ -119,25 +119,34 @@ TxH = Base station height 30 to 200m
 RxH = Mobile station height 1 to 10m
 Distance 1-20km
 modes 1 = URBAN, 2 = SUBURBAN, 3 = OPEN
+http://morse.colorado.edu/~tlen5510/text/classwebch3.html
 */
-	if(f<1500 || f>2000){
-	    printf("Error: COST231 Hata model frequency range 1500-2000MHz\n");
+	if(f<150 || f>2000){
+	    printf("Error: COST231 Hata model frequency range 150-2000MHz\n");
 		return 0;
 	}
 
 	int C = 3; // 3dB for Urban
+	float lRxH = log10(11.75*RxH);
+	float C_H = 3.2*(lRxH*lRxH)-4.97; // Large city (conservative)
+	int c0 = 69.55;
+	int cf = 26.16;
+	if(f>1500){
+	c0=46.3;
+	cf=33.9;
+	}
 	if(mode==2){
-		C = 0; // Suburban, rural
+		C = 0; // Medium city (average)
+		C_H = 8.29*(lRxH*lRxH)-1.1;
 	}
 	if(mode==3){
-		C = -3; // Suburban, rural
+		C = -3; // Small city (Optimistic)
+		C_H = (1.1*log10(f) - 0.7) * RxH - (1.56 * log10(f)) + 0.8;
 	}
-	float lRxH = log10(11.75*RxH);
-	float C_H = 3.2*lRxH*lRxH-4.97;
 	float logf = log10(f);
-    double dbloss = 46.3 + (33.9 * logf) - (13.82 * log10(TxH)) - C_H + (44.9 - 6.55 * log10(TxH)) * log10(d) + C;  
+        double dbloss = c0 + (cf * logf) - (13.82 * log10(TxH)) - C_H + (44.9 - 6.55 * log10(TxH)) * log10(d) + C;  
 	return dbloss;
-}
+	}
 
 double SUIpathLoss(float f,float TxH, float RxH, float d, int mode){
 	/*
@@ -185,12 +194,12 @@ double ECC33pathLoss(float f,float TxH, float RxH, float d, int mode){
 	// MHz to GHz
 	f=f/1000;
 
-	double Gr = 0.759 * RxH - 1.862; // Big city (1)
+	double Gr = 0.759 * RxH - 1.862; // Big city with tall buildings (1)
 	// PL = Afs + Abm - Gb - Gr
 	double Afs = 92.4 + 20 * log10(d) + 20 * log10(f);
 	double Abm = 20.41 + 9.83 * log10(d) + 7.894 * log10(f) + 9.56 * (log10(f) * log10(f));
 	double Gb = log10(TxH/200) * (13.958 + 5.8 * (log10(d) * log10(d)));
-	if(mode>1){ // Medium city
+	if(mode>1){ // Medium city (Europe)
 		Gr = (42.57 + 13.7 * log10(f)) * (log10(RxH) - 0.585);
 	}
 	return Afs+Abm-Gb-Gr;
@@ -202,7 +211,7 @@ double EricssonpathLoss(float f,float TxH, float RxH, float d, int mode){
 		a0=43.2;
 		a1=68.93;
 	}
-	if(mode==1){ // High loss
+	if(mode==3){ // Low loss
 		a0=45.95;
 		a1=100.6;
 	}
