@@ -88,7 +88,7 @@ modes 1 = URBAN, 2 = SUBURBAN, 3 = OPEN
 
 	if(f<150 || f>1500){
 	    printf("Error: Hata model frequency range 150-1500MHz\n");
-		return 0;
+            exit(EXIT_FAILURE);
 	}
 	float lRxH = log10(11.75*RxH);
 	float C_H = 3.2*lRxH*lRxH-4.97;
@@ -123,7 +123,7 @@ http://morse.colorado.edu/~tlen5510/text/classwebch3.html
 */
 	if(f<150 || f>2000){
 	    printf("Error: COST231 Hata model frequency range 150-2000MHz\n");
-		return 0;
+		exit(EXIT_FAILURE);
 	}
 
 	int C = 3; // 3dB for Urban
@@ -157,40 +157,49 @@ double SUIpathLoss(float f,float TxH, float RxH, float d, int mode){
 	mode 1 = Hilly + trees
 	mode 2 = Flat + trees OR hilly + light foliage
 	mode 3 = Flat + light foliage
+	http://www.cl.cam.ac.uk/research/dtg/lce-pub/public/vsa23/VTC05_Empirical.pdf
 	*/
 	d=d*1000; // km to m
 	if(f<1900 || f>11000){
 	    printf("Error: SUI model frequency range 1.9-11GHz\n");
-		return 0;
+		exit(EXIT_FAILURE);
 	}
+
 	// Terrain mode A is default
 	double a = 4.6;
 	double b = 0.0075;
-	double c = 12.6; 
-	double s = 10.6; 
+	double c = 12.6;
+	double s = 10.6; // Optional fading value
 	int XhCF = -10.8;
+
 	if(mode==2){
 		a=4.0;
 		b=0.0065;
 		c=17.1;
-		s=9.6;
+		s=6; // average
 	}
 	if(mode==3){
 		a=3.6;
 		b=0.005;
 		c=20;
-		s=8.2;
+		s=3; // Optimistic
 		XhCF = -20;
 	}
 	double d0 = 100; 
 	double A = 20 * log10((4*M_PI*d0)/(300/f));
-	double y = (a - b * TxH) + (c/TxH);
+	double y = (a - b * TxH) + c / TxH;
 	double Xf = 6 * log10(f/2000);
 	double Xh = XhCF * log10(RxH/2);
 	return A + (10*y*log10(d/d0)) + Xf + Xh + s;
 }
 
 double ECC33pathLoss(float f,float TxH, float RxH, float d, int mode){
+
+        if(f<700 || f>3500){
+            printf("Error: ECC33 model frequency range 700-3500MHz\n");
+                exit(EXIT_FAILURE);
+        }
+
 	// MHz to GHz
 	f=f/1000;
 
@@ -206,19 +215,29 @@ double ECC33pathLoss(float f,float TxH, float RxH, float d, int mode){
 }
 
 double EricssonpathLoss(float f,float TxH, float RxH, float d, int mode){
-	double a0=36.2, a1=30.2, a2=12, a3=0.1;
-	if(mode==2){ // Med loss
+        /*
+	http://research.ijcaonline.org/volume84/number7/pxc3892830.pdf
+	AKA Ericsson 9999 model
+	*/
+	// Default is Urban which bizarrely has lowest loss
+	double a0=36.2, a1=30.2, a2=-12, a3=0.1;
+
+        if(f<150 || f>3500){
+            printf("Error: Ericsson9999 model frequency range 150-3500MHz\n");
+                exit(EXIT_FAILURE);
+        }
+
+	if(mode==2){ // Suburban / Med loss
 		a0=43.2;
 		a1=68.93;
 	}
-	if(mode==3){ // Low loss
+	if(mode==1){ // "Rural" but has highest loss according to Ericsson.
 		a0=45.95;
 		a1=100.6;
 	}
 	double g1 = (11.75 * RxH) * (11.75 * RxH); 
 	double g2 = (44.49 * log10(f)) - 4.78 * ((log10(f) * log10(f))); 
-	double PL = a0+ a1 * log10(d) + a2 * log10(TxH) + a3 * log10(TxH) * log10(d) - (3.2 * log10(g1)) + g2;
-	return PL;
+	return a0 + a1 * log10(d) + a2 * log10(TxH) + a3 * log10(TxH) * log10(d) - (3.2 * log10(g1)) + g2;
 }
 
 double FSPLpathLoss(float f, float d){

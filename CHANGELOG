@@ -1,5 +1,9 @@
 SIGNAL SERVER CHANGE LOG 
 
+2.43 - 06 Mar 2015
+Improved model error handling
+Tweaked params for Ericsson model and inverted environment variables to match rest
+
 v2.41 - 27 February 2015
 Simpler PPA output for scripting
 Enabled new models for PPA (previously just ITM)
