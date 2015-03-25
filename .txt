@@ -2,25 +2,25 @@
 		--==[ Path Profile Analysis ]==--
 
 Transmitter site: Tx
-Site location: 51.8648 North / 2.2022 West
+Site location: 50.0000 North / 350.0000 West
 Ground elevation: 0.00 meters AMSL
-Antenna height: 36.00 meters AGL / 36.00 meters AMSL
-Distance to Rx: 1.00 kilometers
-Azimuth to Rx: 91.27 degrees
-Depression angle to Rx: -1.5004 degrees
+Antenna height: 30.00 meters AGL / 30.00 meters AMSL
+Distance to Rx: 5.00 kilometers
+Azimuth to Rx: 89.97 degrees
+Depression angle to Rx: -0.3433 degrees
 Receiver site: Rx
-Site location: 51.8646 North / 2.1877 West
+Site location: 50.0000 North / 349.9300 West
 Ground elevation: 0.00 meters AMSL
-Antenna height: 10.00 meters AGL / 10.00 meters AMSL
-Distance to Tx: 1.00 kilometers
-Azimuth to Tx: 271.29 degrees
-Elevation angle to Tx: +1.4914 degrees
+Antenna height: 2.00 meters AGL / 2.00 meters AMSL
+Distance to Tx: 5.00 kilometers
+Azimuth to Tx: 270.03 degrees
+Elevation angle to Tx: +0.2984 degrees
 Longley-Rice path calculation parameters used in this analysis:
 
 Earth's Dielectric Constant: 15.000
 Earth's Conductivity: 0.005 Siemens/meter
 Atmospheric Bending Constant (N-units): 301.000 ppm
-Frequency: 900.000 MHz
+Frequency: 5900.000 MHz
 Radio Climate: 5 (Continental Temperate)
 Polarisation: 1 (Vertical)
 Fraction of Situations: 50.0%
@@ -30,17 +30,3 @@ Fraction of Time: 50.0%
 
 Summary for the link between Tx and Rx:
 
-Free space path loss: 91.52 dB
-Longley-Rice path loss: 92.83 dB
-Attenuation due to terrain shielding: 1.32 dB
-Mode of propagation: 
-Longley-Rice model error number: 0 (No error)
-
-
-
-
-No obstructions to LOS path due to terrain were detected
-
-The first Fresnel zone is clear.
-
-60% of the first Fresnel zone is clear.

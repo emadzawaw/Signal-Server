@@ -1,4 +1,4 @@
-double version=2.43;
+double version=2.44;
 /****************************************************************************\
 *       Signal Server: Server optimised SPLAT! by Alex Farrant               *
 ******************************************************************************
@@ -4003,7 +4003,7 @@ void PathReport(struct site source, struct site destination, char *name, char gr
 
     /* Receiver */
 
-    fprintf(fd2,"Receiver site: %s\n",destination.name);
+    fprintf(fd2,"\nReceiver site: %s\n",destination.name);
 
     if (destination.lat>=0.0)
     {
@@ -4058,7 +4058,53 @@ void PathReport(struct site source, struct site destination, char *name, char gr
 
     if (LR.frq_mhz>0.0)
     {
-        fprintf(fd2,"Longley-Rice path calculation parameters used in this analysis:\n\n");
+	fprintf(fd2,"\nPropagation model: ");
+
+        switch (propmodel)
+            {
+              case 1:
+	      fprintf(fd2,"Irregular Terrain Model\n");
+	      break;
+              case 2:
+	      fprintf(fd2,"Line of sight\n");
+	      break;
+              case 3:
+	      fprintf(fd2,"Okumura-Hata\n");
+	      break;
+              case 4:
+	      fprintf(fd2,"ECC33 (ITU-R P.529)\n");
+	      break;
+              case 5:
+	      fprintf(fd2,"Stanford University Interim\n");
+	      break;
+              case 6:
+	      fprintf(fd2,"COST231-Hata\n");
+	      break;
+              case 7:
+	      fprintf(fd2,"Free space path loss (ITU-R.525)\n");
+	      break;
+              case 8:
+	      fprintf(fd2,"ITWOM 3.0\n");
+	      break;
+              case 9:
+	      fprintf(fd2,"Ericsson\n");
+	      break;
+	}
+
+	fprintf(fd2,"Model sub-type: ");
+
+	switch (pmenv)
+		{
+		case 1:
+		fprintf(fd2,"City / Conservative\n");
+		break;
+		case 2:
+		fprintf(fd2,"Suburban / Average\n");
+		break;
+		case 3:
+		fprintf(fd2,"Rural / Optimistic\n");
+		break;
+		}
         fprintf(fd2,"Earth's Dielectric Constant: %.3lf\n",LR.eps_dielect);
         fprintf(fd2,"Earth's Conductivity: %.3lf Siemens/meter\n",LR.sgm_conductivity);
         fprintf(fd2,"Atmospheric Bending Constant (N-units): %.3lf ppm\n",LR.eno_ns_surfref);
@@ -4151,9 +4197,8 @@ void PathReport(struct site source, struct site destination, char *name, char gr
             fprintf(fd2," (%+.2f dBm)\n",dBm);
         }
 
-        fprintf(fd2,"\n%s\n\n",dashes);
 
-        fprintf(fd2,"Summary for the link between %s and %s:\n\n",source.name, destination.name);
+        fprintf(fd2,"\nSummary for the link between %s and %s:\n\n",source.name, destination.name);
 
         if (patterndB!=0.0)
             fprintf(fd2,"%s antenna pattern towards %s: %.3f (%.2f dB)\n", source.name, destination.name, pattern, patterndB);
@@ -4241,7 +4286,7 @@ void PathReport(struct site source, struct site destination, char *name, char gr
 			dkm=(elev[1]*elev[0])/1000; // km
 			txelev=elev[2]+(source.alt*METERS_PER_FOOT);
 			
-			 switch (propmodel)
+	    switch (propmodel)
             {
               case 1:
                 // Longley Rice ITM
@@ -4332,7 +4377,7 @@ void PathReport(struct site source, struct site destination, char *name, char gr
             fprintf(fd2,"Free space path loss: %.2f dB\n",free_space_loss);
         }
 
-        fprintf(fd2,"Longley-Rice path loss: %.2f dB\n",loss);
+        fprintf(fd2,"Computed path loss: %.2f dB\n",loss);
 
         if (free_space_loss!=0.0)
             fprintf(fd2,"Attenuation due to terrain shielding: %.2f dB\n",loss-free_space_loss);
@@ -4362,35 +4407,35 @@ void PathReport(struct site source, struct site destination, char *name, char gr
             fprintf(fd2,"Voltage across 75 ohm dipole at %s: %.2f uV (%.2f dBuV)\n",destination.name,voltage,20.0*log10(voltage));
         }
 
-        fprintf(fd2,"Mode of propagation: %s\n",strmode);
+	if(propmodel==1){
         fprintf(fd2,"Longley-Rice model error number: %d",errnum);
 
-        switch (errnum)
-        {
-            case 0:
-                fprintf(fd2," (No error)\n");
-                break;
+		switch (errnum)
+		{
+		    case 0:
+		        fprintf(fd2," (No error)\n");
+		        break;
 
-            case 1:
-                fprintf(fd2,"\n  Warning: Some parameters are nearly out of range.\n");
-                fprintf(fd2,"  Results should be used with caution.\n");
-                break;
+		    case 1:
+		        fprintf(fd2,"\n  Warning: Some parameters are nearly out of range.\n");
+		        fprintf(fd2,"  Results should be used with caution.\n");
+		        break;
 
-            case 2:
-                fprintf(fd2,"\n  Note: Default parameters have been substituted for impossible ones.\n");
-                break;
+		    case 2:
+		        fprintf(fd2,"\n  Note: Default parameters have been substituted for impossible ones.\n");
+		        break;
 
-            case 3:
-                fprintf(fd2,"\n  Warning: A combination of parameters is out of range.\n");
-                fprintf(fd2,"  Results are probably invalid.\n");
-                break;
+		    case 3:
+		        fprintf(fd2,"\n  Warning: A combination of parameters is out of range.\n");
+		        fprintf(fd2,"  Results are probably invalid.\n");
+		        break;
 
-            default:
-                fprintf(fd2,"\n  Warning: Some parameters are out of range.\n");
-                fprintf(fd2,"  Results are probably invalid.\n");
-        }
+		    default:
+		        fprintf(fd2,"\n  Warning: Some parameters are out of range.\n");
+		        fprintf(fd2,"  Results are probably invalid.\n");
+		}
+	}
 
-        fprintf(fd2,"\n%s\n\n",dashes);
     }
 
     ObstructionAnalysis(source, destination, LR.frq_mhz, fd2);

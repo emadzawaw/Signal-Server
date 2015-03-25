@@ -1,5 +1,9 @@
 SIGNAL SERVER CHANGE LOG 
 
+2.44 - 25 Mar 2015
+Improved PPA text report to list other prop models
+Added HD mode to build script
+
 2.43 - 06 Mar 2015
 Improved model error handling
 Tweaked params for Ericsson model and inverted environment variables to match rest
