@@ -1,4 +1,10 @@
-SIGNAL SERVER CHANGE LOG 
+SIGNAL SERVER CHANGELOG 
+
+2.5 - 27 May 2015
+Code refactored by Andrew Clayton / ac000 with header files
+New Makefile with c / c++ multi mode compilation
+Single executable now with run time switch for HD mode 
+Models separated into directory
 
 2.44 - 25 Mar 2015
 Improved PPA text report to list other prop models

@@ -20,15 +20,7 @@
 *                                                                            *
 \****************************************************************************/
 
-/*
-REQUIRES GCC >= 4.7
-90m mode
-g++ -Wall -Ofast -s -lm itwom3.0.cpp models.cpp main.cpp -o signalserver          
-30m HD mode   
-g++ -Wall -Ofast -s -lm itwom3.0.cpp models.cpp main.cpp -DHD -o signalserverHD
-*/
-
-		 -- Signal Server 2.41 --
+		 -- Signal Server 2.5 --
 	Compiled for 64 tiles at 1200 pixels/degree
 
      -d Directory containing .sdf tiles
