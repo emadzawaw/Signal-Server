@@ -1,5 +1,11 @@
 SIGNAL SERVER CHANGELOG 
 
+2.6 - 9 June 2015
+Multithreading support added by Michael Ramnarine
+PlotPropagation() and PlotLOSMap() use four threads by default
+Feature can be disabled with -nothreads flag
+Static and global variables have been made threadsafe
+
 2.5 - 27 May 2015
 Code refactored by Andrew Clayton / ac000 with header files
 New Makefile with c / c++ multi mode compilation

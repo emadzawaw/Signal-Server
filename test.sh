@@ -1,6 +1,6 @@
-#!/bin/bash
+œ#!/bin/bash
 mkdir test
-RAD=5
+RAD=10
 MAXRAD=30
 FRQ=800
 ERP=20
@@ -17,7 +17,7 @@ while [ $RAD -lt $MAXRAD ]; do
         convert test/$RAD.hd.ppm test/$RAD.hd.png
         rm test/$RAD.hd.ppm
         rm test/$RAD.*cf
-        let RAD=RAD+5
+        let RAD=RAD+10
 done
 
 

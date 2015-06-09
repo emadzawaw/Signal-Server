@@ -98,7 +98,7 @@ extern double clutter;
 extern double dBm;
 extern double loss;
 extern double field_strength;
-extern double *elev;
+extern __thread double *elev;
 
 extern char string[];
 extern char sdf_path[];
@@ -110,7 +110,7 @@ extern unsigned char metric;
 extern unsigned char dbm;
 
 extern struct dem *dem;
-extern struct path path;
+extern __thread struct path path;
 extern struct LR LR;
 extern struct region region;
 

@@ -20,7 +20,7 @@
 *                                                                            *
 \****************************************************************************/
 
-		 -- Signal Server 2.5 --
+		 -- Signal Server 2.6 --
 	Compiled for 64 tiles at 1200 pixels/degree
 
      -d Directory containing .sdf tiles
@@ -52,4 +52,6 @@
      -ked Knife edge diffraction (Default for ITM)
      -ng Normalise Path Profile graph
      -haf Halve 1 or 2 (optional)
+     -nothreads Turn off threaded processing (optional)
+
 

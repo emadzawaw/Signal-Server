@@ -4,7 +4,7 @@ CC		= gcc
 CXX		= g++
 CFLAGS		= -Wall -O3 -s -ffast-amth
 CXXFLAGS	= -Wall -O3 -s -ffast-math
-LIBS		= -lm
+LIBS		= -lm -lpthread
 
 VPATH		= models
 objects 	= main.o cost.o ecc33.o ericsson.o fspl.o hata.o itwom3.0.o \

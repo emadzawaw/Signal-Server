@@ -23,4 +23,9 @@ double ReadBearing(char *input);
 void ObstructionAnalysis(struct site xmtr, struct site rcvr, double f,
 			 FILE *outfile);
 
+void free_elev(void);
+void free_path(void);
+void alloc_elev(void);
+void alloc_path(void);
+
 #endif /* _MAIN_HH_ */

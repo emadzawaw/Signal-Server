@@ -1,4 +1,4 @@
-double version = 2.5;
+double version = 2.6;
 /****************************************************************************\
 *       Signal Server: Server optimised SPLAT! by Alex Farrant               *
 ******************************************************************************
@@ -53,11 +53,11 @@ int min_north = 90, max_north = -90, min_west = 360, max_west = -1, ippd, mpi,
 
 unsigned char got_elevation_pattern, got_azimuth_pattern, metric = 0, dbm = 0;
 
-double *elev;
-
+__thread double *elev;
+__thread struct path path;
 struct site tx_site[2];
 struct dem *dem;
-struct path path;
+
 struct LR LR;
 struct region region;
 
@@ -939,12 +939,21 @@ static void free_dem(void)
 	delete [] dem;
 }
 
-static void free_path(void)
+void free_elev(void) {
+  delete [] elev;
+}
+
+void free_path(void)
 {
 	delete [] path.lat;
 	delete [] path.lon;
 	delete [] path.elevation;
 	delete [] path.distance;
+}
+
+void alloc_elev(void)
+{
+  elev  = new double[ARRAYSIZE + 10];
 }
 
 static void alloc_dem(void)
@@ -965,7 +974,7 @@ static void alloc_dem(void)
 	}
 }
 
-static void alloc_path(void)
+void alloc_path(void)
 {
 	path.lat = new double[ARRAYSIZE];
 	path.lon = new double[ARRAYSIZE];
@@ -979,6 +988,8 @@ int main(int argc, char *argv[])
 	    rxlat, rxlon, txlat, txlon, west_min, west_max,
 	    nortRxHin, nortRxHax, propmodel, winfiles, knifeedge = 0, ppa =
 	    0, normalise = 0, haf = 0, pmenv = 1;
+
+	bool use_threads = true;
 
 	unsigned char LRmap = 0, txsites = 0, topomap = 0, geo = 0, kml =
 	    0, area_mode = 0, max_txsites, ngs = 0;
@@ -1047,6 +1058,7 @@ int main(int argc, char *argv[])
 			"     -ked Knife edge diffraction (Default for ITM)\n");
 		fprintf(stdout, "     -ng Normalise Path Profile graph\n");
 		fprintf(stdout, "     -haf Halve 1 or 2 (optional)\n");
+		fprintf(stdout, "     -nothreads Turn off threaded processing (optional)\n");
 
 		fflush(stdout);
 
@@ -1057,7 +1069,7 @@ int main(int argc, char *argv[])
 	 * Now we know what mode we are running in, we can allocate various
 	 * data structures.
 	 */
-	elev = new double[ARRAYSIZE + 10];
+	alloc_elev();
 	alloc_dem();
 	alloc_path();
 
@@ -1422,6 +1434,11 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		//Disable threads
+		if (strcmp(argv[x], "-nothreads") == 0) {
+			z = x + 1;
+			use_threads = false;
+		}
 	}
 
 	/* ERROR DETECTION */
@@ -1639,12 +1656,12 @@ int main(int argc, char *argv[])
 
 	if (ppa == 0) {
 		if (propmodel == 2) {
-			PlotLOSMap(tx_site[0], altitudeLR, ano_filename);
+			PlotLOSMap(tx_site[0], altitudeLR, ano_filename, use_threads);
 			DoLOS(mapfile, geo, kml, ngs, tx_site, txsites);
 		} else {
 			// 90% of effort here
 			PlotPropagation(tx_site[0], altitudeLR, ano_filename,
-					propmodel, knifeedge, haf, pmenv);
+					propmodel, knifeedge, haf, pmenv, use_threads);
 
 			// Near field bugfix
 			PutSignal(tx_site[0].lat, tx_site[0].lon, hottest);
@@ -1683,7 +1700,7 @@ int main(int argc, char *argv[])
 	}
 	fflush(stdout);
 
-	delete [] elev;
+	free_elev();
 	free_dem();
 	free_path();
 
