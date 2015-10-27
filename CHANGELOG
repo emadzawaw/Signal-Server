@@ -1,5 +1,8 @@
 SIGNAL SERVER CHANGELOG 
 
+2.61 - 27 Oct 2015
+BUGFIX - FSPL model floor reduced from 150MHz to 20MHz.
+
 2.6 - 9 June 2015
 Multithreading support added by Michael Ramnarine
 PlotPropagation() and PlotLOSMap() use four threads by default

@@ -1,4 +1,4 @@
-double version = 2.6;
+double version = 2.61;
 /****************************************************************************\
 *       Signal Server: Server optimised SPLAT! by Alex Farrant               *
 ******************************************************************************
@@ -1495,7 +1495,7 @@ int main(int argc, char *argv[])
 			"ERROR: Receiver threshold out of range (-200 / +200)");
 		exit(0);
 	}
-	if (propmodel > 2 && propmodel < 8 && LR.frq_mhz < 150) {
+	if (propmodel > 2 && propmodel < 7 && LR.frq_mhz < 150) {
 		fprintf(stdout,
 			"ERROR: Frequency too low for Propagation model");
 		exit(0);

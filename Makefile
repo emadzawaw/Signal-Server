@@ -16,11 +16,11 @@ GCC_VER_OK	:= $(shell test $(GCC_MAJOR) -ge 4 && \
 			   test $(GCC_MINOR) -ge 7 && \
 			   echo 1)
 
-ifneq "$(GCC_VER_OK)" "1"
-error:
-	@echo "Requires GCC version >= 4.7"
-	@exit
-endif
+#ifneq "$(GCC_VER_OK)" "1"
+#error:
+#	@echo "Requires GCC version >= 4.7"
+#	@exit
+#endif
 
 %.o : %.cc
 	@echo -e "    CXX\t$@"
