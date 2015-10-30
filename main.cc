@@ -1,4 +1,4 @@
-double version = 2.61;
+double version = 2.62;
 /****************************************************************************\
 *       Signal Server: Server optimised SPLAT! by Alex Farrant               *
 ******************************************************************************
@@ -1664,16 +1664,20 @@ int main(int argc, char *argv[])
 					propmodel, knifeedge, haf, pmenv, use_threads);
 
 			// Near field bugfix
-			PutSignal(tx_site[0].lat, tx_site[0].lon, hottest);
-			for (lat = tx_site[0].lat - 0.002;
-			     lat <= tx_site[0].lat + 0.002;
-			     lat = lat + 0.0005) {
-				for (lon = tx_site[0].lon - 0.002;
-				     lon <= tx_site[0].lon + 0.002;
-				     lon = lon + 0.0005) {
+			//PutSignal(tx_site[0].lat, tx_site[0].lon, hottest);
+			
+			
+			
+			for (lat = tx_site[0].lat - 0.001;
+			     lat <= tx_site[0].lat + 0.001;
+			     lat = lat + 0.0001) {
+				for (lon = tx_site[0].lon - 0.001;
+				     lon <= tx_site[0].lon + 0.001;
+				     lon = lon + 0.0001) {
 					PutSignal(lat, lon, hottest);
 				}
 			}
+			
 			if (LR.erp == 0.0)
 				DoPathLoss(mapfile, geo, kml, ngs, tx_site,
 					   txsites);

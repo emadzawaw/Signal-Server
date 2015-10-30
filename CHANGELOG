@@ -1,7 +1,11 @@
 SIGNAL SERVER CHANGELOG 
 
+2.62 - 30 Oct 2015
+Fixed near field 'lattice' bug at 30m resolution caused by previous fix to fill in void around antenna.
+Credit to Nils Lofstad for helping nail this down.
+
 2.61 - 27 Oct 2015
-BUGFIX - FSPL model floor reduced from 150MHz to 20MHz.
+FSPL model floor reduced from 150MHz to 20MHz.
 
 2.6 - 9 June 2015
 Multithreading support added by Michael Ramnarine
