@@ -338,7 +338,7 @@ void PlotPropPath(struct site source, struct site destination,
 
 			char fd_buffer[64];
 			int buffer_offset = 0;
-	    
+
 			distance = 5280.0 * path.distance[y];
 			xmtr_alt =
 			    four_thirds_earth + source.alt + path.elevation[0];

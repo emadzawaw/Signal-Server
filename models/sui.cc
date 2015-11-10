@@ -41,9 +41,9 @@ double SUIpathLoss(float f, float TxH, float RxH, float d, int mode)
 	}
 	double d0 = 100;
 	double A = 20 * log10((4 * M_PI * d0) / (300 / f));
-	double y = (a - b * TxH) + c / TxH;
+	double y = a - (b * TxH) + (c / TxH);
 	double Xf = 6 * log10(f / 2000);
-	double Xh = XhCF * log10(RxH / 2);
+	double Xh = XhCF * log10(RxH / 20);
 
-	return A + (10 * y * log10(d / d0)) + Xf + Xh + s;
+	return A + (10 * y) * (log10(d / d0)) + Xf + Xh + s;
 }

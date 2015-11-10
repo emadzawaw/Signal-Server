@@ -1,5 +1,8 @@
 SIGNAL SERVER CHANGELOG 
 
+2.63 - 10 Nov 2015
+Added sanity check and handicap to ECC33 model when used with low Tx heights in hilly areas = sea of red
+
 2.62 - 30 Oct 2015
 Fixed near field 'lattice' bug at 30m resolution caused by previous fix to fill in void around antenna.
 Credit to Nils Lofstad for helping nail this down.

@@ -5,6 +5,11 @@
 double ECC33pathLoss(float f, float TxH, float RxH, float d, int mode)
 {
 
+	// Sanity check as this model operates within limited Txh/Rxh bounds
+	if(TxH-RxH<0){
+		RxH=RxH/(d*2);
+	}
+
 	if (f < 700 || f > 3500) {
 		printf("Error: ECC33 model frequency range 700-3500MHz\n");
 		exit(EXIT_FAILURE);
@@ -22,5 +27,6 @@ double ECC33pathLoss(float f, float TxH, float RxH, float d, int mode)
 	if (mode > 1) {		// Medium city (Europe)
 		Gr = (42.57 + 13.7 * log10(f)) * (log10(RxH) - 0.585);
 	}
+
 	return Afs + Abm - Gb - Gr;
 }
