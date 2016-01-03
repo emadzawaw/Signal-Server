@@ -1,6 +1,6 @@
-double version = 2.63;
+double version = 2.7;
 /****************************************************************************\
-*       Signal Server: Server optimised SPLAT! by Alex Farrant               *
+*    Signal Server: Server optimised SPLAT! by Alex Farrant, M6ZUJ           *
 ******************************************************************************
 *    SPLAT! Project started in 1997 by John A. Magliacane, KD2BD             *
 *                                                                            *
@@ -34,7 +34,6 @@ double version = 2.63;
 #include "models/itwom3.0.hh"
 #include "models/los.hh"
 
-// 90m mode (default)
 int MAXPAGES = 64;
 int ARRAYSIZE = 76810;
 int IPPD = 1200;
@@ -42,14 +41,15 @@ int IPPD = 1200;
 char string[255], sdf_path[255], udt_file[255], opened = 0, gpsav =
     0, ss_name[16], dashes[80];
 
-double earthradius, max_range = 0.0, forced_erp, dpp, ppd,
+double earthradius, max_range = 0.0, forced_erp, dpp, ppd, yppd,
     fzone_clearance = 0.6, forced_freq, clutter, lat, lon, txh, tercon, terdic,
-    north, east, south, west, dBm, loss, field_strength;
+    north, east, south, west, dBm, loss, field_strength,
+	min_north = 90, max_north = -90, min_west = 360, max_west = -1;
 
-int min_north = 90, max_north = -90, min_west = 360, max_west = -1, ippd, mpi,
+int ippd, mpi,
     max_elevation = -32768, min_elevation = 32768, bzerror, contour_threshold,
     pred, pblue, pgreen, ter, multiplier = 256, debug = 0, loops = 64, jgets =
-    0, MAXRAD, hottest = 10;
+    0, MAXRAD, hottest = 10, height, width;
 
 unsigned char got_elevation_pattern, got_azimuth_pattern, metric = 0, dbm = 0;
 
@@ -161,7 +161,7 @@ int PutMask(double lat, double lon, int value)
 
 	for (indx = 0, found = 0; indx < MAXPAGES && found == 0;) {
 		x = (int)rint(ppd * (lat - dem[indx].min_north));
-		y = mpi - (int)rint(ppd * (LonDiff(dem[indx].max_west, lon)));
+		y = mpi - (int)rint(yppd * (LonDiff(dem[indx].max_west, lon)));
 
 		if (x >= 0 && x <= mpi && y >= 0 && y <= mpi)
 			found = 1;
@@ -191,8 +191,9 @@ int OrMask(double lat, double lon, int value)
 
 	for (indx = 0, found = 0; indx < MAXPAGES && found == 0;) {
 		x = (int)rint(ppd * (lat - dem[indx].min_north));
-		y = mpi - (int)rint(ppd * (LonDiff(dem[indx].max_west, lon)));
+		y = mpi - (int)rint(yppd * (LonDiff(dem[indx].max_west, lon)));
 
+		
 		if (x >= 0 && x <= mpi && y >= 0 && y <= mpi)
 			found = 1;
 		else
@@ -226,14 +227,14 @@ int PutSignal(double lat, double lon, unsigned char signal)
 
 	int x = 0, y = 0, indx;
 	char found;
-
+			
 	if (signal > hottest)	// dBm, dBuV
 		hottest = signal;
 
 	//lookup x/y for this co-ord
 	for (indx = 0, found = 0; indx < MAXPAGES && found == 0;) {
 		x = (int)rint(ppd * (lat - dem[indx].min_north));
-		y = mpi - (int)rint(ppd * (LonDiff(dem[indx].max_west, lon)));
+		y = mpi - (int)rint(yppd * (LonDiff(dem[indx].max_west, lon)));
 
 		if (x >= 0 && x <= mpi && y >= 0 && y <= mpi)
 			found = 1;
@@ -263,7 +264,7 @@ unsigned char GetSignal(double lat, double lon)
 
 	for (indx = 0, found = 0; indx < MAXPAGES && found == 0;) {
 		x = (int)rint(ppd * (lat - dem[indx].min_north));
-		y = mpi - (int)rint(ppd * (LonDiff(dem[indx].max_west, lon)));
+		y = mpi - (int)rint(yppd * (LonDiff(dem[indx].max_west, lon)));
 
 		if (x >= 0 && x <= mpi && y >= 0 && y <= mpi)
 			found = 1;
@@ -290,7 +291,7 @@ double GetElevation(struct site location)
 	for (indx = 0, found = 0; indx < MAXPAGES && found == 0;) {
 		x = (int)rint(ppd * (location.lat - dem[indx].min_north));
 		y = mpi -
-		    (int)rint(ppd *
+		    (int)rint(yppd *
 			      (LonDiff(dem[indx].max_west, location.lon)));
 
 		if (x >= 0 && x <= mpi && y >= 0 && y <= mpi)
@@ -319,7 +320,7 @@ int AddElevation(double lat, double lon, double height)
 
 	for (indx = 0, found = 0; indx < MAXPAGES && found == 0;) {
 		x = (int)rint(ppd * (lat - dem[indx].min_north));
-		y = mpi - (int)rint(ppd * (LonDiff(dem[indx].max_west, lon)));
+		y = mpi - (int)rint(yppd * (LonDiff(dem[indx].max_west, lon)));
 
 		if (x >= 0 && x <= mpi && y >= 0 && y <= mpi)
 			found = 1;
@@ -455,9 +456,7 @@ void ReadPath(struct site source, struct site destination)
 	if (total_distance > (30.0 / ppd)) {
 		dx = samples_per_radian * acos(cos(lon1 - lon2));
 		dy = samples_per_radian * acos(cos(lat1 - lat2));
-
 		path_length = sqrt((dx * dx) + (dy * dy));
-
 		miles_per_sample = total_distance / path_length;
 	}
 
@@ -986,23 +985,30 @@ int main(int argc, char *argv[])
 {
 	int x, y, z = 0, min_lat, min_lon, max_lat, max_lon,
 	    rxlat, rxlon, txlat, txlon, west_min, west_max,
-	    nortRxHin, nortRxHax, propmodel, winfiles, knifeedge = 0, ppa =
-	    0, normalise = 0, haf = 0, pmenv = 1;
+	    nortRxHin, nortRxHax, propmodel, knifeedge = 0, ppa =
+	    0, normalise = 0, haf = 0, pmenv = 1, lidar=0;
 
 	bool use_threads = true;
 
 	unsigned char LRmap = 0, txsites = 0, topomap = 0, geo = 0, kml =
 	    0, area_mode = 0, max_txsites, ngs = 0;
 
-	char mapfile[255], udt_file[255], ano_filename[255];
+	char mapfile[255], udt_file[255], ano_filename[255], lidar_tile[255];
 
 	double altitude = 0.0, altitudeLR = 0.0, tx_range = 0.0,
 	    rx_range = 0.0, deg_range = 0.0, deg_limit = 0.0, deg_range_lon;
 
 	if (strstr(argv[0], "signalserverHD")) {
 		MAXPAGES = 9;
-		ARRAYSIZE = 14844;
+		ARRAYSIZE = 32410;
 		IPPD = 3600;
+	}
+
+	if (strstr(argv[0], "signalserverLIDAR")) {
+		MAXPAGES = 1; // 10km2 for now :)
+		IPPD = 5000; // // 2m resolution
+		ARRAYSIZE = 5010;
+		ppd=IPPD;
 	}
 
 	strncpy(ss_name, "Signal Server\0", 14);
@@ -1013,7 +1019,8 @@ int main(int argc, char *argv[])
 		fprintf(stdout,
 			"\tSet for %d tiles at %d pixels/degree\n\n",
 			MAXPAGES, IPPD);
-		fprintf(stdout, "     -d Directory containing .sdf tiles\n");
+		fprintf(stdout, "     -sdf Directory containing .sdf tiles\n");
+		fprintf(stdout, "     -lid LIDAR ASCII tile with WGS84 bounds\n");
 		fprintf(stdout,
 			"     -lat Tx Latitude (decimal degrees) -70/+70\n");
 		fprintf(stdout,
@@ -1046,7 +1053,7 @@ int main(int argc, char *argv[])
 		fprintf(stdout, "     -o Filename. Required. \n");
 		fprintf(stdout, "     -R Radius (miles/kilometers)\n");
 		fprintf(stdout,
-			"     -res Pixels per degree. 300/600/1200(default)/3600 (optional)\n");
+			"     -res Pixels per tile. 300/600/1200/3600/5000/10000 (optional)\n");
 		fprintf(stdout, "     -t Terrain background\n");
 		fprintf(stdout,
 			"     -pm Prop model. 1: ITM, 2: LOS, 3: Hata, 4: ECC33,\n");
@@ -1074,7 +1081,6 @@ int main(int argc, char *argv[])
 	alloc_path();
 
 	y = argc - 1;
-
 	kml = 0;
 	geo = 0;
 	dbm = 0;
@@ -1096,8 +1102,6 @@ int main(int argc, char *argv[])
 	earthradius = EARTHRADIUS;
 	max_range = 1.0;
 	propmodel = 1;		//ITM
-	winfiles = 0;
-
 	lat = 0;
 	lon = 0;
 	txh = 0;
@@ -1146,25 +1150,32 @@ int main(int argc, char *argv[])
 
 				switch (ippd) {
 				case 300:
-					MAXRAD = 300;
-					jgets = 3;
+					MAXRAD = 500;
+					jgets = 3; // 3 dummy reads
 					break;
-
 				case 600:
-					MAXRAD = 150;
+					MAXRAD = 500;
 					jgets = 1;
 					break;
-
+				case 1200:
+					MAXRAD = 200;
+					ippd = 1200;
+					break;
 				case 3600:
 					MAXRAD = 100;
 					ippd = 3600;
-					jgets = 0;
 					break;
-
+				case 5000: // LIDAR 2m
+					MAXRAD = 10;
+					ippd = 5000;
+					break;
+				case 10000: // LIDAR 1m
+					MAXRAD = 5;
+					ippd = 10000;
+					break;
 				default:
-					MAXRAD = 100;
+					MAXRAD = 200;
 					ippd = 1200;
-					jgets = 0;
 					break;
 				}
 			}
@@ -1220,13 +1231,20 @@ int main(int argc, char *argv[])
 		if (strcmp(argv[x], "-dbm") == 0)
 			dbm = 1;
 
-		if (strcmp(argv[x], "-d") == 0) {
+		if (strcmp(argv[x], "-sdf") == 0) {
 			z = x + 1;
 
 			if (z <= y && argv[z][0] && argv[z][0] != '-')
 				strncpy(sdf_path, argv[z], 253);
 		}
-
+		
+		if (strcmp(argv[x], "-lid") == 0) {
+			z = x + 1;
+			lidar=1;
+			if (z <= y && argv[z][0] && argv[z][0] != '-')
+				strncpy(lidar_tile, argv[z], 253);
+		}
+		
 		if (strcmp(argv[x], "-lat") == 0) {
 			z = x + 1;
 
@@ -1382,10 +1400,7 @@ int main(int argc, char *argv[])
 			debug = 1;
 		}
 
-		ppd = (double)ippd;	/* pixels per degree (double)  */
-		dpp = 1.0 / ppd;	/* degrees per pixel */
-		mpi = ippd - 1;	/* maximum pixel index per degree */
-
+	
 		 /*UDT*/ if (strcmp(argv[x], "-udt") == 0) {
 			z = x + 1;
 
@@ -1416,11 +1431,7 @@ int main(int argc, char *argv[])
 			z = x + 1;
 			knifeedge = 1;
 		}
-		//Windows friendly SDF filenames
-		if (strcmp(argv[x], "-wf") == 0) {
-			z = x + 1;
-			winfiles = 1;
-		}
+
 		//Normalise Path Profile chart
 		if (strcmp(argv[x], "-ng") == 0) {
 			z = x + 1;
@@ -1486,7 +1497,7 @@ int main(int argc, char *argv[])
 			"ERROR: Rx altitude above ground was too high!");
 		exit(0);
 	}
-	if (ippd < 300 || ippd > 3600) {
+	if (ippd < 300 || ippd > 10000) {
 		fprintf(stdout, "ERROR: resolution out of range!");
 		exit(0);
 	}
@@ -1562,96 +1573,110 @@ int main(int argc, char *argv[])
 			max_lon = rxlon;
 	}
 
-	/* Load the required SDF files */
+	/* Load the required tiles */
+	if(lidar){
+		loadLIDAR(lidar_tile);
+		ppd=rint(ippd / (max_north-min_north));
+		yppd=rint(ippd / (max_west-min_west));
+		height=ippd;
+		width=ippd;
+	}else{
+		LoadTopoData(max_lon, min_lon, max_lat, min_lat);
+			if (area_mode || topomap) {
+			for (z = 0; z < txsites && z < max_txsites; z++) {
+				/* "Ball park" estimates used to load any additional
+				   SDF files required to conduct this analysis. */
 
-	LoadTopoData(max_lon, min_lon, max_lat, min_lat, winfiles);
+				tx_range =
+					sqrt(1.5 *
+					 (tx_site[z].alt + GetElevation(tx_site[z])));
 
-	if (area_mode || topomap) {
-		for (z = 0; z < txsites && z < max_txsites; z++) {
-			/* "Ball park" estimates used to load any additional
-			   SDF files required to conduct this analysis. */
+				if (LRmap)
+					rx_range = sqrt(1.5 * altitudeLR);
+				else
+					rx_range = sqrt(1.5 * altitude);
 
-			tx_range =
-			    sqrt(1.5 *
-				 (tx_site[z].alt + GetElevation(tx_site[z])));
+				/* deg_range determines the maximum
+				   amount of topo data we read */
 
-			if (LRmap)
-				rx_range = sqrt(1.5 * altitudeLR);
-			else
-				rx_range = sqrt(1.5 * altitude);
+				deg_range = (tx_range + rx_range) / 57.0;
 
-			/* deg_range determines the maximum
-			   amount of topo data we read */
+				/* max_range regulates the size of the
+				   analysis.  A small, non-zero amount can
+				   be used to shrink the size of the analysis
+				   and limit the amount of topo data read by
+				   ss  A large number will increase the
+				   width of the analysis and the size of
+				   the map. */
 
-			deg_range = (tx_range + rx_range) / 57.0;
+				if (max_range == 0.0)
+					max_range = tx_range + rx_range;
 
-			/* max_range regulates the size of the
-			   analysis.  A small, non-zero amount can
-			   be used to shrink the size of the analysis
-			   and limit the amount of topo data read by
-			   ss  A large number will increase the
-			   width of the analysis and the size of
-			   the map. */
+				deg_range = max_range / 57.0;
 
-			if (max_range == 0.0)
-				max_range = tx_range + rx_range;
+				// No more than 8 degs
+				deg_limit = 3.5;
 
-			deg_range = max_range / 57.0;
+				if (fabs(tx_site[z].lat) < 70.0)
+					deg_range_lon =
+						deg_range / cos(DEG2RAD * tx_site[z].lat);
+				else
+					deg_range_lon = deg_range / cos(DEG2RAD * 70.0);
 
-			// No more than 8 degs
-			deg_limit = 3.5;
+				/* Correct for squares in degrees not being square in miles */
 
-			if (fabs(tx_site[z].lat) < 70.0)
-				deg_range_lon =
-				    deg_range / cos(DEG2RAD * tx_site[z].lat);
-			else
-				deg_range_lon = deg_range / cos(DEG2RAD * 70.0);
+				if (deg_range > deg_limit)
+					deg_range = deg_limit;
 
-			/* Correct for squares in degrees not being square in miles */
+				if (deg_range_lon > deg_limit)
+					deg_range_lon = deg_limit;
 
-			if (deg_range > deg_limit)
-				deg_range = deg_limit;
+				nortRxHin = (int)floor(tx_site[z].lat - deg_range);
+				nortRxHax = (int)floor(tx_site[z].lat + deg_range);
 
-			if (deg_range_lon > deg_limit)
-				deg_range_lon = deg_limit;
+				west_min = (int)floor(tx_site[z].lon - deg_range_lon);
 
-			nortRxHin = (int)floor(tx_site[z].lat - deg_range);
-			nortRxHax = (int)floor(tx_site[z].lat + deg_range);
+				while (west_min < 0)
+					west_min += 360;
 
-			west_min = (int)floor(tx_site[z].lon - deg_range_lon);
+				while (west_min >= 360)
+					west_min -= 360;
 
-			while (west_min < 0)
-				west_min += 360;
+				west_max = (int)floor(tx_site[z].lon + deg_range_lon);
 
-			while (west_min >= 360)
-				west_min -= 360;
+				while (west_max < 0)
+					west_max += 360;
 
-			west_max = (int)floor(tx_site[z].lon + deg_range_lon);
+				while (west_max >= 360)
+					west_max -= 360;
 
-			while (west_max < 0)
-				west_max += 360;
+				if (nortRxHin < min_lat)
+					min_lat = nortRxHin;
 
-			while (west_max >= 360)
-				west_max -= 360;
+				if (nortRxHax > max_lat)
+					max_lat = nortRxHax;
 
-			if (nortRxHin < min_lat)
-				min_lat = nortRxHin;
+				if (LonDiff(west_min, min_lon) < 0.0)
+					min_lon = west_min;
 
-			if (nortRxHax > max_lat)
-				max_lat = nortRxHax;
+				if (LonDiff(west_max, max_lon) >= 0.0)
+					max_lon = west_max;
+			}
 
-			if (LonDiff(west_min, min_lon) < 0.0)
-				min_lon = west_min;
+			/* Load any additional SDF files, if required */
 
-			if (LonDiff(west_max, max_lon) >= 0.0)
-				max_lon = west_max;
+			LoadTopoData(max_lon, min_lon, max_lat, min_lat);
 		}
-
-		/* Load any additional SDF files, if required */
-
-		LoadTopoData(max_lon, min_lon, max_lat, min_lat, winfiles);
+		ppd=(double)ippd;
+		yppd=ppd; 
+		width = (unsigned)(ippd * ReduceAngle(max_west - min_west));
+		height = (unsigned)(ippd * ReduceAngle(max_north - min_north));
 	}
-	// UDT clutter
+	
+	dpp = 1 / ppd;
+	mpi = ippd-1; 
+
+	// User defined clutter file
 	LoadUDT(udt_file);
 
 	if (ppa == 0) {
@@ -1663,21 +1688,21 @@ int main(int argc, char *argv[])
 			PlotPropagation(tx_site[0], altitudeLR, ano_filename,
 					propmodel, knifeedge, haf, pmenv, use_threads);
 
-			// Near field bugfix
-			//PutSignal(tx_site[0].lat, tx_site[0].lon, hottest);
-			
-			
-			
-			for (lat = tx_site[0].lat - 0.001;
-			     lat <= tx_site[0].lat + 0.001;
-			     lat = lat + 0.0001) {
-				for (lon = tx_site[0].lon - 0.001;
-				     lon <= tx_site[0].lon + 0.001;
-				     lon = lon + 0.0001) {
-					PutSignal(lat, lon, hottest);
+			if(!lidar){
+				// nearfield bugfix
+				for (lat = tx_site[0].lat - 0.001;
+					 lat <= tx_site[0].lat + 0.001;
+					 lat = lat + 0.0001) {
+					for (lon = tx_site[0].lon - 0.001;
+						 lon <= tx_site[0].lon + 0.001;
+						 lon = lon + 0.0001) {
+						PutSignal(lat, lon, hottest);
+					}
 				}
-			}
 			
+			}
+		
+			// Write bitmap
 			if (LR.erp == 0.0)
 				DoPathLoss(mapfile, geo, kml, ngs, tx_site,
 					   txsites);
@@ -1687,11 +1712,14 @@ int main(int argc, char *argv[])
 			else
 				DoSigStr(mapfile, geo, kml, ngs, tx_site,
 					 txsites);
+					 
 		}
-		fprintf(stdout, "|%.5f", north);
-		fprintf(stdout, "|%.5f", east);
-		fprintf(stdout, "|%.5f", south);
-		fprintf(stdout, "|%.5f|", west);
+		
+		// Print WGS84 bounds
+		fprintf(stdout, "|%.6f", north);
+		fprintf(stdout, "|%.6f", east);
+		fprintf(stdout, "|%.6f", south);
+		fprintf(stdout, "|%.6f|", west);
 
 	} else {
 		strncpy(tx_site[0].name, "Tx", 3);
@@ -1704,9 +1732,10 @@ int main(int argc, char *argv[])
 	}
 	fflush(stdout);
 
-	free_elev();
+	// deprecated garbage collection
+	/*free_elev();
 	free_dem();
 	free_path();
-
+	*/
 	return 0;
 }

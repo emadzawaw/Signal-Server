@@ -23,10 +23,10 @@
 #define FOUR_THIRDS	1.3333333333333
 
 struct dem {
-	int min_north;
-	int max_north;
-	int min_west;
-	int max_west;
+	float min_north;
+	float max_north;
+	float min_west;
+	float max_west;
 	int max_el;
 	int min_el;
 	short **data;
@@ -73,10 +73,10 @@ extern int MAXPAGES;
 extern int ARRAYSIZE;
 extern int IPPD;
 
-extern int min_north;
-extern int max_north;
-extern int min_west;
-extern int max_west;
+extern double min_north;
+extern double max_north;
+extern double min_west;
+extern double max_west;
 extern int ippd;
 extern int mpi;
 extern int max_elevation;
@@ -84,6 +84,8 @@ extern int min_elevation;
 extern int contour_threshold;
 extern int loops;
 extern int jgets;
+extern int width;
+extern int height;
 
 extern double earthradius;
 extern double north;
@@ -93,6 +95,7 @@ extern double west;
 extern double max_range;
 extern double dpp;
 extern double ppd;
+extern double yppd;
 extern double fzone_clearance;
 extern double clutter;
 extern double dBm;

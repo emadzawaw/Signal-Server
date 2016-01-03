@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <math.h>
-
 #include "../main.hh"
 #include "los.hh"
 #include "cost.hh"
@@ -13,7 +12,7 @@
 #include <pthread.h>
 
 #define MAXPAGES 64
-#define IPPD 3600
+#define IPPD 5000
 #define NUM_SECTIONS 4
 
 namespace {
@@ -25,7 +24,7 @@ namespace {
 	bool has_init_processed = false;
 
 	struct propagationRange {
-		int min_west, max_west, min_north, max_north;
+		double min_west, max_west, min_north, max_north;
 		double altitude;
 		bool eastwest, los, use_threads;
 		site source;
@@ -105,7 +104,7 @@ namespace {
 
 		for (indx = 0, found = 0; indx < MAXPAGES && found == 0;) {
 			x = (int)rint(ppd * (lat - dem[indx].min_north));
-			y = mpi - (int)rint(ppd * (LonDiff(dem[indx].max_west, lon)));
+			y = mpi - (int)rint(yppd * (LonDiff(dem[indx].max_west, lon)));
 
 			if (x >= 0 && x <= mpi && y >= 0 && y <= mpi)
 				found = 1;
@@ -310,6 +309,7 @@ void PlotPropPath(struct site source, struct site destination,
 								  elevation[x])
 		     * METERS_PER_FOOT);
 
+
 	/* Copy ending points without clutter */
 
 	elev[2] = path.elevation[0] * METERS_PER_FOOT;
@@ -332,7 +332,7 @@ void PlotPropPath(struct site source, struct site destination,
 	     y++) {
 		/* Process this point only if it
 		   has not already been processed. */
-
+	
 		if ( (GetMask(path.lat[y], path.lon[y]) & 248) !=
 			(mask_value << 3) && can_process(path.lat[y], path.lon[y])) {
 
@@ -434,6 +434,7 @@ void PlotPropPath(struct site source, struct site destination,
 			}
 
 			dkm = (elev[1] * elev[0]) / 1000;	// km
+
 
 			switch (propmodel) {
 			case 1:
@@ -682,17 +683,17 @@ void PlotLOSMap(struct site source, double altitude, char *plo_filename,
 
 	if (fd != NULL) {
 		fprintf(fd,
-			"%d, %d\t; max_west, min_west\n%d, %d\t; max_north, min_north\n",
+			"%.3f, %.3f\t; max_west, min_west\n%.3f, %.3f\t; max_north, min_north\n",
 			max_west, min_west, max_north, min_north);
 	}
 
 	// Four sections start here
 	// Process north edge east/west, east edge north/south,
 	// south edge east/west, west edge north/south
-	int range_min_west[] = {min_west, min_west, min_west, max_west};
-	int range_min_north[] = {max_north, min_north, min_north, min_north};
-	int range_max_west[] = {max_west, min_west, max_west, max_west};
-	int range_max_north[] = {max_north, max_north, min_north, max_north};
+	double range_min_west[] = {min_west, min_west, min_west, max_west};
+	double range_min_north[] = {max_north, min_north, min_north, min_north};
+	double range_max_west[] = {max_west, min_west, max_west, max_west};
+	double range_max_north[] = {max_north, max_north, min_north, max_north};
 	propagationRange* r[NUM_SECTIONS];
 
 	for(int i = 0; i < NUM_SECTIONS; ++i) {
@@ -773,27 +774,23 @@ void PlotPropagation(struct site source, double altitude, char *plo_filename,
 			metric ? clutter * METERS_PER_FOOT : clutter,
 			metric ? "meters" : "feet");
 
-	if (debug) {
-		fprintf(stdout, "...\n\n 0%c to  25%c ", 37, 37);
-		fflush(stdout);
-	}
-
 	if (plo_filename[0] != 0)
 		fd = fopen(plo_filename, "wb");
 
 	if (fd != NULL) {
 		fprintf(fd,
-			"%d, %d\t; max_west, min_west\n%d, %d\t; max_north, min_north\n",
+			"%.3f, %.3f\t; max_west, min_west\n%.3f, %.3f\t; max_north, min_north\n",
 			max_west, min_west, max_north, min_north);
 	}
 
+	
 	// Four sections start here
 	// Process north edge east/west, east edge north/south,
 	// south edge east/west, west edge north/south
-	int range_min_west[] = {min_west, min_west, min_west, max_west};
-	int range_min_north[] = {max_north, min_north, min_north, min_north};
-	int range_max_west[] = {max_west, min_west, max_west, max_west};
-	int range_max_north[] = {max_north, max_north, min_north, max_north};
+	double range_min_west[] = {min_west, min_west, min_west, max_west};
+	double range_min_north[] = {max_north, min_north, min_north, min_north};
+	double range_max_west[] = {max_west, min_west, max_west, max_west};
+	double range_max_north[] = {max_north, max_north, min_north, max_north};
 	propagationRange* r[NUM_SECTIONS];
 
 	for(int i = 0; i < NUM_SECTIONS; ++i) {

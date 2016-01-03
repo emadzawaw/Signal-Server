@@ -25,7 +25,7 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 	   points up and east points right in the image generated. */
 
 	char mapfile[255];
-	unsigned width, height, red, green, blue, terrain = 0;
+	unsigned red, green, blue, terrain = 0;
 	unsigned char found, mask, cityorcounty;
 	int indx, x, y, z, x0 = 0, y0 = 0, loss, match;
 	double lat, lon, conversion, one_over_gamma, minwest;
@@ -35,9 +35,6 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 	conversion =
 	    255.0 / pow((double)(max_elevation - min_elevation),
 			one_over_gamma);
-
-	width = (unsigned)(ippd * ReduceAngle(max_west - min_west));
-	height = (unsigned)(ippd * ReduceAngle(max_north - min_north));
 
 	LoadLossColors(xmtr[0]);
 
@@ -117,11 +114,6 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 				loss = (dem[indx].signal[x0][y0]);
 				cityorcounty = 0;
 
-				if (debug) {
-					fprintf(stdout, "\n%d\t%d\t%d\t%d",
-						loss, indx, x0, y0);
-					fflush(stdout);
-				}
 				match = 255;
 
 				red = 0;
@@ -257,7 +249,7 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 	   points up and east points right in the image generated. */
 
 	char mapfile[255];
-	unsigned width, height, terrain, red, green, blue;
+	unsigned terrain, red, green, blue;
 	unsigned char found, mask, cityorcounty;
 	int indx, x, y, z = 1, x0 = 0, y0 = 0, signal, match;
 	double conversion, one_over_gamma, lat, lon, minwest;
@@ -267,9 +259,6 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 	conversion =
 	    255.0 / pow((double)(max_elevation - min_elevation),
 			one_over_gamma);
-
-	width = (unsigned)(ippd * ReduceAngle(max_west - min_west));
-	height = (unsigned)(ippd * ReduceAngle(max_north - min_north));
 
 	LoadSignalColors(xmtr[0]);
 
@@ -344,13 +333,6 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 				mask = dem[indx].mask[x0][y0];
 				signal = (dem[indx].signal[x0][y0]) - 100;
 				cityorcounty = 0;
-
-				if (debug) {
-					fprintf(stdout, "\n%d\t%d\t%d\t%d",
-						signal, indx, x0, y0);
-					fflush(stdout);
-				}
-
 				match = 255;
 
 				red = 0;
@@ -500,19 +482,17 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 	   points up and east points right in the image generated. */
 
 	char mapfile[255];
-	unsigned width, height, terrain, red, green, blue;
+	unsigned terrain, red, green, blue;
 	unsigned char found, mask, cityorcounty;
 	int indx, x, y, z = 1, x0 = 0, y0 = 0, dBm, match;
 	double conversion, one_over_gamma, lat, lon, minwest;
 	FILE *fd;
 
+	
 	one_over_gamma = 1.0 / GAMMA;
 	conversion =
 	    255.0 / pow((double)(max_elevation - min_elevation),
 			one_over_gamma);
-
-	width = (unsigned)(ippd * ReduceAngle(max_west - min_west));
-	height = (unsigned)(ippd * ReduceAngle(max_north - min_north));
 
 	LoadDBMColors(xmtr[0]);
 
@@ -553,15 +533,14 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 
 	fd = fopen(mapfile, "wb");
 
-	fprintf(fd, "P6\n%u %u\n255\n", width, (kml ? height : height + 30));
+	fprintf(fd, "P6\n%u %u\n255\n", width, (kml ? height : height));
 	if (debug) {
 		fprintf(stdout, "\nWriting \"%s\" (%ux%u pixmap image)... ",
-			mapfile, width, (kml ? height : height + 30));
+			mapfile, width, (kml ? height : height));
 		fflush(stdout);
 	}
-	// WriteKML()
-	//writeKML(xmtr,filename);
 
+	// Draw image of x by y pixels
 	for (y = 0, lat = north; y < (int)height;
 	     y++, lat = north - (dpp * (double)y)) {
 		for (x = 0, lon = max_west; x < (int)width;
@@ -571,14 +550,13 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 
 			for (indx = 0, found = 0;
 			     indx < MAXPAGES && found == 0;) {
-				x0 = (int)rint(ppd *
-					       (lat -
-						(double)dem[indx].min_north));
+				x0 = (int)rint((ppd *
+					      (lat -
+						(double)dem[indx].min_north))); // +4549 fix
 				y0 = mpi -
-				    (int)rint(ppd *
+				    (int)rint(ppd * // ONLY exception. All others are yppd
 					      (LonDiff
-					       ((double)dem[indx].max_west,
-						lon)));
+					       ((double)dem[indx].max_west,lon)));
 
 				if (x0 >= 0 && x0 <= mpi && y0 >= 0
 				    && y0 <= mpi)
@@ -591,13 +569,6 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 				mask = dem[indx].mask[x0][y0];
 				dBm = (dem[indx].signal[x0][y0]) - 200;
 				cityorcounty = 0;
-
-				if (debug) {
-					fprintf(stdout, "\n%d\t%d\t%d\t%d", dBm,
-						indx, x0, y0);
-					fflush(stdout);
-				}
-
 				match = 255;
 
 				red = 0;
@@ -639,9 +610,7 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 
 				else if (mask & 4) {
 					/* County Boundaries: Black */
-
 					fprintf(fd, "%c%c%c", 0, 0, 0);
-
 					cityorcounty = 1;
 				}
 
@@ -690,7 +659,7 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 									"%c%c%c",
 									255,
 									255,
-									255);
+									255); // WHITE
 							else {
 								if (dem[indx].
 								    data[x0][y0]
@@ -700,7 +669,7 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 									     "%c%c%c",
 									     0,
 									     0,
-									     170);
+									     170); // BLUE
 								else {
 									/* Elevation: Greyscale */
 									terrain
@@ -732,6 +701,7 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 		}
 	}
 
+
 	fclose(fd);
 
 }
@@ -746,7 +716,7 @@ void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 	   points up and east points right in the image generated. */
 
 	char mapfile[255];
-	unsigned width, height, terrain;
+	unsigned terrain;
 	unsigned char found, mask;
 	int indx, x, y, x0 = 0, y0 = 0;
 	double conversion, one_over_gamma, lat, lon, minwest;
@@ -756,9 +726,6 @@ void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 	conversion =
 	    255.0 / pow((double)(max_elevation - min_elevation),
 			one_over_gamma);
-
-	width = (unsigned)(ippd * ReduceAngle(max_west - min_west));
-	height = (unsigned)(ippd * ReduceAngle(max_north - min_north));
 
 	if (filename[0] == 0) {
 		strncpy(filename, xmtr[0].filename, 254);
@@ -803,8 +770,6 @@ void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 			mapfile, width, (kml ? height : height + 30));
 		fflush(stdout);
 	}
-	// WriteKML()
-	//writeKML(xmtr,filename);
 
 	for (y = 0, lat = north; y < (int)height;
 	     y++, lat = north - (dpp * (double)y)) {

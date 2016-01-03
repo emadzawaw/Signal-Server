@@ -3,11 +3,144 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
-
 #include "common.h"
 #include "main.hh"
 
-int LoadSDF_SDF(char *name, int winfiles)
+int loadLIDAR(char *filename)
+{
+	/*  This function reads a single LIDAR tile of n rows and n columns in ASCII grid format.
+		The tile must have WGS84 bounds in the header in the order: WEST,SOUTH,EAST,NORTH
+		ncols        5000
+		nrows        5000
+		xllcorner    -2.291359
+		yllcorner    51.788295
+		xurcorner    -2.146674
+		yurcorner    51.878474
+		cellsize     2
+		NODATA_value  -9999
+	*/
+
+	int x, y, width, height, cellsize;
+	double xll, yll, xur, yur;
+	char found, free_page = 0, line[50000], jline[20], lid_file[255],
+	    path_plus_name[255], *junk = NULL;
+	FILE *fd;
+	char * pch;
+		fd = fopen(filename, "rb");
+		if (fd != NULL) {
+			if (debug) {
+				fprintf(stdout,"Loading \"%s\"...\n",	filename);
+				fflush(stdout);
+			}
+			if (fgets(line, 20, fd) != NULL) {
+			  pch = strtok (line," "); 
+   			  pch = strtok (NULL, " "); 
+			  width=atoi(pch);
+			}
+			if (fgets(line, 20, fd) != NULL) {
+   			  height=atoi(pch);
+			}
+			fgets(line, 21, fd); // 
+
+			if (fgets(line, 22, fd) != NULL) {
+			  xll=atof(pch);
+			}
+			
+			fgets(line, 21, fd); // 
+			
+			if (fgets(line, 22, fd) != NULL) {
+			  yll=atof(pch);
+			}
+			
+			fgets(line, 21, fd); // 
+			
+			if (fgets(line, 22, fd) != NULL) {
+			  xur=atof(pch);
+			}
+			
+			fgets(line, 21, fd); // 
+			
+			if (fgets(line, 22, fd) != NULL) {
+			  yur=atof(pch);
+			}
+			
+			fgets(line, 21, fd); // 
+			
+			if (fgets(line, 21, fd) != NULL) {
+			  cellsize=atoi(pch);
+			}
+			
+			// Transform WGS84 longitudes into 'west' values as society finishes east of Greenwich ;)
+			if(xll > 0){
+				xll=360-xll;
+			}
+			if(xur > 0){
+				xur=360-xur;
+			}
+			if(xll < 0){
+				xll=xll*-1;
+			}
+			if(xur < 0){
+				xur=xur*-1;
+			}
+			dem[0].min_north=yll;
+			min_north=yll;
+			dem[0].max_north=yur;
+			max_north=yur;
+			dem[0].min_west=xur;
+			min_west=xur;
+			dem[0].max_west=xll;
+			max_west=xll;
+			if(debug){
+				fprintf(stdout,"yll %.2f yur %.2f xur %.2f xll %.2f\n",yll,yur,xur,xll);
+			}
+			if(width!=height){
+				fprintf(stdout,"LIDAR tile is not a square. Rows != Columns\n");
+				return 0;
+			}
+
+			fgets(line, 30, fd); // NODATA
+			for (y = height-1; y > -1; y--) {
+					x=width-1;
+					if (fgets(line, 50000,fd) != NULL) {
+						pch = strtok (line, " "); // 500
+						while(pch != NULL){
+							if(atoi(pch)<-999){
+								pch="0";
+							}
+							
+							dem[0].data[y][x]=atoi(pch);	
+							dem[0].signal[x][y] = 0;
+							dem[0].mask[x][y] = 0;	
+							
+							if (atoi(pch) > dem[0].max_el){
+								dem[0].max_el = atoi(pch);
+								max_elevation = atoi(pch);
+								}
+								
+							if (atoi(pch) < dem[0].min_el){
+								dem[0].min_el = atoi(pch);
+								min_elevation = dem[0].min_el;
+								}
+						
+								
+							x--;
+							pch = strtok (NULL, " "); // 500
+						}	
+					}else{
+						fprintf(stdout,"LIDAR error @ line %d\n",x);
+						return 0;
+					}
+			}
+			
+			fclose(fd);
+			return 0;
+		}
+		else
+			return -1;
+}
+
+int LoadSDF_SDF(char *name)
 {
 	/* This function reads uncompressed ss Data Files (.sdf)
 	   containing digital elevation model data into memory.
@@ -27,13 +160,10 @@ int LoadSDF_SDF(char *name, int winfiles)
 	sdf_file[x] = 0;
 
 	/* Parse filename for minimum latitude and longitude values */
-	if (winfiles == 1) {
-		sscanf(sdf_file, "%d=%d=%d=%d", &minlat, &maxlat, &minlon,
-		       &maxlon);
-	} else {
+
 		sscanf(sdf_file, "%d:%d:%d:%d", &minlat, &maxlat, &minlon,
 		       &maxlon);
-	}
+	
 
 	sdf_file[x] = '.';
 	sdf_file[x + 1] = 's';
@@ -87,19 +217,19 @@ int LoadSDF_SDF(char *name, int winfiles)
 			}
 
 			if (fgets(line, 19, fd) != NULL) {
-				sscanf(line, "%d", &dem[indx].max_west);
+				sscanf(line, "%f", &dem[indx].max_west);
 			}
 
 			if (fgets(line, 19, fd) != NULL) {
-				sscanf(line, "%d", &dem[indx].min_north);
+				sscanf(line, "%f", &dem[indx].min_north);
 			}
 
 			if (fgets(line, 19, fd) != NULL) {
-				sscanf(line, "%d", &dem[indx].min_west);
+				sscanf(line, "%f", &dem[indx].min_west);
 			}
 
 			if (fgets(line, 19, fd) != NULL) {
-				sscanf(line, "%d", &dem[indx].max_north);
+				sscanf(line, "%f", &dem[indx].max_north);
 			}
 			/*
 			   Here X lines of DEM will be read until IPPD is reached.
@@ -205,7 +335,7 @@ int LoadSDF_SDF(char *name, int winfiles)
 		return 0;
 }
 
-char LoadSDF(char *name, int winfiles)
+char LoadSDF(char *name)
 {
 	/* This function loads the requested SDF file from the filesystem.
 	   It first tries to invoke the LoadSDF_SDF() function to load an
@@ -220,19 +350,16 @@ char LoadSDF(char *name, int winfiles)
 	char found, free_page = 0;
 	int return_value = -1;
 
-	return_value = LoadSDF_SDF(name, winfiles);
+	return_value = LoadSDF_SDF(name);
 
 	/* If neither format can be found, then assume the area is water. */
 
 	if (return_value == 0 || return_value == -1) {
 
-		if (winfiles == 1) {
-			sscanf(name, "%d=%d=%d=%d", &minlat, &maxlat, &minlon,
-			       &maxlon);
-		} else {
+
 			sscanf(name, "%d:%d:%d:%d", &minlat, &maxlat, &minlon,
 			       &maxlon);
-		}
+		
 		/* Is it already in memory? */
 
 		for (indx = 0, found = 0; indx < MAXPAGES && found == 0; indx++) {
@@ -1138,8 +1265,7 @@ void LoadDBMColors(struct site xmtr)
 	}
 }
 
-void LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat,
-		  int winfiles)
+void LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat)
 {
 	/* This function loads the SDF files required
 	   to cover the limits of the region specified. */
@@ -1167,17 +1293,7 @@ void LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat,
 				while (ymax >= 360)
 					ymax -= 360;
 
-				if (winfiles == 1) {
-					if (ippd == 3600)
-						snprintf(string, 19,
-							 "%d=%d=%d=%d=hd", x,
-							 x + 1, ymin, ymax);
-					else
-						snprintf(string, 16,
-							 "%d=%d=%d=%d", x,
-							 x + 1, ymin, ymax);
 
-				} else {
 					if (ippd == 3600)
 						snprintf(string, 19,
 							 "%d:%d:%d:%d-hd", x,
@@ -1186,9 +1302,7 @@ void LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat,
 						snprintf(string, 16,
 							 "%d:%d:%d:%d", x,
 							 x + 1, ymin, ymax);
-				}
-
-				LoadSDF(string, winfiles);
+				LoadSDF(string);
 			}
 	}
 
@@ -1211,17 +1325,6 @@ void LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat,
 				while (ymax >= 360)
 					ymax -= 360;
 
-				if (winfiles == 1) {
-					if (ippd == 3600)
-						snprintf(string, 19,
-							 "%d=%d=%d=%d=hd", x,
-							 x + 1, ymin, ymax);
-					else
-						snprintf(string, 16,
-							 "%d=%d=%d=%d", x,
-							 x + 1, ymin, ymax);
-
-				} else {
 					if (ippd == 3600)
 						snprintf(string, 19,
 							 "%d:%d:%d:%d-hd", x,
@@ -1230,9 +1333,7 @@ void LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat,
 						snprintf(string, 16,
 							 "%d:%d:%d:%d", x,
 							 x + 1, ymin, ymax);
-				}
-
-				LoadSDF(string, winfiles);
+				LoadSDF(string);
 			}
 	}
 }

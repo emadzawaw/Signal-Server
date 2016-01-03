@@ -35,7 +35,9 @@ signalserver: $(objects)
 	@$(CXX) $(objects) -o $@ ${LIBS}
 	@echo -e " SYMLNK\tsignalserverHD -> $@"
 	@ln -sf $@ signalserverHD
-
+	@echo -e " SYMLNK\tsignalserverLIDAR -> $@"
+	@ln -sf $@ signalserverLIDAR
+	
 main.o: main.cc common.h inputs.hh outputs.hh itwom3.0.hh los.hh
 
 inputs.o: inputs.cc common.h main.hh
@@ -48,4 +50,4 @@ los.o: los.cc common.h main.hh cost.hh ecc33.hh ericsson.hh fspl.hh hata.hh \
 
 .PHONY: clean
 clean:
-	rm -f $(objects) signalserver signalserverHD
+	rm -f $(objects) signalserver signalserverHD signalserverLIDAR

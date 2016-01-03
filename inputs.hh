@@ -9,8 +9,8 @@ void LoadPAT(char *filename);
 void LoadSignalColors(struct site xmtr);
 void LoadLossColors(struct site xmtr);
 void LoadDBMColors(struct site xmtr);
-void LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat,
-		  int winfiles);
+void LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat);
 void LoadUDT(char *filename);
+int loadLIDAR(char *filename);
 
 #endif /* _INPUTS_HH_ */

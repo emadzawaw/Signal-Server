@@ -1,4 +1,9 @@
 SIGNAL SERVER CHANGELOG 
+2.7 - 03 Jan 2016
+Added support for LIDAR data in ASCII grid format with WGS84 bounds
+Increased resolution to +54000 pixels per degree (2m)
+Removed support for Windows SDF filenames without:colons.
+
 
 2.63 - 10 Nov 2015
 Added sanity check and handicap to ECC33 model when used with low Tx heights in hilly areas = sea of red
@@ -11,10 +16,10 @@ Credit to Nils Lofstad for helping nail this down.
 FSPL model floor reduced from 150MHz to 20MHz.
 
 2.6 - 9 June 2015
-Multithreading support added by Michael Ramnarine
+Multi-threading support added by Michael Ramnarine
 PlotPropagation() and PlotLOSMap() use four threads by default
 Feature can be disabled with -nothreads flag
-Static and global variables have been made threadsafe
+Static and global variables have been made thread safe
 
 2.5 - 27 May 2015
 Code refactored by Andrew Clayton / ac000 with header files
@@ -109,7 +114,7 @@ New Earth Dielectric range (Permittivity): 80 to 0.1
 New Conductivity range (Siemens/m): 0.01 to 0.000001
 
 1.0 - 19 November 2011
-SS released. 
+Signal Server forked from SPLAT!
 
 
 
