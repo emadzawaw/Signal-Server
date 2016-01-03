@@ -1,25 +1,18 @@
-/****************************************************************************\
-*    Signal Server: Server optimised SPLAT! by Alex Farrant, M6ZUJ           *
-******************************************************************************
-*    SPLAT! Project started in 1997 by John A. Magliacane, KD2BD             *
-*                                                                            *
-******************************************************************************
-*    Please consult the SPLAT! documentation for a complete list of          *
-*    individuals who have contributed to this project.                       *
-******************************************************************************
-*                                                                            *
-*  This program is free software; you can redistribute it and/or modify it   *
-*  under the terms of the GNU General Public License as published by the     *
-*  Free Software Foundation; either version 2 of the License or any later    *
-*  version.                                                                  *
-*                                                                            *
-*  This program is distributed in the hope that it will useful, but WITHOUT  *
-*  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or     *
-*  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License     *
-*  for more details.                                                         *
-*                                                                            *
-\****************************************************************************/
+# Signal Server
+Signal Server: Server optimised SPLAT! by Alex Farrant, M6ZUJ 
 
+SPLAT! Project started in 1997 by John A. Magliacane, KD2BD
+
+For detailed information and reference data related to this program see the SPLAT! documentation
+
+
+## Requirements
+* Linux
+* GCC,G++
+* Multicore CPU (optional)
+* >2GB Memory
+
+## Parameters
 		 -- Signal Server --
 	Compiled for 64 tiles at 1200 pixels/degree
 
@@ -54,16 +47,20 @@
      -haf Halve 1 or 2 (optional)
      -nothreads Turn off threaded processing (optional)
 	 
-	 Example usage:
-	 
-	 INPUTS: 900MHz tower at 25m AGL with 5W ERP
-	 OUTPUTS: 1200 resolution, 30km radius, -90dBm receiver threshold, Longley Rice model
-	 ./signalserver -d /data/SRTM3 -lat 51.849 -lon -2.2299 -txh 25 -f 900 -erp 5 -rxh 2 -rt -90 -dbm -m -o test1 -R 30 -res 1200 -pm 1
 
-	 INPUTS: 450MHz tower at 25f AGL with 20W ERP
-	 OUTPUTS: 3600 resolution, 30km radius, 10dBuV receiver threshold, Hata model
-	 ./signalserverHD -d /data/SRTM1 -lat 51.849 -lon -2.2299 -txh 25 -f 450 -erp 20 -rxh 2 -rt 10 -o test2 -R 30 -res 3600 -pm 3
+## Examples
+	
+### 90m resolution	
+INPUTS: 900MHz tower at 25m AGL with 5W ERP
+OUTPUTS: 1200 resolution, 30km radius, -90dBm receiver threshold, Longley Rice model
+./signalserver -d /data/SRTM3 -lat 51.849 -lon -2.2299 -txh 25 -f 900 -erp 5 -rxh 2 -rt -90 -dbm -m -o test1 -R 30 -res 1200 -pm 1
 
-	 INPUTS: 1800MHz tower at 15m AGL with 1W ERP
-	 OUTPUTS: 2m LIDAR resolution, 5km radius, -90dBm receiver threshold, Longley Rice model
-	./signalserverLIDAR -lid /data/LIDAR2m/Gloucester_2m.asc -lat 51.849 -lon -2.2299 -txh 15 -f 1800 -erp 1 -rxh 2 -rt -90 -dbm -m -o test3 -R 30 -res 5000 -pm 1
+### 30m resolution
+INPUTS: 450MHz tower at 25f AGL with 20W ERP
+OUTPUTS: 3600 resolution, 30km radius, 10dBuV receiver threshold, Hata model
+./signalserverHD -d /data/SRTM1 -lat 51.849 -lon -2.2299 -txh 25 -f 450 -erp 20 -rxh 2 -rt 10 -o test2 -R 30 -res 3600 -pm 3
+
+### 2m resolution (LIDAR)
+INPUTS: 1800MHz tower at 15m AGL with 1W ERP
+OUTPUTS: 2m LIDAR resolution, 5km radius, -90dBm receiver threshold, Longley Rice model
+./signalserverLIDAR -lid /data/LIDAR2m/Gloucester_2m.asc -lat 51.849 -lon -2.2299 -txh 15 -f 1800 -erp 1 -rxh 2 -rt -90 -dbm -m -o test3 -R 30 -res 5000 -pm 1
