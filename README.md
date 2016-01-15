@@ -1,22 +1,35 @@
 # Signal Server
-Signal Server: Server optimised SPLAT! by Alex Farrant, M6ZUJ 
+Server optimised SPLAT! by Alex Farrant, M6ZUJ. 
 
 SPLAT! Project started in 1997 by John A. Magliacane, KD2BD
 
-For detailed information and reference data related to this program see the SPLAT! documentation
+This server application will generate RF coverage predictions, producing either 2D profile plots (Point-to-Point) or 360 degree polar plots in WGS-84 projection.
+For detailed information and historical reference data related to this project see the SPLAT! documentation. Propagation models added to this project have been sourced from reputable academic sources and all efforts have been taken to ensure their accurate implementation. Not all models are ITU ratified and you use them entirely at your own risk.
+
+The accuracy of the output is directly proportional to the accuracy of the inputs and the time taken defining and validating them. 
 
 
 ## Requirements
 * Linux
 * GCC,G++
 * Multicore CPU (optional)
-* >2GB Memory
+* ~2GB Memory
+* SRTM terrain tiles
 
+Signal Server is a very resource intensive multicore application. Only publish it for common use if you know what you are doing and you are advised to wrap it with another script to perform input validation.
+
+Additional programs/scripts will be required to prepare inputs such as .sdf tiles (srtm2sdf.c), 3D antenna patterns (.ant) and user defined clutter (.udt) or manipulate the bitmap output (.ppm). More information can be found in the SPLAT! project.
+
+## Installation
+```sh
+$ make
+```
 ## Parameters
-		 -- Signal Server --
-	Compiled for 64 tiles at 1200 pixels/degree
+		 	 -- Signal Server 2.70 --
+	Set for 64 tiles at 1200 pixels/degree
 
-     -d Directory containing .sdf tiles
+     -sdf Directory containing .sdf tiles
+     -lid LIDAR ASCII tile with WGS84 bounds
      -lat Tx Latitude (decimal degrees) -70/+70
      -lon Tx Longitude (decimal degrees) -180/+180
      -txh Tx Height (above ground)
@@ -37,7 +50,7 @@ For detailed information and reference data related to this program see the SPLA
      -cl Climate code 1-6 (optional)
      -o Filename. Required. 
      -R Radius (miles/kilometers)
-     -res Pixels per degree. 300/600/1200(default)/3600 (optional)
+     -res Pixels per tile. 300/600/1200/3600/5000/10000 (optional)
      -t Terrain background
      -pm Prop model. 1: ITM, 2: LOS, 3: Hata, 4: ECC33,
      		5: SUI, 6: COST-Hata, 7: FSPL, 8: ITWOM, 9: Ericsson
@@ -46,21 +59,22 @@ For detailed information and reference data related to this program see the SPLA
      -ng Normalise Path Profile graph
      -haf Halve 1 or 2 (optional)
      -nothreads Turn off threaded processing (optional)
+
 	 
 
 ## Examples
 	
 ### 90m resolution	
-INPUTS: 900MHz tower at 25m AGL with 5W ERP
-OUTPUTS: 1200 resolution, 30km radius, -90dBm receiver threshold, Longley Rice model
-./signalserver -d /data/SRTM3 -lat 51.849 -lon -2.2299 -txh 25 -f 900 -erp 5 -rxh 2 -rt -90 -dbm -m -o test1 -R 30 -res 1200 -pm 1
+- INPUTS: 900MHz tower at 25m AGL with 5W ERP
+- OUTPUTS: 1200 resolution, 30km radius, -90dBm receiver threshold, Longley Rice model
+- ./signalserver -sdf /data/SRTM3 -lat 51.849 -lon -2.2299 -txh 25 -f 900 -erp 5 -rxh 2 -rt -90 -dbm -m -o test1 -R 30 -res 1200 -pm 1
 
 ### 30m resolution
-INPUTS: 450MHz tower at 25f AGL with 20W ERP
-OUTPUTS: 3600 resolution, 30km radius, 10dBuV receiver threshold, Hata model
-./signalserverHD -d /data/SRTM1 -lat 51.849 -lon -2.2299 -txh 25 -f 450 -erp 20 -rxh 2 -rt 10 -o test2 -R 30 -res 3600 -pm 3
+- INPUTS: 450MHz tower at 25f AGL with 20W ERP
+- OUTPUTS: 3600 resolution, 30km radius, 10dBuV receiver threshold, Hata model
+- ./signalserverHD -sdf /data/SRTM1 -lat 51.849 -lon -2.2299 -txh 25 -f 450 -erp 20 -rxh 2 -rt 10 -o test2 -R 30 -res 3600 -pm 3
 
 ### 2m resolution (LIDAR)
-INPUTS: 1800MHz tower at 15m AGL with 1W ERP
-OUTPUTS: 2m LIDAR resolution, 5km radius, -90dBm receiver threshold, Longley Rice model
-./signalserverLIDAR -lid /data/LIDAR2m/Gloucester_2m.asc -lat 51.849 -lon -2.2299 -txh 15 -f 1800 -erp 1 -rxh 2 -rt -90 -dbm -m -o test3 -R 30 -res 5000 -pm 1
+- INPUTS: 1800MHz tower at 15m AGL with 1W ERP
+- OUTPUTS: 2m LIDAR resolution, 5km radius, -90dBm receiver threshold, Longley Rice model
+- ./signalserverLIDAR -lid /data/LIDAR2m/Gloucester_2m.asc -lat 51.849 -lon -2.2299 -txh 15 -f 1800 -erp 1 -rxh 2 -rt -90 -dbm -m -o test3 -R 30 -res 5000 -pm 1
