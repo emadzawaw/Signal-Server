@@ -1,4 +1,8 @@
 SIGNAL SERVER CHANGELOG 
+2.7.1 - 14 Jan 2016
+LIDAR longitude bugfix for Greenwich meridian tiles
+Adjusted ITM parameters warnings
+
 2.7 - 03 Jan 2016
 Added support for LIDAR data in ASCII grid format with WGS84 bounds
 Increased resolution to +54000 pixels per degree (2m)

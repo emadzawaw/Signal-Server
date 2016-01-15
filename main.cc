@@ -1,4 +1,4 @@
-double version = 2.7;
+double version = 2.7.1;
 /****************************************************************************\
 *    Signal Server: Server optimised SPLAT! by Alex Farrant, M6ZUJ           *
 ******************************************************************************
@@ -44,7 +44,7 @@ char string[255], sdf_path[255], udt_file[255], opened = 0, gpsav =
 double earthradius, max_range = 0.0, forced_erp, dpp, ppd, yppd,
     fzone_clearance = 0.6, forced_freq, clutter, lat, lon, txh, tercon, terdic,
     north, east, south, west, dBm, loss, field_strength,
-	min_north = 90, max_north = -90, min_west = 360, max_west = -1;
+	min_north = 90, max_north = -90, min_west = 360, max_west = -1, westoffset=0, eastoffset=0, delta=0;
 
 int ippd, mpi,
     max_elevation = -32768, min_elevation = 32768, bzerror, contour_threshold,
@@ -1538,6 +1538,7 @@ int main(int argc, char *argv[])
 	min_lat = 70;
 	max_lat = -70;
 
+
 	min_lon = (int)floor(tx_site[0].lon);
 	max_lon = (int)floor(tx_site[0].lon);
 
@@ -1580,6 +1581,9 @@ int main(int argc, char *argv[])
 		yppd=rint(ippd / (max_west-min_west));
 		height=ippd;
 		width=ippd;
+		if(delta>0){
+			tx_site[0].lon+=delta;
+		}
 	}else{
 		LoadTopoData(max_lon, min_lon, max_lat, min_lat);
 			if (area_mode || topomap) {
@@ -1717,9 +1721,9 @@ int main(int argc, char *argv[])
 		
 		// Print WGS84 bounds
 		fprintf(stdout, "|%.6f", north);
-		fprintf(stdout, "|%.6f", east);
+		fprintf(stdout, "|%.6f", eastoffset);
 		fprintf(stdout, "|%.6f", south);
-		fprintf(stdout, "|%.6f|", west);
+		fprintf(stdout, "|%.6f|", westoffset);
 
 	} else {
 		strncpy(tx_site[0].name, "Tx", 3);

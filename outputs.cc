@@ -1564,16 +1564,16 @@ void PathReport(struct site source, struct site destination, char *name,
 
 			case 3:
 				fprintf(fd2,
-					"\n  Warning: A combination of parameters is out of range.\n");
+					"\n  Warning: A combination of parameters is out of range for this model.\n");
 				fprintf(fd2,
-					"  Results are probably invalid.\n");
+					"  Results should be used with caution.\n");
 				break;
 
 			default:
 				fprintf(fd2,
-					"\n  Warning: Some parameters are out of range.\n");
+					"\n  Warning: Some parameters are out of range for this model.\n");
 				fprintf(fd2,
-					"  Results are probably invalid.\n");
+					"  Results should be used with caution.\n");
 			}
 		}
 

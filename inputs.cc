@@ -18,6 +18,8 @@ int loadLIDAR(char *filename)
 		yurcorner    51.878474
 		cellsize     2
 		NODATA_value  -9999
+
+
 	*/
 
 	int x, y, width, height, cellsize;
@@ -40,28 +42,32 @@ int loadLIDAR(char *filename)
 			if (fgets(line, 20, fd) != NULL) {
    			  height=atoi(pch);
 			}
-			fgets(line, 21, fd); // 
+			fgets(line, 24, fd); // 
 
-			if (fgets(line, 22, fd) != NULL) {
-			  xll=atof(pch);
+			if (fgets(line, 24, fd) != NULL) {
+			  //xll=atof(pch);
+			  sscanf(pch, "%lf", &xll);
 			}
 			
-			fgets(line, 21, fd); // 
+			fgets(line, 24, fd); // 
 			
-			if (fgets(line, 22, fd) != NULL) {
-			  yll=atof(pch);
+			if (fgets(line, 24, fd) != NULL) {
+			  //yll=atof(pch);
+			  sscanf(pch, "%lf", &yll);
 			}
 			
-			fgets(line, 21, fd); // 
+			fgets(line, 24, fd); // 
 			
-			if (fgets(line, 22, fd) != NULL) {
-			  xur=atof(pch);
+			if (fgets(line, 24, fd) != NULL) {
+			  //xur=atof(pch);
+			  sscanf(pch, "%lf", &xur);
 			}
 			
-			fgets(line, 21, fd); // 
+			fgets(line, 24, fd); // 
 			
-			if (fgets(line, 22, fd) != NULL) {
-			  yur=atof(pch);
+			if (fgets(line, 24, fd) != NULL) {
+			  //yur=atof(pch);
+			  sscanf(pch, "%lf", &yur);
 			}
 			
 			fgets(line, 21, fd); // 
@@ -69,6 +75,17 @@ int loadLIDAR(char *filename)
 			if (fgets(line, 21, fd) != NULL) {
 			  cellsize=atoi(pch);
 			}
+
+			eastoffset=xur;
+			westoffset=xll;
+			
+			// Greenwich straddling hack
+			if(xll < 0 && xur > 0){
+				delta = (xur - xll);
+				xur=0.0;
+				xll=delta;
+				delta=eastoffset; // add to Tx longitude later
+			}else{
 			
 			// Transform WGS84 longitudes into 'west' values as society finishes east of Greenwich ;)
 			if(xll > 0){
@@ -83,17 +100,23 @@ int loadLIDAR(char *filename)
 			if(xur < 0){
 				xur=xur*-1;
 			}
+
+			}
+			
+			if(debug){
+				fprintf(stdout,"yll %.7f yur %.7f xur %.7f xll %.7f delta %.6f\n",yll,yur,xur,xll,delta);
+			}			
 			dem[0].min_north=yll;
 			min_north=yll;
 			dem[0].max_north=yur;
 			max_north=yur;
+			
 			dem[0].min_west=xur;
 			min_west=xur;
 			dem[0].max_west=xll;
 			max_west=xll;
-			if(debug){
-				fprintf(stdout,"yll %.2f yur %.2f xur %.2f xll %.2f\n",yll,yur,xur,xll);
-			}
+		
+	
 			if(width!=height){
 				fprintf(stdout,"LIDAR tile is not a square. Rows != Columns\n");
 				return 0;
