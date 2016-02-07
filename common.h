@@ -78,6 +78,7 @@ extern double max_north;
 extern double min_west;
 extern double max_west;
 extern int ippd;
+extern int MAXRAD;
 extern int mpi;
 extern int max_elevation;
 extern int min_elevation;

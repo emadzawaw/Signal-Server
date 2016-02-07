@@ -1,4 +1,4 @@
-double version = 2.7.1;
+double version = 2.72;
 /****************************************************************************\
 *    Signal Server: Server optimised SPLAT! by Alex Farrant, M6ZUJ           *
 ******************************************************************************
@@ -44,7 +44,7 @@ char string[255], sdf_path[255], udt_file[255], opened = 0, gpsav =
 double earthradius, max_range = 0.0, forced_erp, dpp, ppd, yppd,
     fzone_clearance = 0.6, forced_freq, clutter, lat, lon, txh, tercon, terdic,
     north, east, south, west, dBm, loss, field_strength,
-	min_north = 90, max_north = -90, min_west = 360, max_west = -1, westoffset=0, eastoffset=0, delta=0;
+	min_north = 90, max_north = -90, min_west = 360, max_west = -1, westoffset=-180, eastoffset=180, delta=0;
 
 int ippd, mpi,
     max_elevation = -32768, min_elevation = 32768, bzerror, contour_threshold,
@@ -993,7 +993,7 @@ int main(int argc, char *argv[])
 	unsigned char LRmap = 0, txsites = 0, topomap = 0, geo = 0, kml =
 	    0, area_mode = 0, max_txsites, ngs = 0;
 
-	char mapfile[255], udt_file[255], ano_filename[255], lidar_tile[255];
+	char mapfile[255], udt_file[255], ano_filename[255], lidar_tiles[512];
 
 	double altitude = 0.0, altitudeLR = 0.0, tx_range = 0.0,
 	    rx_range = 0.0, deg_range = 0.0, deg_limit = 0.0, deg_range_lon;
@@ -1005,9 +1005,9 @@ int main(int argc, char *argv[])
 	}
 
 	if (strstr(argv[0], "signalserverLIDAR")) {
-		MAXPAGES = 1; // 10km2 for now :)
-		IPPD = 5000; // // 2m resolution
-		ARRAYSIZE = 5010;
+		MAXPAGES = 4; 
+		IPPD = 5000; // // 2m resolution default
+		ARRAYSIZE = 20010;
 		ppd=IPPD;
 	}
 
@@ -1020,7 +1020,7 @@ int main(int argc, char *argv[])
 			"\tSet for %d tiles at %d pixels/degree\n\n",
 			MAXPAGES, IPPD);
 		fprintf(stdout, "     -sdf Directory containing .sdf tiles\n");
-		fprintf(stdout, "     -lid LIDAR ASCII tile with WGS84 bounds\n");
+		fprintf(stdout, "     -lid LIDAR ASCII tile with WGS84 bounds (Dimensions defined in file metadata)\n");
 		fprintf(stdout,
 			"     -lat Tx Latitude (decimal degrees) -70/+70\n");
 		fprintf(stdout,
@@ -1053,7 +1053,7 @@ int main(int argc, char *argv[])
 		fprintf(stdout, "     -o Filename. Required. \n");
 		fprintf(stdout, "     -R Radius (miles/kilometers)\n");
 		fprintf(stdout,
-			"     -res Pixels per tile. 300/600/1200/3600/5000/10000 (optional)\n");
+			"     -res Pixels per tile. 300/600/1200/3600 (Optional. LIDAR res is defined within the tile)\n");
 		fprintf(stdout, "     -t Terrain background\n");
 		fprintf(stdout,
 			"     -pm Prop model. 1: ITM, 2: LOS, 3: Hata, 4: ECC33,\n");
@@ -1142,44 +1142,7 @@ int main(int argc, char *argv[])
 
 	for (x = 1; x <= y; x++) {
 
-		if (strcmp(argv[x], "-res") == 0) {
-			z = x + 1;
 
-			if (z <= y && argv[z][0] && argv[z][0] != '-') {
-				sscanf(argv[z], "%d", &ippd);
-
-				switch (ippd) {
-				case 300:
-					MAXRAD = 500;
-					jgets = 3; // 3 dummy reads
-					break;
-				case 600:
-					MAXRAD = 500;
-					jgets = 1;
-					break;
-				case 1200:
-					MAXRAD = 200;
-					ippd = 1200;
-					break;
-				case 3600:
-					MAXRAD = 100;
-					ippd = 3600;
-					break;
-				case 5000: // LIDAR 2m
-					MAXRAD = 10;
-					ippd = 5000;
-					break;
-				case 10000: // LIDAR 1m
-					MAXRAD = 5;
-					ippd = 10000;
-					break;
-				default:
-					MAXRAD = 200;
-					ippd = 1200;
-					break;
-				}
-			}
-		}
 		if (strcmp(argv[x], "-R") == 0) {
 			z = x + 1;
 
@@ -1242,9 +1205,40 @@ int main(int argc, char *argv[])
 			z = x + 1;
 			lidar=1;
 			if (z <= y && argv[z][0] && argv[z][0] != '-')
-				strncpy(lidar_tile, argv[z], 253);
+				strncpy(lidar_tiles, argv[z], 253);
 		}
-		
+
+		if (strcmp(argv[x], "-res") == 0) {
+			z = x + 1;
+
+			if (z <= y && argv[z][0] && argv[z][0] != '-') {
+				sscanf(argv[z], "%d", &ippd);
+
+				switch (ippd) {
+				case 300:
+					MAXRAD = 500;
+					jgets = 3; // 3 dummy reads
+					break;
+				case 600:
+					MAXRAD = 500;
+					jgets = 1;
+					break;
+				case 1200:
+					MAXRAD = 200;
+					ippd = 1200;
+					break;
+				case 3600:
+					MAXRAD = 100;
+					ippd = 3600;
+					break;
+				default:
+					MAXRAD = 200;
+					ippd = 1200;
+					break;
+				}
+			}
+		}
+
 		if (strcmp(argv[x], "-lat") == 0) {
 			z = x + 1;
 
@@ -1497,10 +1491,14 @@ int main(int argc, char *argv[])
 			"ERROR: Rx altitude above ground was too high!");
 		exit(0);
 	}
-	if (ippd < 300 || ippd > 10000) {
-		fprintf(stdout, "ERROR: resolution out of range!");
-		exit(0);
+
+	if(!lidar){
+		if (ippd < 300 || ippd > 10000) {
+			fprintf(stdout, "ERROR: resolution out of range!");
+			exit(0);
+		}
 	}
+
 	if (contour_threshold < -200 || contour_threshold > 200) {
 		fprintf(stdout,
 			"ERROR: Receiver threshold out of range (-200 / +200)");
@@ -1576,14 +1574,17 @@ int main(int argc, char *argv[])
 
 	/* Load the required tiles */
 	if(lidar){
-		loadLIDAR(lidar_tile);
-		ppd=rint(ippd / (max_north-min_north));
-		yppd=rint(ippd / (max_west-min_west));
-		height=ippd;
-		width=ippd;
+		loadLIDAR(lidar_tiles);
+		if(debug){
+			fprintf(stdout,"%.4f,%.4f,%.4f,%.4f\n",max_north,min_west,min_north,max_west);
+		}
+		ppd=rint(height / (max_north-min_north));
+		yppd=rint(width / (max_west-min_west));
+
 		if(delta>0){
 			tx_site[0].lon+=delta;
 		}
+	
 	}else{
 		LoadTopoData(max_lon, min_lon, max_lat, min_lat);
 			if (area_mode || topomap) {
@@ -1718,12 +1719,15 @@ int main(int argc, char *argv[])
 					 txsites);
 					 
 		}
-		
+		if(lidar){
+			east=eastoffset;
+			west=westoffset;
+		}
 		// Print WGS84 bounds
 		fprintf(stdout, "|%.6f", north);
-		fprintf(stdout, "|%.6f", eastoffset);
+		fprintf(stdout, "|%.6f", east);
 		fprintf(stdout, "|%.6f", south);
-		fprintf(stdout, "|%.6f|", westoffset);
+		fprintf(stdout, "|%.6f|", west);
 
 	} else {
 		strncpy(tx_site[0].name, "Tx", 3);

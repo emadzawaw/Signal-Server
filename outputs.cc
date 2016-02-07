@@ -101,6 +101,13 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 					      (LonDiff
 					       ((double)dem[indx].max_west,
 						lon)));
+				 // fix for multi-tile lidar
+                                if(width==10000 && (indx==1 || indx==3)){
+                                        if(y0 >= 3510){ //3535
+                                                y0=y0-3510;
+                                        }
+                                }
+
 
 				if (x0 >= 0 && x0 <= mpi && y0 >= 0
 				    && y0 <= mpi)
@@ -322,6 +329,14 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 					       ((double)dem[indx].max_west,
 						lon)));
 
+				 // fix for multi-tile lidar
+                                if(width==10000 && (indx==1 || indx==3)){
+                                        if(y0 >= 3510){ //3535
+                                                y0=y0-3510;
+                                        }
+                                }
+
+
 				if (x0 >= 0 && x0 <= mpi && y0 >= 0
 				    && y0 <= mpi)
 					found = 1;
@@ -488,7 +503,6 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 	double conversion, one_over_gamma, lat, lon, minwest;
 	FILE *fd;
 
-	
 	one_over_gamma = 1.0 / GAMMA;
 	conversion =
 	    255.0 / pow((double)(max_elevation - min_elevation),
@@ -535,7 +549,7 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 
 	fprintf(fd, "P6\n%u %u\n255\n", width, (kml ? height : height));
 	if (debug) {
-		fprintf(stdout, "\nWriting \"%s\" (%ux%u pixmap image)... ",
+		fprintf(stdout, "\nWriting \"%s\" (%ux%u pixmap image)...\n",
 			mapfile, width, (kml ? height : height));
 		fflush(stdout);
 	}
@@ -550,6 +564,7 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 
 			for (indx = 0, found = 0;
 			     indx < MAXPAGES && found == 0;) {
+
 				x0 = (int)rint((ppd *
 					      (lat -
 						(double)dem[indx].min_north))); // +4549 fix
@@ -558,11 +573,20 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 					      (LonDiff
 					       ((double)dem[indx].max_west,lon)));
 
+				// fix for multi-tile lidar
+				if(width==10000 && (indx==1 || indx==3)){
+					if(y0 >= 3510){ //3535
+						y0=y0-3510;
+					}
+				}
+
 				if (x0 >= 0 && x0 <= mpi && y0 >= 0
 				    && y0 <= mpi)
 					found = 1;
 				else
 					indx++;
+
+
 			}
 
 			if (found) {

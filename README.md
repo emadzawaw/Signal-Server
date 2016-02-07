@@ -25,11 +25,11 @@ Additional programs/scripts will be required to prepare inputs such as .sdf tile
 $ make
 ```
 ## Parameters
-		 	 -- Signal Server 2.70 --
+		 -- Signal Server 2.72 --
 	Set for 64 tiles at 1200 pixels/degree
 
      -sdf Directory containing .sdf tiles
-     -lid LIDAR ASCII tile with WGS84 bounds
+     -lid LIDAR ASCII tile with WGS84 bounds (Dimensions defined in file metadata)
      -lat Tx Latitude (decimal degrees) -70/+70
      -lon Tx Longitude (decimal degrees) -180/+180
      -txh Tx Height (above ground)
@@ -50,7 +50,7 @@ $ make
      -cl Climate code 1-6 (optional)
      -o Filename. Required. 
      -R Radius (miles/kilometers)
-     -res Pixels per tile. 300/600/1200/3600/5000/10000 (optional)
+     -res Pixels per tile. 300/600/1200/3600 (Optional. LIDAR res is defined within the tile)
      -t Terrain background
      -pm Prop model. 1: ITM, 2: LOS, 3: Hata, 4: ECC33,
      		5: SUI, 6: COST-Hata, 7: FSPL, 8: ITWOM, 9: Ericsson
@@ -60,21 +60,20 @@ $ make
      -haf Halve 1 or 2 (optional)
      -nothreads Turn off threaded processing (optional)
 
-	 
 
 ## Examples
 	
 ### 90m resolution	
-- INPUTS: 900MHz tower at 25m AGL with 5W ERP
+- INPUTS: 900MHz tower at 25m AGL with 5W ERP, 30km radius
 - OUTPUTS: 1200 resolution, 30km radius, -90dBm receiver threshold, Longley Rice model
 - ./signalserver -sdf /data/SRTM3 -lat 51.849 -lon -2.2299 -txh 25 -f 900 -erp 5 -rxh 2 -rt -90 -dbm -m -o test1 -R 30 -res 1200 -pm 1
 
 ### 30m resolution
-- INPUTS: 450MHz tower at 25f AGL with 20W ERP
+- INPUTS: 450MHz tower at 25f AGL with 20W ERP, 10km radius
 - OUTPUTS: 3600 resolution, 30km radius, 10dBuV receiver threshold, Hata model
-- ./signalserverHD -sdf /data/SRTM1 -lat 51.849 -lon -2.2299 -txh 25 -f 450 -erp 20 -rxh 2 -rt 10 -o test2 -R 30 -res 3600 -pm 3
+- ./signalserverHD -sdf /data/SRTM1 -lat 51.849 -lon -2.2299 -txh 25 -f 450 -erp 20 -rxh 2 -rt 10 -o test2 -R 10 -res 3600 -pm 3
 
 ### 2m resolution (LIDAR)
-- INPUTS: 1800MHz tower at 15m AGL with 1W ERP
+- INPUTS: 1800MHz tower at 15m AGL with 1W ERP, 1 km radius
 - OUTPUTS: 2m LIDAR resolution, 5km radius, -90dBm receiver threshold, Longley Rice model
-- ./signalserverLIDAR -lid /data/LIDAR2m/Gloucester_2m.asc -lat 51.849 -lon -2.2299 -txh 15 -f 1800 -erp 1 -rxh 2 -rt -90 -dbm -m -o test3 -R 30 -res 5000 -pm 1
+- ./signalserverLIDAR -lid /data/LIDAR/Gloucester_2m.asc -lat 51.849 -lon -2.2299 -txh 15 -f 1800 -erp 1 -rxh 2 -rt -90 -dbm -m -o test3 -R 1 -pm 1

@@ -6,9 +6,117 @@
 #include "common.h"
 #include "main.hh"
 
-int loadLIDAR(char *filename)
+void readLIDAR(FILE *fd, int hoffset, int voffset, int h, int w, int indx, double n, double e, double s, double west)
 {
-	/*  This function reads a single LIDAR tile of n rows and n columns in ASCII grid format.
+	int x=0,y=0,reads=0;
+	char line[150000];
+	char * pch;
+
+	// use offsets to determine middle lat/lon for 5 x 10k tiles
+	// TALL
+	if(voffset==0 && h==10000){
+		s = (s+n)/2;
+		h=5000;
+	}
+	if(voffset==5000 && h==10000){
+		n = (s+n)/2;
+	}
+	// WIDE
+	if(hoffset==0 && w==10000){
+		e = (e+west)/2;
+		w=5000;
+	}
+	if(hoffset==5000 && w==10000){
+		west = (e+west)/2;
+		w=5000;
+	}
+
+	dem[indx].max_north=n;
+	dem[indx].min_west=e;
+	dem[indx].min_north=s;
+	dem[indx].max_west=west;
+
+
+	if (dem[indx].max_west > max_west)
+		max_west = dem[indx].max_west;
+	if (dem[indx].min_west < min_west)
+		min_west = dem[indx].min_west;
+
+	if (max_west == -1)
+		max_west = dem[indx].max_west;
+	else {
+		if (abs(dem[indx].max_west - max_west) < 180) {
+			if (dem[indx].max_west > max_west)
+				max_west = dem[indx].max_west;
+		}
+
+		else {
+			if (dem[indx].max_west < max_west)
+				max_west = dem[indx].max_west;
+		}
+	}
+
+	if (min_west == 360)
+		min_west = dem[indx].min_west;
+
+	else {
+		if (fabs(dem[indx].min_west - min_west) < 180.0) {
+			if (dem[indx].min_west < min_west)
+				min_west = dem[indx].min_west;
+		}
+
+		else {
+			if (dem[indx].min_west > min_west)
+				min_west = dem[indx].min_west;
+		}
+	}
+	
+
+	for (y = h-1; y > -1; y--) {
+							x=w-1;
+							if (fgets(line, 150000, fd) != NULL) {
+								// do nothing until n rows have passed
+								if(y<voffset || voffset==0){
+									pch = strtok (line, " "); 
+
+									//dummy reads until we reach offset
+									// for 5000 offset, width must be 10e3
+									for(n=0;n<hoffset;n++){
+										pch = strtok(NULL, " ");
+									}
+
+									while(pch != NULL && x > -1){
+										if(atoi(pch)<-999){
+											pch="0";
+										}
+
+										dem[indx].data[y][x]=atoi(pch);	
+										dem[indx].signal[x][y] = 0;
+										dem[indx].mask[x][y] = 0;	
+										if (atoi(pch) > dem[indx].max_el){
+											dem[indx].max_el = atoi(pch);
+											max_elevation = atoi(pch);
+											}
+										if (atoi(pch) < dem[indx].min_el){
+											dem[indx].min_el = atoi(pch);
+											min_elevation = dem[indx].min_el;
+											}
+										//}
+
+										x--; 
+										pch = strtok (NULL, " "); 
+									}	//while
+								} //voffset
+							}else{
+								fprintf(stdout,"LIDAR error @ x %d y %d indx %d\n",x,y,indx);
+							}//if
+				}//for
+
+}
+
+int loadLIDAR(char *filenames)
+{
+	/*  This function reads either 9 LIDAR tiles of n rows and n columns in ASCII grid format OR a single super tile composed of 2 or more tiles.
 		The tile must have WGS84 bounds in the header in the order: WEST,SOUTH,EAST,NORTH
 		ncols        5000
 		nrows        5000
@@ -19,27 +127,42 @@ int loadLIDAR(char *filename)
 		cellsize     2
 		NODATA_value  -9999
 
-
+		Tiles must be entered in the format -lid tile1.asc,tile2.asc,tile3.asc
 	*/
-
-	int x, y, width, height, cellsize;
+	char *filename;
+	char *files[4]; // 4 tiles
+	int x, y, cellsize,indx=0,fc=0,hoffset=0,voffset=0,pos;
 	double xll, yll, xur, yur;
-	char found, free_page = 0, line[50000], jline[20], lid_file[255],
+	char found, free_page = 0, jline[20], lid_file[255],	
 	    path_plus_name[255], *junk = NULL;
-	FILE *fd;
+	char line[50000];
 	char * pch;
-		fd = fopen(filename, "rb");
+	FILE *fd;
+
+
+	// test for multiple files
+	filename = strtok(filenames, " ,");
+	while (filename != NULL)
+	{
+		files[fc] = filename;
+		filename = strtok(NULL, " ,");	
+		fc++;
+	}
+
+	while (indx<fc) {
+		fd = fopen(files[indx], "rb");
+
 		if (fd != NULL) {
 			if (debug) {
-				fprintf(stdout,"Loading \"%s\"...\n",	filename);
+				fprintf(stdout,"Loading \"%s\" into page %d...\n",files[indx], indx);
 				fflush(stdout);
 			}
-			if (fgets(line, 20, fd) != NULL) {
+			if (fgets(line, 18, fd) != NULL) {
 			  pch = strtok (line," "); 
    			  pch = strtok (NULL, " "); 
 			  width=atoi(pch);
 			}
-			if (fgets(line, 20, fd) != NULL) {
+			if (fgets(line, 18, fd) != NULL) {
    			  height=atoi(pch);
 			}
 			fgets(line, 24, fd); // 
@@ -48,9 +171,7 @@ int loadLIDAR(char *filename)
 			  //xll=atof(pch);
 			  sscanf(pch, "%lf", &xll);
 			}
-			
 			fgets(line, 24, fd); // 
-			
 			if (fgets(line, 24, fd) != NULL) {
 			  //yll=atof(pch);
 			  sscanf(pch, "%lf", &yll);
@@ -70,14 +191,26 @@ int loadLIDAR(char *filename)
 			  sscanf(pch, "%lf", &yur);
 			}
 			
-			fgets(line, 21, fd); // 
+			fgets(line, 15, fd); // 
 			
-			if (fgets(line, 21, fd) != NULL) {
+			if (fgets(line, 15, fd) != NULL) {
 			  cellsize=atoi(pch);
 			}
+			// LIDAR 2m @ 54000 PPD
+			if(cellsize==2){
+				ippd=5000;
+				MAXRAD=15;
+			}
+			// LIDAR 1m @ 108000 PPD!
+			if(cellsize==1){
+				ippd=10000;
+				MAXRAD=10;
+			}
 
-			eastoffset=xur;
-			westoffset=xll;
+			if(xur<eastoffset)
+				eastoffset=xur;
+			if(xll>westoffset)
+				westoffset=xll;
 			
 			// Greenwich straddling hack
 			if(xll < 0 && xur > 0){
@@ -105,62 +238,65 @@ int loadLIDAR(char *filename)
 			
 			if(debug){
 				fprintf(stdout,"yll %.7f yur %.7f xur %.7f xll %.7f delta %.6f\n",yll,yur,xur,xll,delta);
-			}			
-			dem[0].min_north=yll;
-			min_north=yll;
-			dem[0].max_north=yur;
-			max_north=yur;
-			
-			dem[0].min_west=xur;
-			min_west=xur;
-			dem[0].max_west=xll;
-			max_west=xll;
-		
-	
-			if(width!=height){
-				fprintf(stdout,"LIDAR tile is not a square. Rows != Columns\n");
-				return 0;
 			}
+			
+			if (yll < min_north)
+				min_north=yll;
+			if (yur > max_north)		
+				max_north=yur;
 
 			fgets(line, 30, fd); // NODATA
-			for (y = height-1; y > -1; y--) {
-					x=width-1;
-					if (fgets(line, 50000,fd) != NULL) {
-						pch = strtok (line, " "); // 500
-						while(pch != NULL){
-							if(atoi(pch)<-999){
-								pch="0";
-							}
-							
-							dem[0].data[y][x]=atoi(pch);	
-							dem[0].signal[x][y] = 0;
-							dem[0].mask[x][y] = 0;	
-							
-							if (atoi(pch) > dem[0].max_el){
-								dem[0].max_el = atoi(pch);
-								max_elevation = atoi(pch);
-								}
-								
-							if (atoi(pch) < dem[0].min_el){
-								dem[0].min_el = atoi(pch);
-								min_elevation = dem[0].min_el;
-								}
-						
-								
-							x--;
-							pch = strtok (NULL, " "); // 500
-						}	
-					}else{
-						fprintf(stdout,"LIDAR error @ line %d\n",x);
-						return 0;
-					}
+			pos=ftell(fd);
+
+			// tile 0 [x| ]
+			if(debug){
+				fprintf(stdout,"readLIDAR(fd,%d,%d,%d,%d,%d,%.4f,%.4f,%.4f,%.4f)\n",0,0,height,width,indx,yur,xur,yll,xll);	
 			}
-			
+			readLIDAR(fd,0,0,height,width,indx,yur,xur,yll,xll);
+
+			//rewind
+			fseek(fd,pos,SEEK_SET);
+
+			// tile 1 [ |x]
+			if(width==10000){
+				indx++;
+				if(debug){
+					fprintf(stdout,"readLIDAR(fd,%d,%d,%d,%d,%d,%.4f,%.4f,%.4f,%.4f)\n",5000,0,height,width,indx,yur,xur,yll,xll);	
+				}
+				readLIDAR(fd,5000,0,height,width,indx,yur,xur,yll,xll);
+			}
+
+			//rewind
+			fseek(fd,pos,SEEK_SET);
+
+			// tile 2 [x | ]
+			if(height==10000){
+				indx++;
+				if(debug){
+					fprintf(stdout,"readLIDAR(fd,%d,%d,%d,%d,%d,%.4f,%.4f,%.4f,%.4f)\n",0,5000,height,width,indx,yur,xur,yll,xll);	
+				}
+				readLIDAR(fd,0,5000,height,width,indx,yur,xur,yll,xll);
+			}
+
+			//rewind
+			fseek(fd,pos,SEEK_SET);
+
+			// tile 3 [ |x]
+			if(width==10000 && height==10000){
+				indx++;
+				if(debug){
+					fprintf(stdout,"readLIDAR(fd,%d,%d,%d,%d,%d,%.4f,%.4f,%.4f,%.4f)\n",5000,5000,height,width,indx,yur,xur,yll,xll);	
+				}
+				readLIDAR(fd,5000,5000,height,width,indx,yur,xur,yll,xll);
+			}
 			fclose(fd);
-			return 0;
-		}
+
+			fprintf(stdout,"LIDAR LOADED %d x %d\n",width,height);
+		} // if (fd != NULL)
 		else
 			return -1;
+	indx++;
+	} // filename(s)
 }
 
 int LoadSDF_SDF(char *name)

@@ -1,4 +1,0 @@
-#define MAXPAGES 64
-#define ARRAYSIZE 76810
-#define IPPD 1200
-

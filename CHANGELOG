@@ -1,5 +1,10 @@
 SIGNAL SERVER CHANGELOG 
-2.7.1 - 14 Jan 2016
+
+2.72 - 07 Feb 2016
+Expanded LIDAR coverage to read in 4 adjacent ASCII tiles in a 2x2 grid
+Removed requirement to specify -res in LIDAR mode as it's in the file header
+
+2.71 - 14 Jan 2016
 LIDAR longitude bugfix for Greenwich meridian tiles
 Adjusted ITM parameters warnings
 
