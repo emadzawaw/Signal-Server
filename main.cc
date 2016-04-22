@@ -1,4 +1,4 @@
-double version = 2.72;
+double version = 2.75;
 /****************************************************************************\
 *    Signal Server: Server optimised SPLAT! by Alex Farrant, M6ZUJ           *
 ******************************************************************************
@@ -1464,7 +1464,7 @@ int main(int argc, char *argv[])
 			"ERROR: Either the Frequency was missing or out of range!");
 		exit(0);
 	}
-	if (LR.erp > 5000000) {
+	if (LR.erp > 500000000) {
 		fprintf(stdout, "ERROR: Power was out of range!");
 		exit(0);
 
@@ -1693,7 +1693,11 @@ int main(int argc, char *argv[])
 			PlotPropagation(tx_site[0], altitudeLR, ano_filename,
 					propmodel, knifeedge, haf, pmenv, use_threads);
 
+			
 			if(!lidar){
+				if (LR.erp == 0.0)
+					hottest=9; // 9dB nearfield
+
 				// nearfield bugfix
 				for (lat = tx_site[0].lat - 0.001;
 					 lat <= tx_site[0].lat + 0.001;
@@ -1723,6 +1727,7 @@ int main(int argc, char *argv[])
 			east=eastoffset;
 			west=westoffset;
 		}
+
 		// Print WGS84 bounds
 		fprintf(stdout, "|%.6f", north);
 		fprintf(stdout, "|%.6f", east);
@@ -1735,7 +1740,7 @@ int main(int argc, char *argv[])
 		PlotPath(tx_site[0], tx_site[1], 1);
 		PathReport(tx_site[0], tx_site[1], tx_site[0].filename, 0,
 			   propmodel, pmenv);
-		SeriesData(tx_site[0], tx_site[1], tx_site[0].filename, 1,
+		SeriesData(tx_site[1], tx_site[0], tx_site[0].filename, 1,
 			   normalise);
 	}
 	fflush(stdout);

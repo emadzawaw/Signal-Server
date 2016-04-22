@@ -157,12 +157,12 @@ int loadLIDAR(char *filenames)
 				fprintf(stdout,"Loading \"%s\" into page %d...\n",files[indx], indx);
 				fflush(stdout);
 			}
-			if (fgets(line, 18, fd) != NULL) {
+			if (fgets(line, 19, fd) != NULL) {
 			  pch = strtok (line," "); 
    			  pch = strtok (NULL, " "); 
 			  width=atoi(pch);
 			}
-			if (fgets(line, 18, fd) != NULL) {
+			if (fgets(line, 19, fd) != NULL) {
    			  height=atoi(pch);
 			}
 			fgets(line, 24, fd); // 
@@ -211,33 +211,36 @@ int loadLIDAR(char *filenames)
 				eastoffset=xur;
 			if(xll>westoffset)
 				westoffset=xll;
+
+			if(debug){
+				fprintf(stdout,"PRE yll %.7f yur %.7f xur %.7f xll %.7f delta %.6f\n",yll,yur,xur,xll,delta);
+			}
 			
 			// Greenwich straddling hack
 			if(xll < 0 && xur > 0){
-				delta = (xur - xll);
-				xur=0.0;
-				xll=delta;
+				xll = (xur - xll); // full width
+				xur=0.0; // budge it along so it's west of greenwich
 				delta=eastoffset; // add to Tx longitude later
 			}else{
 			
-			// Transform WGS84 longitudes into 'west' values as society finishes east of Greenwich ;)
-			if(xll > 0){
-				xll=360-xll;
-			}
-			if(xur > 0){
-				xur=360-xur;
-			}
-			if(xll < 0){
-				xll=xll*-1;
-			}
-			if(xur < 0){
-				xur=xur*-1;
-			}
+				// Transform WGS84 longitudes into 'west' values as society finishes east of Greenwich ;)
+				if(xll > 0){
+					xll=360-xll;
+				}
+				if(xur > 0){
+					xur=360-xur;
+				}
+				if(xll < 0){
+					xll=xll*-1;
+				}
+				if(xur < 0){
+					xur=xur*-1;
+				}
 
 			}
 			
 			if(debug){
-				fprintf(stdout,"yll %.7f yur %.7f xur %.7f xll %.7f delta %.6f\n",yll,yur,xur,xll,delta);
+				fprintf(stdout,"POST yll %.7f yur %.7f xur %.7f xll %.7f delta %.6f\n",yll,yur,xur,xll,delta);
 			}
 			
 			if (yll < min_north)

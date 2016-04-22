@@ -1,5 +1,9 @@
 SIGNAL SERVER CHANGELOG 
 
+2.75 - 22 Apr 2016
+Added Hata model logic for f < 200MHz
+
+
 2.72 - 07 Feb 2016
 Expanded LIDAR coverage to read in 4 adjacent ASCII tiles in a 2x2 grid
 Removed requirement to specify -res in LIDAR mode as it's in the file header

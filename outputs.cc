@@ -103,8 +103,8 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 						lon)));
 				 // fix for multi-tile lidar
                                 if(width==10000 && (indx==1 || indx==3)){
-                                        if(y0 >= 3510){ //3535
-                                                y0=y0-3510;
+                                        if(y0 >= 3432){ //3535
+                                                y0=y0-3432;
                                         }
                                 }
 
@@ -331,8 +331,8 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 
 				 // fix for multi-tile lidar
                                 if(width==10000 && (indx==1 || indx==3)){
-                                        if(y0 >= 3510){ //3535
-                                                y0=y0-3510;
+                                        if(y0 >= 3432){ //3535
+                                                y0=y0-3432;
                                         }
                                 }
 
@@ -575,8 +575,8 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 
 				// fix for multi-tile lidar
 				if(width==10000 && (indx==1 || indx==3)){
-					if(y0 >= 3510){ //3535
-						y0=y0-3510;
+					if(y0 >= 3432){ //3510,3535
+						y0=y0-3432;
 					}
 				}
 
@@ -997,14 +997,21 @@ void PathReport(struct site source, struct site destination, char *name,
 	fprintf(fd2, "Transmitter site: %s\n", source.name);
 
 	if (source.lat >= 0.0) {
-		fprintf(fd2, "Site location: %.4f North / %.4f West\n",
-			source.lat, source.lon);
+
+		if (source.lon <= 180){
+			fprintf(fd2, "Site location: %.4f, -%.4f\n",source.lat, source.lon);
+		}else{
+			fprintf(fd2, "Site location: %.4f, %.4f\n",source.lat, 360 - source.lon);
+		}
 	}
 
 	else {
 
-		fprintf(fd2, "Site location: %.4f South / %.4f West\n",
-			-source.lat, source.lon);
+		if (source.lon <= 180){
+			fprintf(fd2, "Site location: %.4f, -%.4f\n",source.lat, source.lon);
+		}else{
+			fprintf(fd2, "Site location: %.4f, %.4f\n",source.lat, 360 - source.lon);
+		}
 	}
 
 	if (metric) {
@@ -1069,13 +1076,21 @@ void PathReport(struct site source, struct site destination, char *name,
 	fprintf(fd2, "\nReceiver site: %s\n", destination.name);
 
 	if (destination.lat >= 0.0) {
-		fprintf(fd2, "Site location: %.4f North / %.4f West\n",
-			destination.lat, destination.lon);
+
+		if (destination.lon <= 180){
+			fprintf(fd2, "Site location: %.4f, -%.4f\n",destination.lat, destination.lon);
+		}else{
+			fprintf(fd2, "Site location: %.4f, %.4f\n",destination.lat, 360 - destination.lon);
+		}
 	}
 
 	else {
-		fprintf(fd2, "Site location: %.4f South / %.4f West\n",
-			-destination.lat, destination.lon);
+
+		if (destination.lon <= 180){
+			fprintf(fd2, "Site location: %.4f, -%.4f\n",destination.lat, destination.lon);
+		}else{
+			fprintf(fd2, "Site location: %.4f, %.4f\n",destination.lat, 360 - destination.lon);
+		}
 	}
 
 	if (metric) {
