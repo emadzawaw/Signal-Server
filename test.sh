@@ -1,4 +1,4 @@
-œ#!/bin/bash
+#!/bin/bash
 mkdir test
 RAD=10
 MAXRAD=30

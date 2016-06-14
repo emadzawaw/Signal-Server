@@ -27,5 +27,6 @@ void free_elev(void);
 void free_path(void);
 void alloc_elev(void);
 void alloc_path(void);
+void do_allocs(void);
 
 #endif /* _MAIN_HH_ */

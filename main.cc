@@ -1,6 +1,6 @@
-double version = 2.75;
+double version = 2.8;
 /****************************************************************************\
-*    Signal Server: Server optimised SPLAT! by Alex Farrant, M6ZUJ           *
+*  Signal Server: Radio propagation simulator by Alex Farrant QCVS, 2E0TDW   *
 ******************************************************************************
 *    SPLAT! Project started in 1997 by John A. Magliacane, KD2BD             *
 *                                                                            *
@@ -981,6 +981,24 @@ void alloc_path(void)
 	path.distance = new double[ARRAYSIZE];
 }
 
+void do_allocs(void)
+{
+	int i;
+
+	alloc_elev();
+	alloc_dem();
+	alloc_path();
+
+	for (i = 0; i < MAXPAGES; i++) {
+		dem[i].min_el = 32768;
+		dem[i].max_el = -32768;
+		dem[i].min_north = 90;
+		dem[i].max_north = -90;
+		dem[i].min_west = 360;
+		dem[i].max_west = -1;
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	int x, y, z = 0, min_lat, min_lon, max_lat, max_lon,
@@ -1006,66 +1024,55 @@ int main(int argc, char *argv[])
 
 	if (strstr(argv[0], "signalserverLIDAR")) {
 		MAXPAGES = 4; 
-		IPPD = 5000; // // 2m resolution default
-		ARRAYSIZE = 20010;
-		ppd=IPPD;
+		lidar = 1;
+		IPPD = 5000;
 	}
 
 	strncpy(ss_name, "Signal Server\0", 14);
 
 	if (argc == 1) {
 
-		fprintf(stdout, "\n\t\t -- %s %.2f --\n", ss_name, version);
-		fprintf(stdout,
-			"\tSet for %d tiles at %d pixels/degree\n\n",
-			MAXPAGES, IPPD);
-		fprintf(stdout, "     -sdf Directory containing .sdf tiles\n");
-		fprintf(stdout, "     -lid LIDAR ASCII tile with WGS84 bounds (Dimensions defined in file metadata)\n");
-		fprintf(stdout,
-			"     -lat Tx Latitude (decimal degrees) -70/+70\n");
-		fprintf(stdout,
-			"     -lon Tx Longitude (decimal degrees) -180/+180\n");
+		fprintf(stdout, "Version: %s %.2f (Built for %d DEM tiles at %d pixels)\n", ss_name, version,MAXPAGES, IPPD);
+		fprintf(stdout, "License: GNU General Public License (GPL) version 2\n\n");
+		fprintf(stdout, "Radio propagation simulator by Alex Farrant QCVS, 2E0TDW\n");
+		fprintf(stdout, "Based upon SPLAT! by John Magliacane, KD2BD\n\n");
+		fprintf(stdout, "Usage: signalserver [data options] [input options] [output options] -o outputfile\n\n");
+		fprintf(stdout, "Data:\n");
+		fprintf(stdout, "     -sdf Directory containing SRTM derived .sdf DEM tiles\n");
+		fprintf(stdout, "     -lid ASCII grid tile (LIDAR) with dimensions and resolution defined in header\n");
+		fprintf(stdout, "     -udt User defined CSV clutter file\n");
+		fprintf(stdout, "Input:\n");
+		fprintf(stdout,	"     -lat Tx Latitude (decimal degrees) -70/+70\n");
+		fprintf(stdout,	"     -lon Tx Longitude (decimal degrees) -180/+180\n");
 		fprintf(stdout, "     -txh Tx Height (above ground)\n");
-		fprintf(stdout,
-			"     -rla (Optional) Rx Latitude for PPA (decimal degrees) -70/+70\n");
-		fprintf(stdout,
-			"     -rlo (Optional) Rx Longitude for PPA (decimal degrees) -180/+180\n");
-		fprintf(stdout,
-			"     -f Tx Frequency (MHz) 20MHz to 100GHz (LOS after 20GHz)\n");
-		fprintf(stdout,
-			"     -erp Tx Effective Radiated Power (Watts)\n");
-		fprintf(stdout,
-			"     -rxh Rx Height(s) (optional. Default=0.1)\n");
-		fprintf(stdout, "     -rt Rx Threshold (dB / dBm / dBuV/m)\n");
-		fprintf(stdout,
-			"     -hp Horizontal Polarisation (default=vertical)\n");
+		fprintf(stdout,	"     -rla (Optional) Rx Latitude for PPA (decimal degrees) -70/+70\n");
+		fprintf(stdout, "     -rlo (Optional) Rx Longitude for PPA (decimal degrees) -180/+180\n");
+		fprintf(stdout,	"     -f Tx Frequency (MHz) 20MHz to 100GHz (LOS after 20GHz)\n");
+		fprintf(stdout,	"     -erp Tx Effective Radiated Power (Watts)\n");
+		fprintf(stdout,	"     -rxh Rx Height(s) (optional. Default=0.1)\n");
+		fprintf(stdout,	"     -hp Horizontal Polarisation (default=vertical)\n");
 		fprintf(stdout, "     -gc Ground clutter (feet/meters)\n");
-		fprintf(stdout, "     -udt User defined terrain filename\n");
-		fprintf(stdout,
-			"     -dbm Plot Rxd signal power instead of field strength\n");
 		fprintf(stdout, "     -m Metric units of measurement\n");
 		fprintf(stdout, "     -te Terrain code 1-6 (optional)\n");
-		fprintf(stdout,
-			"     -terdic Terrain dielectric value 2-80 (optional)\n");
-		fprintf(stdout,
-			"     -tercon Terrain conductivity 0.01-0.0001 (optional)\n");
+		fprintf(stdout,	"     -terdic Terrain dielectric value 2-80 (optional)\n");
+		fprintf(stdout,	"     -tercon Terrain conductivity 0.01-0.0001 (optional)\n");
 		fprintf(stdout, "     -cl Climate code 1-6 (optional)\n");
+		fprintf(stdout, "Output:\n");
+		fprintf(stdout,	"     -dbm Plot Rxd signal power instead of field strength\n");
+		fprintf(stdout, "     -rt Rx Threshold (dB / dBm / dBuV/m)\n");
 		fprintf(stdout, "     -o Filename. Required. \n");
 		fprintf(stdout, "     -R Radius (miles/kilometers)\n");
-		fprintf(stdout,
-			"     -res Pixels per tile. 300/600/1200/3600 (Optional. LIDAR res is defined within the tile)\n");
-		fprintf(stdout, "     -t Terrain background\n");
-		fprintf(stdout,
-			"     -pm Prop model. 1: ITM, 2: LOS, 3: Hata, 4: ECC33,\n");
-		fprintf(stdout,
-			"     		5: SUI, 6: COST-Hata, 7: FSPL, 8: ITWOM, 9: Ericsson\n");
-		fprintf(stdout,
-			"     -pe Prop model mode: 1=Urban,2=Suburban,3=Rural\n");
-		fprintf(stdout,
-			"     -ked Knife edge diffraction (Default for ITM)\n");
+		fprintf(stdout,	"     -res Pixels per tile. 300/600/1200/3600 (Optional. LIDAR res is within the tile)\n");
+		fprintf(stdout,	"     -pm Propagation model. 1: ITM, 2: LOS, 3: Hata, 4: ECC33,\n");
+		fprintf(stdout,	"     	  5: SUI, 6: COST-Hata, 7: FSPL, 8: ITWOM, 9: Ericsson\n");
+		fprintf(stdout,	"     -pe Propagation model mode: 1=Urban,2=Suburban,3=Rural\n");
+		fprintf(stdout,	"     -ked Knife edge diffraction (Already on for ITM)\n");
+		fprintf(stdout, "Debugging:\n");
+		fprintf(stdout, "     -t Terrain greyscale background\n");
+		fprintf(stdout, "     -dbg Verbose debug messages\n");
 		fprintf(stdout, "     -ng Normalise Path Profile graph\n");
 		fprintf(stdout, "     -haf Halve 1 or 2 (optional)\n");
-		fprintf(stdout, "     -nothreads Turn off threaded processing (optional)\n");
+		fprintf(stdout, "     -nothreads Turn off threaded processing\n");
 
 		fflush(stdout);
 
@@ -1073,12 +1080,12 @@ int main(int argc, char *argv[])
 	}
 
 	/*
-	 * Now we know what mode we are running in, we can allocate various
-	 * data structures.
+	 * If we're not called as signalserverLIDAR we can allocate various
+	 * memory now. For LIDAR stuff we need to wait until we've pasred
+	 * the headers in the .asc file to know how much memory to allocate.
 	 */
-	alloc_elev();
-	alloc_dem();
-	alloc_path();
+	if (!lidar)
+		do_allocs();
 
 	y = argc - 1;
 	kml = 0;
@@ -1128,15 +1135,6 @@ int main(int argc, char *argv[])
 	tx_site[0].lon = 361.0;
 	tx_site[1].lat = 91.0;
 	tx_site[1].lon = 361.0;
-
-	for (x = 0; x < MAXPAGES; x++) {
-		dem[x].min_el = 32768;
-		dem[x].max_el = -32768;
-		dem[x].min_north = 90;
-		dem[x].max_north = -90;
-		dem[x].min_west = 360;
-		dem[x].max_west = -1;
-	}
 
 	/* Scan for command line arguments */
 
@@ -1211,7 +1209,10 @@ int main(int argc, char *argv[])
 		if (strcmp(argv[x], "-res") == 0) {
 			z = x + 1;
 
-			if (z <= y && argv[z][0] && argv[z][0] != '-') {
+			if (!lidar &&
+			    z <= y &&
+			    argv[z][0] &&
+			    argv[z][0] != '-') {
 				sscanf(argv[z], "%d", &ippd);
 
 				switch (ippd) {
@@ -1574,7 +1575,17 @@ int main(int argc, char *argv[])
 
 	/* Load the required tiles */
 	if(lidar){
-		loadLIDAR(lidar_tiles);
+		int err;
+
+		err = loadLIDAR(lidar_tiles);
+		if (err) {
+			fprintf(stderr, "Couldn't find one or more of the "
+				"lidar files. Please ensure their paths are\n"
+				"correct and try again.\n");
+			exit(EXIT_FAILURE);
+		}
+		ippd = IPPD;
+
 		if(debug){
 			fprintf(stdout,"%.4f,%.4f,%.4f,%.4f\n",max_north,min_west,min_north,max_west);
 		}
@@ -1745,10 +1756,5 @@ int main(int argc, char *argv[])
 	}
 	fflush(stdout);
 
-	// deprecated garbage collection
-	/*free_elev();
-	free_dem();
-	free_path();
-	*/
 	return 0;
 }

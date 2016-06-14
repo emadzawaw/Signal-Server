@@ -1,5 +1,11 @@
 SIGNAL SERVER CHANGELOG 
 
+2.8 - 08 June 2016
+Widened scope of LIDAR / ASCII Grid input to include sub-meter accurate tiles. (ac000)
+Optimised memory usage (ac000)
+Tidied and refactored some code (ac000)
+Updated Readme and callsign because I passed my intermediate :)
+
 2.75 - 22 Apr 2016
 Added Hata model logic for f < 200MHz
 

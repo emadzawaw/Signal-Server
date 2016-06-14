@@ -11,16 +11,13 @@
 #include "sui.hh"
 #include <pthread.h>
 
-#define MAXPAGES 64
-#define IPPD 5000
 #define NUM_SECTIONS 4
 
 namespace {
 	pthread_t threads[NUM_SECTIONS];
 	unsigned int thread_count = 0;
 	pthread_mutex_t maskMutex;
-
-	bool processed[MAXPAGES][IPPD][IPPD];
+	bool ***processed;
 	bool has_init_processed = false;
 
 	struct propagationRange {
@@ -81,13 +78,25 @@ namespace {
 
 	void init_processed()
 	{
-		for(int i = 0; i < MAXPAGES; i++) {
-			for (int x = 0; x < ippd; x++) {
-				for (int y = 0; y < ippd; y++) {
+		int i;
+		int x;
+		int y;
+
+		processed = new bool **[MAXPAGES];
+		for (i = 0; i < MAXPAGES; i++) {
+			processed[i] = new bool *[ippd];
+			for (x = 0; x < ippd; x++)
+				processed[i][x] = new bool [ippd];
+		}
+
+		for (i = 0; i < MAXPAGES; i++) {
+			for (x = 0; x < ippd; x++) {
+				for (y = 0; y < ippd; y++)
 					processed[i][x][y] = false;
-				}
 			}
 		}
+
+		has_init_processed = true;
 	}
 
 	bool can_process(double lat, double lon)
