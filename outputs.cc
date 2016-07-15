@@ -965,7 +965,7 @@ void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 }
 
 void PathReport(struct site source, struct site destination, char *name,
-		char graph_it, int propmodel, int pmenv)
+		char graph_it, int propmodel, int pmenv, double rxGain)
 {
 	/* This function writes a PPA Path Report (name.txt) to
 	   the filesystem.  If (graph_it == 1), then gnuplot is invoked
@@ -1142,7 +1142,7 @@ void PathReport(struct site source, struct site destination, char *name,
 	}
 
 	if (LR.frq_mhz > 0.0) {
-		fprintf(fd2, "\nPropagation model: ");
+		fprintf(fd2, "\n\nPropagation model: ");
 
 		switch (propmodel) {
 		case 1:
@@ -1243,7 +1243,9 @@ void PathReport(struct site source, struct site destination, char *name,
 		fprintf(fd2, "Fraction of Time: %.1lf%c\n", LR.rel * 100.0, 37);
 
 		if (LR.erp != 0.0) {
-			fprintf(fd2, "Transmitter ERP: ");
+			fprintf(fd2, "\nReceiver gain: %.2f dBd\n", rxGain);
+			fprintf(fd2, "Receiver gain: %.2f dBi\n", rxGain+2.14);
+			fprintf(fd2, "Transmitter ERP plus Receiver gain: ");
 
 			if (LR.erp < 1.0)
 				fprintf(fd2, "%.1lf milliwatts",
@@ -1260,10 +1262,11 @@ void PathReport(struct site source, struct site destination, char *name,
 
 			dBm = 10.0 * (log10(LR.erp * 1000.0));
 			fprintf(fd2, " (%+.2f dBm)\n", dBm);
+			fprintf(fd2, "Transmitter ERP minus Receiver gain: %.2f dBm\n", dBm-rxGain);
 
 			/* EIRP = ERP + 2.14 dB */
 
-			fprintf(fd2, "Transmitter EIRP: ");
+			fprintf(fd2, "Transmitter EIRP plus Receiver gain: ");
 
 			eirp = LR.erp * 1.636816521;
 
@@ -1281,6 +1284,9 @@ void PathReport(struct site source, struct site destination, char *name,
 
 			dBm = 10.0 * (log10(eirp * 1000.0));
 			fprintf(fd2, " (%+.2f dBm)\n", dBm);
+
+			// Rx gain
+			fprintf(fd2, "Transmitter EIRP minus Receiver gain: %.2f dBm\n", dBm-rxGain);
 		}
 
 		fprintf(fd2, "\nSummary for the link between %s and %s:\n\n",

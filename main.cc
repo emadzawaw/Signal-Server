@@ -1,4 +1,4 @@
-double version = 2.8;
+double version = 2.82;
 /****************************************************************************\
 *  Signal Server: Radio propagation simulator by Alex Farrant QCVS, 2E0TDW   *
 ******************************************************************************
@@ -35,7 +35,7 @@ double version = 2.8;
 #include "models/los.hh"
 
 int MAXPAGES = 64;
-int ARRAYSIZE = 76810;
+int ARRAYSIZE = 76810;//76810;
 int IPPD = 1200;
 
 char string[255], sdf_path[255], udt_file[255], opened = 0, gpsav =
@@ -44,7 +44,7 @@ char string[255], sdf_path[255], udt_file[255], opened = 0, gpsav =
 double earthradius, max_range = 0.0, forced_erp, dpp, ppd, yppd,
     fzone_clearance = 0.6, forced_freq, clutter, lat, lon, txh, tercon, terdic,
     north, east, south, west, dBm, loss, field_strength,
-	min_north = 90, max_north = -90, min_west = 360, max_west = -1, westoffset=-180, eastoffset=180, delta=0;
+	min_north = 90, max_north = -90, min_west = 360, max_west = -1, westoffset=-180, eastoffset=180, delta=0, rxGain=0;
 
 int ippd, mpi,
     max_elevation = -32768, min_elevation = 32768, bzerror, contour_threshold,
@@ -1048,8 +1048,9 @@ int main(int argc, char *argv[])
 		fprintf(stdout,	"     -rla (Optional) Rx Latitude for PPA (decimal degrees) -70/+70\n");
 		fprintf(stdout, "     -rlo (Optional) Rx Longitude for PPA (decimal degrees) -180/+180\n");
 		fprintf(stdout,	"     -f Tx Frequency (MHz) 20MHz to 100GHz (LOS after 20GHz)\n");
-		fprintf(stdout,	"     -erp Tx Effective Radiated Power (Watts)\n");
+		fprintf(stdout,	"     -erp Tx Effective Radiated Power (Watts) including Tx+Rx gain\n");
 		fprintf(stdout,	"     -rxh Rx Height(s) (optional. Default=0.1)\n");
+		fprintf(stdout,	"     -rxg Rx gain dBi (optional for text report)\n");
 		fprintf(stdout,	"     -hp Horizontal Polarisation (default=vertical)\n");
 		fprintf(stdout, "     -gc Ground clutter (feet/meters)\n");
 		fprintf(stdout, "     -m Metric units of measurement\n");
@@ -1292,6 +1293,14 @@ int main(int argc, char *argv[])
 			if (z <= y && argv[z][0] && argv[z][0] != '-') {
 				sscanf(argv[z], "%lf", &altitudeLR);
 				sscanf(argv[z], "%f", &tx_site[1].alt);
+			}
+		}
+
+		if (strcmp(argv[x], "-rxg") == 0) {
+			z = x + 1;
+
+			if (z <= y && argv[z][0] && argv[z][0] != '-') {
+				sscanf(argv[z], "%lf", &rxGain);
 			}
 		}
 
@@ -1750,7 +1759,7 @@ int main(int argc, char *argv[])
 		strncpy(tx_site[1].name, "Rx", 3);
 		PlotPath(tx_site[0], tx_site[1], 1);
 		PathReport(tx_site[0], tx_site[1], tx_site[0].filename, 0,
-			   propmodel, pmenv);
+			   propmodel, pmenv, rxGain);
 		SeriesData(tx_site[1], tx_site[0], tx_site[0].filename, 1,
 			   normalise);
 	}

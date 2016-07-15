@@ -1,5 +1,11 @@
 SIGNAL SERVER CHANGELOG 
 
+2.82 - 15 July 2016
+Fixed bug in SUI model which was making it over optimistic.
+
+2.81 - 01 July 2016
+Added Rx gain value for PPA report only and tweaked text report to show ERP/EIRP with and without Rx gain
+
 2.8 - 08 June 2016
 Widened scope of LIDAR / ASCII Grid input to include sub-meter accurate tiles. (ac000)
 Optimised memory usage (ac000)

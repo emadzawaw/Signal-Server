@@ -10,7 +10,7 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 	   unsigned char ngs, struct site *xmtr, unsigned char txsites);
 void PathReport(struct site source, struct site destination, char *name,
-		char graph_it, int propmodel, int pmenv);
+		char graph_it, int propmodel, int pmenv, double rxGain);
 void SeriesData(struct site source, struct site destination, char *name,
 		unsigned char fresnel_plot, unsigned char normalised);
 

@@ -81,7 +81,6 @@ void readLIDAR(FILE *fd, int hoffset, int voffset, int h, int w, int indx,
 				while (pch != NULL && x > -1) {
 					if (atoi(pch) < -999)
 						pch = "0";
-
 					dem[indx].data[y][x] = atoi(pch);
 					dem[indx].signal[x][y] = 0;
 					dem[indx].mask[x][y] = 0;
@@ -147,19 +146,20 @@ int loadLIDAR(char *filenames)
 		fd = fopen(files[indx], "rb");
 
 		if (fd != NULL) {
-			if (debug) {
-				fprintf(stdout, "Loading \"%s\" into page %d...\n", files[indx], indx);
-				fflush(stdout);
-			}
+
 			if (fgets(line, 19, fd) != NULL) {
 				pch = strtok (line," ");
 				pch = strtok (NULL, " ");
 				width = atoi(pch);
 
+				if (debug) {
+					fprintf(stdout, "Loading \"%s\" into page %d with width %d...\n", files[indx], indx, width);
+					fflush(stdout);
+				}
+
 				if (!dem_alloced) {
 					IPPD = width;
 					ARRAYSIZE = (MAXPAGES * IPPD) + 10;
-
 					do_allocs();
 					dem_alloced = 1;
 				}
@@ -247,8 +247,7 @@ int loadLIDAR(char *filenames)
 			if (debug)
 				fprintf(stdout, "readLIDAR(fd,%d,%d,%d,%d,%d,%.4f,%.4f,%.4f,%.4f)\n", 0, 0, height, width, indx, yur, xur, yll, xll);
 
-			readLIDAR(fd, 0, 0, height, width, indx, yur, xur, yll,
-					xll);
+			readLIDAR(fd, 0, 0, height, width, indx, yur, xur, yll,	xll);
 			//rewind
 			fseek(fd, pos, SEEK_SET);
 
@@ -260,8 +259,7 @@ int loadLIDAR(char *filenames)
 				if (debug)
 					fprintf(stdout, "readLIDAR(fd,%d,%d,%d,%d,%d,%.4f,%.4f,%.4f,%.4f)\n", width / 2, 0, height, width, indx, yur, xur, yll, xll);
 
-				readLIDAR(fd, width / 2, 0, height, width,
-						indx, yur, xur, yll, xll);
+				readLIDAR(fd, width / 2, 0, height, width, indx, yur, xur, yll, xll);
 			}
 			//rewind
 			fseek(fd, pos, SEEK_SET);
@@ -274,8 +272,7 @@ int loadLIDAR(char *filenames)
 				if (debug)
 					fprintf(stdout, "readLIDAR(fd,%d,%d,%d,%d,%d,%.4f,%.4f,%.4f,%.4f)\n", 0, height / 2, height, width, indx, yur, xur, yll, xll);
 
-				readLIDAR(fd, 0, height / 2, height, width,
-						indx, yur, xur, yll, xll);
+				readLIDAR(fd, 0, height / 2, height, width, indx, yur, xur, yll, xll);
 			}
 			//rewind
 			fseek(fd, pos, SEEK_SET);
@@ -288,9 +285,7 @@ int loadLIDAR(char *filenames)
 				if (debug)
 					fprintf(stdout, "readLIDAR(fd,%d,%d,%d,%d,%d,%.4f,%.4f,%.4f,%.4f)\n", width / 2, height / 2, height, width, indx, yur, xur, yll, xll);
 
-				readLIDAR(fd, width / 2, height / 2, height,
-						width, indx, yur, xur, yll,
-						xll);
+				readLIDAR(fd, width / 2, height / 2, height, width, indx, yur, xur, yll, xll);
 			}
 			fclose(fd);
 			if (debug)
