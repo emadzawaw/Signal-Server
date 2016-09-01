@@ -12,5 +12,6 @@ void LoadDBMColors(struct site xmtr);
 void LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat);
 void LoadUDT(char *filename);
 int loadLIDAR(char *filename);
+int loadClutter(char *filename, double radius, struct site tx);
 
 #endif /* _INPUTS_HH_ */

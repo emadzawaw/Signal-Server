@@ -1,4 +1,4 @@
-double version = 2.82;
+double version = 2.9;
 /****************************************************************************\
 *  Signal Server: Radio propagation simulator by Alex Farrant QCVS, 2E0TDW   *
 ******************************************************************************
@@ -33,6 +33,7 @@ double version = 2.82;
 #include "outputs.hh"
 #include "models/itwom3.0.hh"
 #include "models/los.hh"
+#include "models/pel.hh"
 
 int MAXPAGES = 64;
 int ARRAYSIZE = 76810;//76810;
@@ -1011,7 +1012,7 @@ int main(int argc, char *argv[])
 	unsigned char LRmap = 0, txsites = 0, topomap = 0, geo = 0, kml =
 	    0, area_mode = 0, max_txsites, ngs = 0;
 
-	char mapfile[255], udt_file[255], ano_filename[255], lidar_tiles[512];
+	char mapfile[255], udt_file[255], ano_filename[255], lidar_tiles[512], clutter_file[255];
 
 	double altitude = 0.0, altitudeLR = 0.0, tx_range = 0.0,
 	    rx_range = 0.0, deg_range = 0.0, deg_limit = 0.0, deg_range_lon;
@@ -1040,7 +1041,8 @@ int main(int argc, char *argv[])
 		fprintf(stdout, "Data:\n");
 		fprintf(stdout, "     -sdf Directory containing SRTM derived .sdf DEM tiles\n");
 		fprintf(stdout, "     -lid ASCII grid tile (LIDAR) with dimensions and resolution defined in header\n");
-		fprintf(stdout, "     -udt User defined CSV clutter file\n");
+		fprintf(stdout, "     -udt User defined point clutter as decimal co-ordinates: 'latitude,longitude,height'\n");
+		fprintf(stdout, "     -clt MODIS 17-class wide area clutter in ASCII grid format\n");
 		fprintf(stdout, "Input:\n");
 		fprintf(stdout,	"     -lat Tx Latitude (decimal degrees) -70/+70\n");
 		fprintf(stdout,	"     -lon Tx Longitude (decimal degrees) -180/+180\n");
@@ -1052,7 +1054,7 @@ int main(int argc, char *argv[])
 		fprintf(stdout,	"     -rxh Rx Height(s) (optional. Default=0.1)\n");
 		fprintf(stdout,	"     -rxg Rx gain dBi (optional for text report)\n");
 		fprintf(stdout,	"     -hp Horizontal Polarisation (default=vertical)\n");
-		fprintf(stdout, "     -gc Ground clutter (feet/meters)\n");
+		fprintf(stdout, "     -gc Random ground clutter (feet/meters)\n");
 		fprintf(stdout, "     -m Metric units of measurement\n");
 		fprintf(stdout, "     -te Terrain code 1-6 (optional)\n");
 		fprintf(stdout,	"     -terdic Terrain dielectric value 2-80 (optional)\n");
@@ -1065,7 +1067,7 @@ int main(int argc, char *argv[])
 		fprintf(stdout, "     -R Radius (miles/kilometers)\n");
 		fprintf(stdout,	"     -res Pixels per tile. 300/600/1200/3600 (Optional. LIDAR res is within the tile)\n");
 		fprintf(stdout,	"     -pm Propagation model. 1: ITM, 2: LOS, 3: Hata, 4: ECC33,\n");
-		fprintf(stdout,	"     	  5: SUI, 6: COST-Hata, 7: FSPL, 8: ITWOM, 9: Ericsson\n");
+		fprintf(stdout,	"     	  5: SUI, 6: COST-Hata, 7: FSPL, 8: ITWOM, 9: Ericsson, 10: Plane earth\n");
 		fprintf(stdout,	"     -pe Propagation model mode: 1=Urban,2=Suburban,3=Rural\n");
 		fprintf(stdout,	"     -ked Knife edge diffraction (Already on for ITM)\n");
 		fprintf(stdout, "Debugging:\n");
@@ -1082,8 +1084,8 @@ int main(int argc, char *argv[])
 
 	/*
 	 * If we're not called as signalserverLIDAR we can allocate various
-	 * memory now. For LIDAR stuff we need to wait until we've pasred
-	 * the headers in the .asc file to know how much memory to allocate.
+	 * memory now. For LIDAR we need to wait until we've parsed
+	 * the headers in the .asc file to know how much memory to allocate...
 	 */
 	if (!lidar)
 		do_allocs();
@@ -1096,6 +1098,7 @@ int main(int argc, char *argv[])
 	metric = 0;
 	string[0] = 0;
 	mapfile[0] = 0;
+	clutter_file[0] = 0;
 	clutter = 0.0;
 	forced_erp = -1.0;
 	forced_freq = 0.0;
@@ -1159,6 +1162,14 @@ int main(int argc, char *argv[])
 
 				if (clutter < 0.0)
 					clutter = 0.0;
+			}
+		}
+
+		if (strcmp(argv[x], "-clt") == 0) {
+			z = x + 1;
+
+			if (z <= y && argv[z][0] && argv[z][0] != '-') {
+				strncpy(clutter_file, argv[z], 253);
 			}
 		}
 
@@ -1606,7 +1617,9 @@ int main(int argc, char *argv[])
 		}
 	
 	}else{
+		// DEM first
 		LoadTopoData(max_lon, min_lon, max_lat, min_lat);
+
 			if (area_mode || topomap) {
 			for (z = 0; z < txsites && z < max_txsites; z++) {
 				/* "Ball park" estimates used to load any additional
@@ -1703,6 +1716,15 @@ int main(int argc, char *argv[])
 
 	// User defined clutter file
 	LoadUDT(udt_file);
+
+	// Enrich with Clutter
+	if(strlen(clutter_file) > 1){
+		/*
+		Clutter tiles cover 16 x 12 degs but we only need a fraction of that area.
+		Limit by max_range / miles per degree (at equator)
+		*/
+		loadClutter(clutter_file,max_range/45,tx_site[0]); 
+	}
 
 	if (ppa == 0) {
 		if (propmodel == 2) {

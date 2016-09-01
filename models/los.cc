@@ -9,6 +9,7 @@
 #include "hata.hh"
 #include "itwom3.0.hh"
 #include "sui.hh"
+#include "pel.hh"
 #include <pthread.h>
 
 #define NUM_SECTIONS 4
@@ -467,7 +468,7 @@ void PlotPropPath(struct site source, struct site destination,
 						  METERS_PER_FOOT), dkm, pmenv);
 				break;
 			case 4:
-				// COST231-HATA
+				// ECC33
 				loss =
 				    ECC33pathLoss(LR.frq_mhz, txelev,
 						  path.elevation[y] +
@@ -484,6 +485,7 @@ void PlotPropPath(struct site source, struct site destination,
 						 METERS_PER_FOOT), dkm, pmenv);
 				break;
 			case 6:
+				// COST231-Hata
 				loss =
 				    COST231pathLoss(LR.frq_mhz, txelev,
 						    path.elevation[y] +
@@ -517,6 +519,11 @@ void PlotPropPath(struct site source, struct site destination,
 						     pmenv);
 				break;
 
+			case 10:
+				// Plane earth
+				loss =	PlaneEarthLoss(dkm, txelev, path.elevation[y] + (destination.alt * METERS_PER_FOOT));
+				break;
+
 			default:
 				point_to_point_ITM(source.alt * METERS_PER_FOOT,
 						   destination.alt *
@@ -529,7 +536,7 @@ void PlotPropPath(struct site source, struct site destination,
 						   loss, strmode, errnum);
 
 			}
-			
+
 			if (knifeedge == 1) {
 				diffloss =
 				    ked(LR.frq_mhz,

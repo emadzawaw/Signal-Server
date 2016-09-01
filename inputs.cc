@@ -6,6 +6,131 @@
 #include "common.h"
 #include "main.hh"
 
+int loadClutter(char *filename, double radius, struct site tx)
+{
+	/* This function reads a MODIS 17-class clutter file in ASCII Grid format.
+	   The nominal heights it applies to each value, eg. 5 (Mixed forest) = 15m are 
+	   taken from ITU-R P.452-11.
+	   It doesn't have it's own matrix, instead it boosts the DEM matrix like point clutter
+	   AddElevation(lat, lon, height);
+ 	   If tiles are standard 2880 x 3840 then cellsize is constant at 0.004166
+	 */
+	int x, y, z, clh, result, h, w;
+	double xll, yll, xur, yur, cellsize, cellsize2, xOffset, yOffset, lat, lon, i, j;
+	char line[50000];
+	char * pch;
+	FILE *fd;
+
+	fd = fopen(filename, "rb");
+
+	if (fd != NULL) {
+
+		if (fgets(line, 19, fd) != NULL) {
+			pch = strtok (line," ");
+			pch = strtok (NULL, " ");
+			w = atoi(pch);
+		}
+
+		if (fgets(line, 19, fd) != NULL) {
+			//pch = strtok (line," ");
+			//pch = strtok (NULL, " ");
+			h = atoi(pch);
+		}
+
+		if(w==2880 && h==3840){
+			cellsize=0.004167;
+			cellsize2 = cellsize * 2;
+		}else{
+			return 0; // can't work with this yet
+		}
+			if (debug) {
+				fprintf(stdout, "\nLoading clutter file \"%s\" %d x %d...\n", filename, w,h);
+				fflush(stdout);
+			}
+		if (fgets(line, 25, fd) != NULL) {
+			sscanf(pch, "%lf", &xll);
+		}
+
+		fgets(line, 25, fd);
+		if (fgets(line, 25, fd) != NULL) {
+			sscanf(pch, "%lf", &yll);
+		}
+
+		if (debug) {
+			fprintf(stdout, "\nxll %.2f yll %.2f\n", xll, yll);
+			fflush(stdout);
+		}
+
+		fgets(line, 25, fd); // cellsize
+
+		//loop over matrix
+		for (y = h; y > 0; y--) {
+				x = 0;
+				if (fgets(line, 100000, fd) != NULL) {
+					pch = strtok(line, " ");
+					while (pch != NULL && x < w) {
+						z = atoi(pch);
+						
+						// Apply ITU-R P.452-11
+						// Treat classes 0, 9, 10, 11, 15, 16 as water, (Water, savanna, grassland, wetland, snow, barren)
+						clh = 0;
+
+						// evergreen, evergreen, urban
+						if(z == 1 || z == 2 || z == 13)
+							clh = 20;
+						
+						// deciduous, deciduous, mixed
+						if(z==3 || z==4 || z==5)
+							clh = 15;
+						if(z==6)
+							clh = 4;
+						if(z==7 || z==12 || z==14)
+							clh = 2;
+
+						if(clh>1){
+							clh/=2; // Because heights are deliberately conservative
+							xOffset=x*cellsize; // 12 deg wide
+							yOffset=y*cellsize; // 16 deg high
+
+							// make all longitudes positive 
+							if(xll+xOffset>0){
+								lon=360-(xll+xOffset);
+							}else{
+								lon=(xll+xOffset)*-1;
+							}
+							lat = yll+yOffset;
+
+							// bounding box
+							if(lat > tx.lat - radius && lat < tx.lat + radius && lon > tx.lon - radius && lon < tx.lon + radius){
+								
+								// not in near field
+								if((lat > tx.lat+cellsize2 || lat < tx.lat-cellsize2) || (lon > tx.lon + cellsize2 || lon < tx.lon - cellsize2)){
+									AddElevation(lat,lon,clh);
+
+									// Create rectangle of dimensions cellsize x cellsize
+									for(i=cellsize*-1; i < cellsize; i=i+0.0005){
+										for(j=cellsize*-1; j < cellsize; j=j+0.0005){
+											AddElevation(lat+i,lon+j,clh);
+										}
+
+									}
+								}
+
+							}
+						}
+	
+						x++;
+						pch = strtok(NULL, " ");
+					}//while
+				} else {
+					fprintf(stdout, "Clutter error @ x %d y %d\n", x, y);
+				}//if
+			}//for
+	}
+	fclose(fd);
+	return 0;
+}
+
 void readLIDAR(FILE *fd, int hoffset, int voffset, int h, int w, int indx,
 	       double n, double e, double s, double west)
 {

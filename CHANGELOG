@@ -1,5 +1,8 @@
 SIGNAL SERVER CHANGELOG 
 
+2.9 - 01 September 2016
+MODIS Landcover support in ASCII Grid format. Works for 1200/3600 SRTM only.
+
 2.82 - 15 July 2016
 Fixed bug in SUI model which was making it over optimistic.
 
