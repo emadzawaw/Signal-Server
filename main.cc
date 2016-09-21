@@ -1,4 +1,4 @@
-double version = 2.9;
+double version = 2.91;
 /****************************************************************************\
 *  Signal Server: Radio propagation simulator by Alex Farrant QCVS, 2E0TDW   *
 ******************************************************************************
@@ -309,7 +309,7 @@ double GetElevation(struct site location)
 	return elevation;
 }
 
-int AddElevation(double lat, double lon, double height)
+int AddElevation(double lat, double lon, double height, int size)
 {
 	/* This function adds a user-defined terrain feature
 	   (in meters AGL) to the digital elevation model data
@@ -317,7 +317,7 @@ int AddElevation(double lat, double lon, double height)
 	   not found in memory. */
 
 	char found;
-	int x = 0, y = 0, indx;
+	int i,j,x = 0, y = 0, indx;
 
 	for (indx = 0, found = 0; indx < MAXPAGES && found == 0;) {
 		x = (int)rint(ppd * (lat - dem[indx].min_north));
@@ -329,8 +329,20 @@ int AddElevation(double lat, double lon, double height)
 			indx++;
 	}
 
-	if (found)
+	if (found && size<2)
 		dem[indx].data[x][y] += (short)rint(height);
+
+	// Make surrounding area bigger for wide area landcover. Should enhance 3x3 pixels including c.p
+	if (found && size>1){
+		for(i=size*-1; i <= size; i=i+1){
+			for(j=size*-1; j <= size; j=j+1){
+				if(x+j >= 0 && x+j <=IPPD && y+i >= 0 && y+i <=IPPD)
+					dem[indx].data[x+j][y+i] += (short)rint(height);
+			}
+
+		}
+	}
+	
 
 	return found;
 }

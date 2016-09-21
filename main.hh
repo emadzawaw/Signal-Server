@@ -13,7 +13,7 @@ int GetMask(double lat, double lon);
 int PutSignal(double lat, double lon, unsigned char signal);
 unsigned char GetSignal(double lat, double lon);
 double GetElevation(struct site location);
-int AddElevation(double lat, double lon, double height);
+int AddElevation(double lat, double lon, double height, int size);
 double Distance(struct site site1, struct site site2);
 double Azimuth(struct site source, struct site destination);
 double ElevationAngle(struct site source, struct site destination);

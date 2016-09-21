@@ -15,8 +15,8 @@ int loadClutter(char *filename, double radius, struct site tx)
 	   AddElevation(lat, lon, height);
  	   If tiles are standard 2880 x 3840 then cellsize is constant at 0.004166
 	 */
-	int x, y, z, clh, result, h, w;
-	double xll, yll, xur, yur, cellsize, cellsize2, xOffset, yOffset, lat, lon, i, j;
+	int x, y, z, result, h, w;
+	double clh, xll, yll, xur, yur, cellsize, cellsize2, xOffset, yOffset, lat, lon, i, j;
 	char line[50000];
 	char * pch;
 	FILE *fd;
@@ -73,22 +73,22 @@ int loadClutter(char *filename, double radius, struct site tx)
 						
 						// Apply ITU-R P.452-11
 						// Treat classes 0, 9, 10, 11, 15, 16 as water, (Water, savanna, grassland, wetland, snow, barren)
-						clh = 0;
+						clh = 0.0;
 
 						// evergreen, evergreen, urban
 						if(z == 1 || z == 2 || z == 13)
-							clh = 20;
-						
+							clh = 20.0;
 						// deciduous, deciduous, mixed
 						if(z==3 || z==4 || z==5)
-							clh = 15;
-						if(z==6)
-							clh = 4;
-						if(z==7 || z==12 || z==14)
-							clh = 2;
+							clh = 15.0;
+						// woody shrublands & savannas
+						if(z==6 || z==8)
+							clh = 4.0;
+						// shurblands, savannas, croplands...
+						if(z==7 || z==9 || z==10 || z==12 || z==14)
+							clh = 2.0;
 
 						if(clh>1){
-							clh/=2; // Because heights are deliberately conservative
 							xOffset=x*cellsize; // 12 deg wide
 							yOffset=y*cellsize; // 16 deg high
 
@@ -105,15 +105,8 @@ int loadClutter(char *filename, double radius, struct site tx)
 								
 								// not in near field
 								if((lat > tx.lat+cellsize2 || lat < tx.lat-cellsize2) || (lon > tx.lon + cellsize2 || lon < tx.lon - cellsize2)){
-									AddElevation(lat,lon,clh);
+									AddElevation(lat,lon,clh,3);
 
-									// Create rectangle of dimensions cellsize x cellsize
-									for(i=cellsize*-1; i < cellsize; i=i+0.0005){
-										for(j=cellsize*-1; j < cellsize; j=j+0.0005){
-											AddElevation(lat+i,lon+j,clh);
-										}
-
-									}
 								}
 
 							}
@@ -1757,7 +1750,7 @@ void LoadUDT(char *filename)
 				/* No duplicate found */
 				//fprintf(stdout,"%lf, %lf \n",xpix*dpp, ypix*dpp);
 				fflush(stdout);
-			    AddElevation(xpix * dpp, ypix * dpp, height);
+			    AddElevation(xpix * dpp, ypix * dpp, height, 1);
 			fflush(stdout);
 
 			n = fscanf(fd1, "%d, %d, %lf", &xpix, &ypix, &height);
