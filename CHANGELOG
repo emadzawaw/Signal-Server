@@ -1,5 +1,9 @@
 SIGNAL SERVER CHANGELOG 
 
+2.92 - 29 September 2016
+Overhauled LIDAR functions to read in (more) native format tiles.
+Replaced 'super tile' code with more scalable multi-tile code: currently limited to 16.
+
 2.9 - 01 September 2016
 MODIS Landcover support in ASCII Grid format. Works for 1200/3600 SRTM only.
 
