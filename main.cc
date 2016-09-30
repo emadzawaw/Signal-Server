@@ -1,4 +1,4 @@
-double version = 2.92;
+double version = 2.93;
 /****************************************************************************\
 *  Signal Server: Radio propagation simulator by Alex Farrant QCVS, 2E0TDW   *
 ******************************************************************************
@@ -1024,7 +1024,7 @@ int main(int argc, char *argv[])
 	unsigned char LRmap = 0, txsites = 0, topomap = 0, geo = 0, kml =
 	    0, area_mode = 0, max_txsites, ngs = 0;
 
-	char mapfile[255], udt_file[255], ano_filename[255], lidar_tiles[1024], clutter_file[255];
+	char mapfile[255], udt_file[255], ano_filename[255], lidar_tiles[4096], clutter_file[255];
 
 	double altitude = 0.0, altitudeLR = 0.0, tx_range = 0.0,
 	    rx_range = 0.0, deg_range = 0.0, deg_limit = 0.0, deg_range_lon;
@@ -1036,7 +1036,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (strstr(argv[0], "signalserverLIDAR")) {
-		MAXPAGES = 25; // 5x5
+		MAXPAGES = 100; // 10x10
 		lidar = 1;
 		IPPD = 500; // will be overridden based upon file header...
 	}
@@ -1227,7 +1227,7 @@ int main(int argc, char *argv[])
 			z = x + 1;
 			lidar=1;
 			if (z <= y && argv[z][0] && argv[z][0] != '-')
-				strncpy(lidar_tiles, argv[z], 1022);
+				strncpy(lidar_tiles, argv[z], 4094);
 		}
 
 		if (strcmp(argv[x], "-res") == 0) {
@@ -1611,7 +1611,7 @@ int main(int argc, char *argv[])
 
 		err = loadLIDAR(lidar_tiles);
 		if (err) {
-			fprintf(stderr, "Couldn't find one or more of the "
+			fprintf(stdout, "Couldn't find one or more of the "
 				"lidar files. Please ensure their paths are\n"
 				"correct and try again.\n");
 			exit(EXIT_FAILURE);

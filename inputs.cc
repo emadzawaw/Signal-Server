@@ -214,7 +214,7 @@ void readLIDAR(FILE *fd, int h, int w, int indx,double n, double e, double s, do
 int loadLIDAR(char *filenames)
 {
 	char *filename;
-	char *files[25]; // 25 tiles
+	char *files[100]; // 10x10 tiles
 	int x, y, indx = 0, fc = 0, hoffset = 0, voffset = 0, pos,
 	    dem_alloced = 0;
 	double xll, yll, xur, yur, cellsize, avgCellsize;
@@ -269,18 +269,19 @@ int loadLIDAR(char *filenames)
 
 			if (fgets(line, 255, fd) != NULL)
 				sscanf(pch, "%lf", &cellsize); 
+
 			avgCellsize=avgCellsize+cellsize;
 
-			if(cellsize>=0.5){ // 50cm LIDAR?
+			/*if(cellsize>=0.5){ // 50cm LIDAR?
 				// compute xur and yur with inverse haversine if cellsize in *metres*
 				double roundDistance = (width*cellsize)/6371000;
 				yur = asin(sin(yll*DEG2RAD) * cos(roundDistance) + cos(yll * DEG2RAD) * sin(roundDistance) * cos(0)) * TO_DEG;
 				xur = ((xll*DEG2RAD) + atan2(sin(90*DEG2RAD) * sin(roundDistance) * cos(yll*DEG2RAD), cos(roundDistance) - sin(yll * DEG2RAD) * sin(yur*DEG2RAD))) * TO_DEG;
-			}else{
+			}else{*/
 				// Degrees with GDAL option: -co "FORCE_CELLSIZE=YES"
 				xur = xll+(cellsize*width);
 				yur = yll+(cellsize*height);
-			}
+			//}
 	
 			if (xur > eastoffset)
 				eastoffset = xur;
@@ -288,7 +289,7 @@ int loadLIDAR(char *filenames)
 				westoffset = xll;
 
 			if (debug)
-				fprintf(stdout,"%d, %d, %.7f, %.7f, %.0f, %.7f, %.7f\n",width,height,xll,yll,cellsize,yur,xur);
+				fprintf(stdout,"%d, %d, %.7f, %.7f, %.7f, %.7f, %.7f\n",width,height,xll,yll,cellsize,yur,xur);
 
 
 			// Greenwich straddling hack
@@ -332,12 +333,12 @@ int loadLIDAR(char *filenames)
 	// TESTING!
 	IPPD=width;
 	ippd=width;
-	avgCellsize=avgCellsize/fc;
-	height = (unsigned)((max_north-min_north) / avgCellsize);
-	width = (unsigned)((max_west-min_west) / avgCellsize);
+	//avgCellsize=avgCellsize/fc;
+	height = (unsigned)((max_north-min_north) / cellsize);
+	width = (unsigned)((max_west-min_west) / cellsize);
 
 	if (debug)
-		fprintf(stdout, "fc %d WIDTH %d HEIGHT %d ippd %d minN %.5f maxN %.5f minW %.5f maxW %.5f\n", fc, width, height, ippd,min_north,max_north,min_west,max_west);
+		fprintf(stdout, "fc %d WIDTH %d HEIGHT %d ippd %d minN %.5f maxN %.5f minW %.5f maxW %.5f avgCellsize %.5f\n", fc, width, height, ippd,min_north,max_north,min_west,max_west,avgCellsize);
 	return 0;
 }
 
