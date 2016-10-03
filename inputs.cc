@@ -220,7 +220,7 @@ int loadLIDAR(char *filenames)
 	double xll, yll, xur, yur, cellsize, avgCellsize;
 	char found, free_page = 0, jline[20], lid_file[255],	
 	     path_plus_name[255], *junk = NULL;
-	char line[50000];
+	char line[100000];
 	char * pch;
     	double TO_DEG = (180 / PI);
 	FILE *fd;
@@ -248,17 +248,21 @@ int loadLIDAR(char *filenames)
 					fflush(stdout);
 				}
 
+                        if (fgets(line, 255, fd) != NULL)
+                                height = atoi(pch); // nrows
+
 				if (!dem_alloced) {
-					IPPD = width * 1.1; // +10%
+					if(width>height){
+						IPPD = width;
+					}else{
+						IPPD = height;
+					}
 					ARRAYSIZE = (MAXPAGES * IPPD) + 10;
 					do_allocs();
 					dem_alloced = 1;
 				}
 
 			}
-			if (fgets(line, 255, fd) != NULL)
-				height = atoi(pch); // nrows
-
 			if (fgets(line, 255, fd) != NULL) {
 				sscanf(pch, "%lf", &xll); // xll
 			}
@@ -282,7 +286,7 @@ int loadLIDAR(char *filenames)
 				xur = xll+(cellsize*width);
 				yur = yll+(cellsize*height);
 			//}
-	
+
 			if (xur > eastoffset)
 				eastoffset = xur;
 			if (xll < westoffset)
@@ -293,15 +297,15 @@ int loadLIDAR(char *filenames)
 
 
 			// Greenwich straddling hack
-			if (xll < 0 && xur > 0) {
+			if (xll <= 0 && xur > 0) {
 				xll = (xur - xll); // full width
 				xur = 0.0; // budge it along so it's west of greenwich
 				delta = eastoffset; // add to Tx longitude later
 			} else {
 				// Transform WGS84 longitudes into 'west' values as society finishes east of Greenwich ;)
-				if (xll > 0)
+				if (xll >= 0)
 					xll = 360-xll;
-				if(xur > 0)
+				if(xur >= 0)
 					xur = 360-xur;
 				if(xll < 0)
 					xll = xll * -1;
@@ -329,11 +333,8 @@ int loadLIDAR(char *filenames)
 		}
 		indx++;
 	} // filename(s)
-
-	// TESTING!
 	IPPD=width;
-	ippd=width;
-	//avgCellsize=avgCellsize/fc;
+	ippd=IPPD;
 	height = (unsigned)((max_north-min_north) / cellsize);
 	width = (unsigned)((max_west-min_west) / cellsize);
 

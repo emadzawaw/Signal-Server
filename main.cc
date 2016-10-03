@@ -1,4 +1,4 @@
-double version = 2.93;
+double version = 2.94;
 /****************************************************************************\
 *  Signal Server: Radio propagation simulator by Alex Farrant QCVS, 2E0TDW   *
 ******************************************************************************
@@ -530,6 +530,9 @@ void ReadPath(struct site source, struct site destination)
 		tempsite.lat = lat2;
 		tempsite.lon = lon2;
 		path.elevation[c] = GetElevation(tempsite);
+		// fix for tile gaps in multi-tile LIDAR plots
+		if(path.elevation[c]==0 && path.elevation[c-1] > 10)
+			path.elevation[c]=path.elevation[c-1];
 		path.distance[c] = distance;
 	}
 
@@ -1036,9 +1039,9 @@ int main(int argc, char *argv[])
 	}
 
 	if (strstr(argv[0], "signalserverLIDAR")) {
-		MAXPAGES = 100; // 10x10
+		MAXPAGES = 64; // 8x8
 		lidar = 1;
-		IPPD = 500; // will be overridden based upon file header...
+		IPPD = 5000; // will be overridden based upon file header...
 	}
 
 	strncpy(ss_name, "Signal Server\0", 14);
@@ -1612,7 +1615,7 @@ int main(int argc, char *argv[])
 		err = loadLIDAR(lidar_tiles);
 		if (err) {
 			fprintf(stdout, "Couldn't find one or more of the "
-				"lidar files. Please ensure their paths are\n"
+				"lidar files. Please ensure their paths are "
 				"correct and try again.\n");
 			exit(EXIT_FAILURE);
 		}
@@ -1751,7 +1754,9 @@ int main(int argc, char *argv[])
 			PlotPropagation(tx_site[0], altitudeLR, ano_filename,
 					propmodel, knifeedge, haf, pmenv, use_threads);
 
-			
+                        if(debug)
+                        	fprintf(stdout,"Finished PlotPropagation()\n");
+
 			if(!lidar){
 				if (LR.erp == 0.0)
 					hottest=9; // 9dB nearfield
