@@ -1039,7 +1039,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (strstr(argv[0], "signalserverLIDAR")) {
-		MAXPAGES = 64; // 8x8
+		MAXPAGES = 100; // 10x10
 		lidar = 1;
 		IPPD = 5000; // will be overridden based upon file header...
 	}

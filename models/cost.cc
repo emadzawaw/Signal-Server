@@ -44,6 +44,7 @@ http://morse.colorado.edu/~tlen5510/text/classwebch3.html
 	}
 	if (mode == 2) {
 		C = 0;		// Medium city (average)
+		lRxH = log10(1.54 * RxH);
 		C_H = 8.29 * (lRxH * lRxH) - 1.1;
 	}
 	if (mode == 3) {

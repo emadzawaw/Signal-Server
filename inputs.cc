@@ -252,11 +252,15 @@ int loadLIDAR(char *filenames)
                                 height = atoi(pch); // nrows
 
 				if (!dem_alloced) {
+					//Reduce MAXPAGES to increase speed
+					MAXPAGES=fc;
 					if(width>height){
 						IPPD = width;
 					}else{
 						IPPD = height;
 					}
+					// add fudge as reprojected tiles sometimes vary by a pixel or two
+					IPPD+=5;
 					ARRAYSIZE = (MAXPAGES * IPPD) + 10;
 					do_allocs();
 					dem_alloced = 1;
