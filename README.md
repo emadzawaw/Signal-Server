@@ -21,51 +21,64 @@ Signal Server is a very resource intensive multicore application. Only publish i
 Additional programs/scripts will be required to prepare inputs such as .sdf tiles (srtm2sdf.c), 3D antenna patterns (.ant) and user defined clutter (.udt) or manipulate the bitmap output (.ppm). More information can be found in the SPLAT! project.
 
 ## Installation
-```sh
-$ make
 ```
+make
+```
+
+## Test
+```
+./test.sh
+```
+
 ## Parameters
 ```
-	 ---| Signal Server 2.80 |---
-	RF propagation simulator by Alex Farrant, 2E0TDW
-	Set for 64 tiles at 1200 pixels/degree
+Version: Signal Server 2.94 (Built for 64 DEM tiles at 1200 pixels)
+License: GNU General Public License (GPL) version 2
 
-REFERENCE DATA
-     -sdf Directory containing SRTM derived .sdf tiles
-     -lid WGS84 ASCII grid tile (LIDAR) with dimensions and resolution defined in header
-     -udt User defined CSV clutter file
-INPUT
+Radio propagation simulator by Alex Farrant QCVS, 2E0TDW
+Based upon SPLAT! by John Magliacane, KD2BD
+
+Usage: signalserver [data options] [input options] [output options] -o outputfile
+
+Data:
+     -sdf Directory containing SRTM derived .sdf DEM tiles
+     -lid ASCII grid tile (LIDAR) with dimensions and resolution defined in header
+     -udt User defined point clutter as decimal co-ordinates: 'latitude,longitude,height'
+     -clt MODIS 17-class wide area clutter in ASCII grid format
+Input:
      -lat Tx Latitude (decimal degrees) -70/+70
      -lon Tx Longitude (decimal degrees) -180/+180
      -txh Tx Height (above ground)
      -rla (Optional) Rx Latitude for PPA (decimal degrees) -70/+70
      -rlo (Optional) Rx Longitude for PPA (decimal degrees) -180/+180
      -f Tx Frequency (MHz) 20MHz to 100GHz (LOS after 20GHz)
-     -erp Tx Effective Radiated Power (Watts)
+     -erp Tx Effective Radiated Power (Watts) including Tx+Rx gain
      -rxh Rx Height(s) (optional. Default=0.1)
+     -rxg Rx gain dBi (optional for text report)
      -hp Horizontal Polarisation (default=vertical)
-     -gc Ground clutter (feet/meters)
+     -gc Random ground clutter (feet/meters)
      -m Metric units of measurement
      -te Terrain code 1-6 (optional)
      -terdic Terrain dielectric value 2-80 (optional)
      -tercon Terrain conductivity 0.01-0.0001 (optional)
      -cl Climate code 1-6 (optional)
-OUTPUT
+Output:
      -dbm Plot Rxd signal power instead of field strength
      -rt Rx Threshold (dB / dBm / dBuV/m)
      -o Filename. Required. 
      -R Radius (miles/kilometers)
-     -res Pixels per tile. 300/600/1200/3600 (Optional. LIDAR res is defined within the tile)
+     -res Pixels per tile. 300/600/1200/3600 (Optional. LIDAR res is within the tile)
      -pm Propagation model. 1: ITM, 2: LOS, 3: Hata, 4: ECC33,
-     	  5: SUI, 6: COST-Hata, 7: FSPL, 8: ITWOM, 9: Ericsson
+     	  5: SUI, 6: COST-Hata, 7: FSPL, 8: ITWOM, 9: Ericsson, 10: Plane earth
      -pe Propagation model mode: 1=Urban,2=Suburban,3=Rural
      -ked Knife edge diffraction (Already on for ITM)
-DEBUGGING
+Debugging:
      -t Terrain greyscale background
      -dbg Verbose debug messages
      -ng Normalise Path Profile graph
      -haf Halve 1 or 2 (optional)
      -nothreads Turn off threaded processing
+
 ```
 
 ### REFERENCE DATA
@@ -79,16 +92,16 @@ SDF formatted tiles can be created by converting SRTM tiles (30m or 90m) in HGT 
 
 #### -lid 
 ##### WGS84 ASCII grid tile (LIDAR) with dimensions and resolution defined in header
-LIDAR data can be used providing it is in ASCII grid format with WGS84 projection. Super tiles with up to 10000 rows by 10000 cols  have been tested. Unlike a normal ASCII Grid file, this expects additional box bounds to be defined in the header as follows with this example for a 50.41km square tile. Cellsize should be in meters and co-ordinates must be in WGS84 decimal degrees.
+LIDAR data can be used providing it is in ASCII grid format with WGS84 projection. Resolutions up to 25cm have been tested. 2m is recommended for a good trade off. Cellsize should be in degrees and co-ordinates must be in WGS84 decimal degrees.
+To load multiple tiles use commas eg. -lid tile1.asc,tile2.asc. When working large areas, multiple smaller tiles are much more efficient than a single super-tile.
 ```
-ncols        5041
-nrows        5041
-xllcorner    6.44681098949985
-yllcorner    58.1638386261566
-xurcorner    7.28124500979768
-yurcorner    58.6306585538797
-cellsize     10
-NODATA_value  0
+ncols        2454
+nrows        1467
+xllcorner    -1.475333294357
+yllcorner    53.378635095801
+cellsize     0.000006170864
+NODATA_value      0
+ 0 0 0 0 0 0 0 0 0 0 0 0 0 ...
 ```
 
 #### -udt 
