@@ -128,7 +128,7 @@ int loadClutter(char *filename, double radius, struct site tx)
 void readLIDAR(FILE *fd, int h, int w, int indx,double n, double e, double s, double west)
 {
 	int x = 0, y = 0, reads = 0, a=0, b=0, avg=0, tWidth = 0, tHeight = 0;
-	char line[150000];
+	char line[25000];
 	char *pch;
 
 	dem[indx].max_north=n;
@@ -180,7 +180,7 @@ void readLIDAR(FILE *fd, int h, int w, int indx,double n, double e, double s, do
 	for (y = h-1; y > -1; y--) {
 		x = w-1;
 	
-		if (fgets(line, 150000, fd) != NULL) {
+		if (fgets(line, 25000, fd) != NULL) {
 				pch = strtok(line, " "); // split line into values
 
 				while (pch != NULL && x > -1) {
@@ -220,7 +220,7 @@ int loadLIDAR(char *filenames)
 	double xll, yll, xur, yur, cellsize, avgCellsize;
 	char found, free_page = 0, jline[20], lid_file[255],	
 	     path_plus_name[255], *junk = NULL;
-	char line[100000];
+	char line[25000];
 	char * pch;
     	double TO_DEG = (180 / PI);
 	FILE *fd;
@@ -259,8 +259,8 @@ int loadLIDAR(char *filenames)
 					}else{
 						IPPD = height;
 					}
-					// add fudge as reprojected tiles sometimes vary by a pixel or two
-					IPPD+=5;
+					// add fudge as reprojected tiles sometimes vary by a pixel or ten
+					IPPD+=10;
 					ARRAYSIZE = (MAXPAGES * IPPD) + 10;
 					do_allocs();
 					dem_alloced = 1;

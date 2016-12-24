@@ -1,4 +1,4 @@
-double version = 2.94;
+double version = 2.95;
 /****************************************************************************\
 *  Signal Server: Radio propagation simulator by Alex Farrant QCVS, 2E0TDW   *
 ******************************************************************************
@@ -1041,7 +1041,7 @@ int main(int argc, char *argv[])
 	if (strstr(argv[0], "signalserverLIDAR")) {
 		MAXPAGES = 100; // 10x10
 		lidar = 1;
-		IPPD = 5000; // will be overridden based upon file header...
+		IPPD = 6000; // will be overridden based upon file header...
 	}
 
 	strncpy(ss_name, "Signal Server\0", 14);
@@ -1075,6 +1075,7 @@ int main(int argc, char *argv[])
 		fprintf(stdout,	"     -terdic Terrain dielectric value 2-80 (optional)\n");
 		fprintf(stdout,	"     -tercon Terrain conductivity 0.01-0.0001 (optional)\n");
 		fprintf(stdout, "     -cl Climate code 1-6 (optional)\n");
+		fprintf(stdout, "     -rel Reliability for ITM model 50 to 99 (optional)\n");
 		fprintf(stdout, "Output:\n");
 		fprintf(stdout,	"     -dbm Plot Rxd signal power instead of field strength\n");
 		fprintf(stdout, "     -rt Rx Threshold (dB / dBm / dBuV/m)\n");
@@ -1479,6 +1480,18 @@ int main(int argc, char *argv[])
 		if (strcmp(argv[x], "-nothreads") == 0) {
 			z = x + 1;
 			use_threads = false;
+		}
+
+		// Reliability % for ITM model
+		if (strcmp(argv[x], "-rel") == 0) {
+			z = x + 1;
+
+			if (z <= y && argv[z][0]) {
+				sscanf(argv[z], "%lf", &LR.rel);
+				sscanf(argv[z], "%lf", &LR.conf);
+				LR.rel=LR.rel/100;
+				LR.conf=LR.conf/100;
+			}
 		}
 	}
 
