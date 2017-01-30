@@ -766,17 +766,17 @@ void PlotPropagation(struct site source, double altitude, char *plo_filename,
 	FILE *fd = NULL;
 	
 	if (LR.erp == 0.0 && debug)
-		fprintf(stdout, "path loss");
+		fprintf(stderr, "path loss");
 	else {
 		if (debug) {
 			if (dbm)
-				fprintf(stdout, "signal power level");
+				fprintf(stderr, "signal power level");
 			else
-				fprintf(stdout, "field strength");
+				fprintf(stderr, "field strength");
 		}
 	}
 	if (debug) {
-		fprintf(stdout,
+		fprintf(stderr,
 			" contours of \"%s\"\nout to a radius of %.2f %s with Rx antenna(s) at %.2f %s AGL\n",
 			source.name,
 			metric ? max_range * KM_PER_MILE : max_range,
@@ -786,7 +786,7 @@ void PlotPropagation(struct site source, double altitude, char *plo_filename,
 	}
 
 	if (clutter > 0.0 && debug)
-		fprintf(stdout, "\nand %.2f %s of ground clutter",
+		fprintf(stderr, "\nand %.2f %s of ground clutter",
 			metric ? clutter * METERS_PER_FOOT : clutter,
 			metric ? "meters" : "feet");
 
