@@ -14,6 +14,7 @@
 #include "models/hata.hh"
 #include "models/itwom3.0.hh"
 #include "models/sui.hh"
+#include "image.hh"
 
 void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 		unsigned char ngs, struct site *xmtr, unsigned char txsites)
@@ -529,6 +530,13 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 	int indx, x, y, z = 1, x0 = 0, y0 = 0, dBm, match;
 	double conversion, one_over_gamma, lat, lon, minwest;
 	FILE *fd;
+	IMAGE_CTX ctx;
+	int success;
+
+	if((success = image_init(&ctx, width, (kml ? height : height + 30), IMAGE_RGB)) != 0){
+		fprintf(stderr,"Error initializing image\n");
+		exit(success);
+	}
 
 	one_over_gamma = 1.0 / GAMMA;
 	conversion =
@@ -544,23 +552,10 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 			filename[strlen(filename) - 4] = 0;	/* Remove .qth */
 		}
 
-		y = strlen(filename);
-
-		if (y > 4) {
-			if (filename[y - 1] == 'm' && filename[y - 2] == 'p'
-			    && filename[y - 3] == 'p' && filename[y - 4] == '.')
-				y -= 4;
+		if(image_get_filename(&ctx,mapfile,sizeof(mapfile),filename) != 0){
+			fprintf(stderr,"Error creating file name\n");
+			exit(1);
 		}
-
-		for (x = 0; x < y; x++) {
-			mapfile[x] = filename[x];
-		}
-
-		mapfile[x] = '.';
-		mapfile[x + 1] = 'p';
-		mapfile[x + 2] = 'p';
-		mapfile[x + 3] = 'm';
-		mapfile[x + 4] = 0;
 
 		fd = fopen(mapfile,"wb");
 
@@ -583,7 +578,6 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 	east = (minwest < 180.0 ? -minwest : 360.0 - min_west);
 	west = (double)(max_west < 180 ? -max_west : 360 - max_west);
 
-	fprintf(fd, "P6\n%u %u\n255\n", width, (kml ? height : height));
 	if (debug) {
 		fprintf(stderr, "\nWriting \"%s\" (%ux%u pixmap image)...\n",
 			(filename != NULL ? mapfile : "to stdout"), width, (kml ? height : height));
@@ -652,11 +646,11 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 
 					if (red >= 180 && green <= 75
 					    && blue <= 75 && dBm != 0)
-						fprintf(fd, "%c%c%c", 255 ^ red,
+						ADD_PIXEL(&ctx, 255 ^ red,
 							255 ^ green,
 							255 ^ blue);
 					else
-						fprintf(fd, "%c%c%c", 255, 0,
+						ADD_PIXEL(&ctx, 255, 0,
 							0);
 
 					cityorcounty = 1;
@@ -664,7 +658,7 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 
 				else if (mask & 4) {
 					/* County Boundaries: Black */
-					fprintf(fd, "%c%c%c", 0, 0, 0);
+					ADD_PIXEL(&ctx, 0, 0, 0);
 					cityorcounty = 1;
 				}
 
@@ -672,15 +666,14 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 					if (contour_threshold != 0
 					    && dBm < contour_threshold) {
 						if (ngs)	/* No terrain */
-							fprintf(fd, "%c%c%c",
+							ADD_PIXEL(&ctx,
 								255, 255, 255);
 						else {
 							/* Display land or sea elevation */
 
 							if (dem[indx].
 							    data[x0][y0] == 0)
-								fprintf(fd,
-									"%c%c%c",
+								ADD_PIXEL(&ctx,
 									0, 0,
 									170);
 							else {
@@ -688,8 +681,7 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 								    (unsigned)
 								    (0.5 +
 								     pow((double)(dem[indx].data[x0][y0] - min_elevation), one_over_gamma) * conversion);
-								fprintf(fd,
-									"%c%c%c",
+								ADD_PIXEL(&ctx,
 									terrain,
 									terrain,
 									terrain);
@@ -702,15 +694,14 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 
 						if (red != 0 || green != 0
 						    || blue != 0)
-							fprintf(fd, "%c%c%c",
+							ADD_PIXEL(&ctx,
 								red, green,
 								blue);
 
 						else {	/* terrain / sea-level */
 
 							if (ngs)
-								fprintf(fd,
-									"%c%c%c",
+								ADD_PIXEL(&ctx, 
 									255,
 									255,
 									255); // WHITE
@@ -718,9 +709,7 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 								if (dem[indx].
 								    data[x0][y0]
 								    == 0)
-									fprintf
-									    (fd,
-									     "%c%c%c",
+									ADD_PIXEL(&ctx, 
 									     0,
 									     0,
 									     170); // BLUE
@@ -733,9 +722,7 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 									     +
 									     pow
 									     ((double)(dem[indx].data[x0][y0] - min_elevation), one_over_gamma) * conversion);
-									fprintf
-									    (fd,
-									     "%c%c%c",
+									ADD_PIXEL(&ctx, 
 									     terrain,
 									     terrain,
 									     terrain);
@@ -750,9 +737,14 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 				/* We should never get here, but if */
 				/* we do, display the region as black */
 
-				fprintf(fd, "%c%c%c", 0, 0, 0);
+				ADD_PIXEL(&ctx, 0, 0, 0);
 			}
 		}
+	}
+
+	if((success = image_write(&ctx,fd)) != 0){
+		fprintf(stderr,"Error writing image\n");
+		exit(success);
 	}
 
 	fflush(fd);

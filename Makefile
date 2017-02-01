@@ -4,11 +4,11 @@ CC		= gcc
 CXX		= g++
 CFLAGS		= -Wall -O3 -s -ffast-math
 CXXFLAGS	= -Wall -O3 -s -ffast-math
-LIBS		= -lm -lpthread
+LIBS		= -lm -lpthread -ldl
 
 VPATH		= models
 objects 	= main.o cost.o ecc33.o ericsson.o fspl.o hata.o itwom3.0.o \
-		  los.o sui.o pel.o inputs.o outputs.o
+		  los.o sui.o pel.o inputs.o outputs.o image.o image-ppm.o
 
 GCC_MAJOR	:= $(shell $(CXX) -dumpversion 2>&1 | cut -d . -f 1)
 GCC_MINOR	:= $(shell $(CXX) -dumpversion 2>&1 | cut -d . -f 2)
@@ -44,6 +44,10 @@ inputs.o: inputs.cc common.h main.hh
 
 outputs.o: outputs.cc common.h inputs.hh main.hh cost.hh ecc33.hh ericsson.hh \
 	   fspl.hh hata.hh itwom3.0.hh sui.hh pel.hh
+
+image.o: image.cc image-ppm.o
+
+image-ppm.o: image-ppm.cc
 
 los.o: los.cc common.h main.hh cost.hh ecc33.hh ericsson.hh fspl.hh hata.hh \
        itwom3.0.hh sui.hh pel.hh

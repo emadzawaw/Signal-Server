@@ -35,6 +35,7 @@ double version = 2.95;
 #include "models/itwom3.0.hh"
 #include "models/los.hh"
 #include "models/pel.hh"
+#include "image.hh"
 
 int MAXPAGES = 64;
 int ARRAYSIZE = 76810;//76810;
@@ -1207,6 +1208,14 @@ int main(int argc, char *argv[])
 				strncpy(tx_site[0].name, "Tx", 2);
 				tx_site[0].filename[0] = '\0';
 				fprintf(stderr,"Writing to stdout\n");
+			}
+		}
+
+		if (strcmp(argv[x], "-so") == 0) {
+			z = x + 1;
+			if(image_set_library(argv[z]) != 0){
+				fprintf(stderr,"Error configuring image processor\n");
+				exit(EINVAL);
 			}
 		}
 
