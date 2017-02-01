@@ -45,8 +45,8 @@ int loadClutter(char *filename, double radius, struct site tx)
 			return 0; // can't work with this yet
 		}
 			if (debug) {
-				fprintf(stdout, "\nLoading clutter file \"%s\" %d x %d...\n", filename, w,h);
-				fflush(stdout);
+				fprintf(stderr, "\nLoading clutter file \"%s\" %d x %d...\n", filename, w,h);
+				fflush(stderr);
 			}
 		if (fgets(line, 25, fd) != NULL) {
 			sscanf(pch, "%lf", &xll);
@@ -58,8 +58,8 @@ int loadClutter(char *filename, double radius, struct site tx)
 		}
 
 		if (debug) {
-			fprintf(stdout, "\nxll %.2f yll %.2f\n", xll, yll);
-			fflush(stdout);
+			fprintf(stderr, "\nxll %.2f yll %.2f\n", xll, yll);
+			fflush(stderr);
 		}
 
 		fgets(line, 25, fd); // cellsize
@@ -117,7 +117,7 @@ int loadClutter(char *filename, double radius, struct site tx)
 						pch = strtok(NULL, " ");
 					}//while
 				} else {
-					fprintf(stdout, "Clutter error @ x %d y %d\n", x, y);
+					fprintf(stderr, "Clutter error @ x %d y %d\n", x, y);
 				}//if
 			}//for
 	}
@@ -204,7 +204,7 @@ void readLIDAR(FILE *fd, int h, int w, int indx,double n, double e, double s, do
 
 
 		} else {
-			fprintf(stdout, "LIDAR error @ x %d y %d indx %d\n",
+			fprintf(stderr, "LIDAR error @ x %d y %d indx %d\n",
 					x, y, indx);
 		}//if
 	}//for
@@ -244,8 +244,8 @@ int loadLIDAR(char *filenames)
 				width = atoi(pch); // ncols
 
 				if (debug) {
-					fprintf(stdout, "Loading \"%s\" into page %d with width %d...\n", files[indx], indx, width);
-					fflush(stdout);
+					fprintf(stderr, "Loading \"%s\" into page %d with width %d...\n", files[indx], indx, width);
+					fflush(stderr);
 				}
 
                         if (fgets(line, 255, fd) != NULL)
@@ -297,7 +297,7 @@ int loadLIDAR(char *filenames)
 				westoffset = xll;
 
 			if (debug)
-				fprintf(stdout,"%d, %d, %.7f, %.7f, %.7f, %.7f, %.7f\n",width,height,xll,yll,cellsize,yur,xur);
+				fprintf(stderr,"%d, %d, %.7f, %.7f, %.7f, %.7f, %.7f\n",width,height,xll,yll,cellsize,yur,xur);
 
 
 			// Greenwich straddling hack
@@ -317,7 +317,7 @@ int loadLIDAR(char *filenames)
 					xur = xur * -1;
 			}
 			if (debug)
-				fprintf(stdout, "POST yll %.7f yur %.7f xur %.7f xll %.7f delta %.6f\n", yll, yur, xur, xll, delta);
+				fprintf(stderr, "POST yll %.7f yur %.7f xur %.7f xll %.7f delta %.6f\n", yll, yur, xur, xll, delta);
 
 
 			fgets(line, 255, fd); // NODATA
@@ -325,13 +325,13 @@ int loadLIDAR(char *filenames)
 
 			// tile 0 [x| ]
 			if (debug)
-				fprintf(stdout, "readLIDAR(fd,%d,%d,%d,%.4f,%.4f,%.4f,%.4f)\n", height, width, indx, yur, xur, yll, xll);
+				fprintf(stderr, "readLIDAR(fd,%d,%d,%d,%.4f,%.4f,%.4f,%.4f)\n", height, width, indx, yur, xur, yll, xll);
 
 			readLIDAR(fd, height, width, indx, yur, xur, yll, xll);
 
 			fclose(fd);
 			if (debug)
-				fprintf(stdout, "LIDAR LOADED %d x %d\n", width, height);
+				fprintf(stderr, "LIDAR LOADED %d x %d\n", width, height);
 		} else {
 			return -1;
 		}
@@ -343,7 +343,7 @@ int loadLIDAR(char *filenames)
 	width = (unsigned)((max_west-min_west) / cellsize);
 
 	if (debug)
-		fprintf(stdout, "fc %d WIDTH %d HEIGHT %d ippd %d minN %.5f maxN %.5f minW %.5f maxW %.5f avgCellsize %.5f\n", fc, width, height, ippd,min_north,max_north,min_west,max_west,avgCellsize);
+		fprintf(stderr, "fc %d WIDTH %d HEIGHT %d ippd %d minN %.5f maxN %.5f minW %.5f maxW %.5f avgCellsize %.5f\n", fc, width, height, ippd,min_north,max_north,min_west,max_west,avgCellsize);
 	return 0;
 }
 
@@ -417,10 +417,10 @@ int LoadSDF_SDF(char *name)
 
 		if (fd != NULL) {
 			if (debug == 1) {
-				fprintf(stdout,
+				fprintf(stderr,
 					"Loading \"%s\" into page %d...",
 					path_plus_name, indx + 1);
-				fflush(stdout);
+				fflush(stderr);
 			}
 
 			if (fgets(line, 19, fd) != NULL) {
@@ -590,10 +590,10 @@ char LoadSDF(char *name)
 
 		if (free_page && found == 0 && indx >= 0 && indx < MAXPAGES) {
 			if (debug == 1) {
-				fprintf(stdout,
-					"Region  \"%s\" assumed as sea-level into page %d...",
+				fprintf(stderr,
+					"Region  \"%s\" assumed as sea-level into page %d...\n",
 					name, indx + 1);
-				fflush(stdout);
+				fflush(stderr);
 			}
 
 			dem[indx].max_west = maxlon;
@@ -720,7 +720,7 @@ void LoadPAT(char *filename)
 		   from true North. */
 
 		if (fgets(string, 254, fd) == NULL) {
-			//fprintf(stdout,"Azimuth read error\n");
+			//fprintf(stderr,"Azimuth read error\n");
 			//exit(0);
 		}
 		pointer = strchr(string, ';');
@@ -735,7 +735,7 @@ void LoadPAT(char *filename)
 		   (0.0 to 1.0) until EOF is reached. */
 
 		if (fgets(string, 254, fd) == NULL) {
-			//fprintf(stdout,"Azimuth read error\n");
+			//fprintf(stderr,"Azimuth read error\n");
 			//exit(0);
 		}
 		pointer = strchr(string, ';');
@@ -754,7 +754,7 @@ void LoadPAT(char *filename)
 			}
 
 			if (fgets(string, 254, fd) == NULL) {
-				//fprintf(stdout,"Azimuth read error\n");
+				//fprintf(stderr,"Azimuth read error\n");
 				// exit(0);
 			}
 			pointer = strchr(string, ';');
@@ -850,7 +850,7 @@ void LoadPAT(char *filename)
 		   clockwise from true North. */
 
 		if (fgets(string, 254, fd) == NULL) {
-			//fprintf(stdout,"Tilt read error\n");
+			//fprintf(stderr,"Tilt read error\n");
 			//exit(0);
 		}
 		pointer = strchr(string, ';');
@@ -865,7 +865,7 @@ void LoadPAT(char *filename)
 		   (0.0 to 1.0) until EOF is reached. */
 
 		if (fgets(string, 254, fd) == NULL) {
-			//fprintf(stdout,"Ant elevation read error\n");
+			//fprintf(stderr,"Ant elevation read error\n");
 			//exit(0);
 		}
 		pointer = strchr(string, ';');
@@ -1108,8 +1108,9 @@ void LoadSignalColors(struct site xmtr)
 
 	fd = fopen(filename, "r");
 
-	if (fd == NULL)
-		fd = fopen(filename, "r");
+	if (fd == NULL && xmtr.filename[0] == '\0')
+		/* Don't save if we don't have an output file */
+		return;
 
 	if (fd == NULL) {
 		fd = fopen(filename, "w");
@@ -1261,8 +1262,9 @@ void LoadLossColors(struct site xmtr)
 
 	fd = fopen(filename, "r");
 
-	if (fd == NULL)
-		fd = fopen(filename, "r");
+	if (fd == NULL && xmtr.filename[0] == '\0')
+		/* Don't save if we don't have an output file */
+		return;
 
 	if (fd == NULL) {
 		fd = fopen(filename, "w");
@@ -1414,8 +1416,9 @@ void LoadDBMColors(struct site xmtr)
 
 	fd = fopen(filename, "r");
 
-	if (fd == NULL)
-		fd = fopen(filename, "r");
+	if (fd == NULL && xmtr.filename[0] == '\0')
+		/* Don't save if we don't have an output file */
+		return;
 
 	if (fd == NULL) {
 		fd = fopen(filename, "w");
@@ -1678,10 +1681,10 @@ void LoadUDT(char *filename)
 
 			if (z == 0)
 				/* No duplicate found */
-				//fprintf(stdout,"%lf, %lf \n",xpix*dpp, ypix*dpp);
-				fflush(stdout);
+				//fprintf(stderr,"%lf, %lf \n",xpix*dpp, ypix*dpp);
+				fflush(stderr);
 			    AddElevation(xpix * dpp, ypix * dpp, height, 1);
-			fflush(stdout);
+			fflush(stderr);
 
 			n = fscanf(fd1, "%d, %d, %lf", &xpix, &ypix, &height);
 			y++;

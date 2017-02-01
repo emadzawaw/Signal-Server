@@ -38,28 +38,39 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 
 	LoadLossColors(xmtr[0]);
 
-	if (filename[0] == 0) {
-		strncpy(filename, xmtr[0].filename, 254);
-		filename[strlen(filename) - 4] = 0;	/* Remove .qth */
+	if( filename != NULL ) {
+
+		if (filename[0] == 0) {
+			strncpy(filename, xmtr[0].filename, 254);
+			filename[strlen(filename) - 4] = 0;	/* Remove .qth */
+		}
+
+		y = strlen(filename);
+
+		if (y > 4) {
+			if (filename[y - 1] == 'm' && filename[y - 2] == 'p'
+			    && filename[y - 3] == 'p' && filename[y - 4] == '.')
+				y -= 4;
+		}
+
+		for (x = 0; x < y; x++) {
+			mapfile[x] = filename[x];
+		}
+
+		mapfile[x] = '.';
+		mapfile[x + 1] = 'p';
+		mapfile[x + 2] = 'p';
+		mapfile[x + 3] = 'm';
+		mapfile[x + 4] = 0;
+
+		fd = fopen(mapfile,"wb");
+
+	} else {
+
+		fprintf(stderr,"Writing to stdout\n");
+		fd = stdout;
+
 	}
-
-	y = strlen(filename);
-
-	if (y > 4) {
-		if (filename[y - 1] == 'm' && filename[y - 2] == 'p'
-		    && filename[y - 3] == 'p' && filename[y - 4] == '.')
-			y -= 4;
-	}
-
-	for (x = 0; x < y; x++) {
-		mapfile[x] = filename[x];
-	}
-
-	mapfile[x] = '.';
-	mapfile[x + 1] = 'p';
-	mapfile[x + 2] = 'p';
-	mapfile[x + 3] = 'm';
-	mapfile[x + 4] = 0;
 
 	minwest = ((double)min_west) + dpp;
 
@@ -76,14 +87,13 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 	east = (minwest < 180.0 ? -minwest : 360.0 - min_west);
 	west = (double)(max_west < 180 ? -max_west : 360 - max_west);
 
-	fd = fopen(mapfile, "wb");
-
 	fprintf(fd, "P6\n%u %u\n255\n", width, (kml ? height : height + 30));
 	if (debug) {
-		fprintf(stdout, "\nWriting \"%s\" (%ux%u pixmap image)... ",
-			mapfile, width, (kml ? height : height + 30));
-		fflush(stdout);
+		fprintf(stderr, "\nWriting \"%s\" (%ux%u pixmap image)...\n",
+			filename != NULL ? mapfile : "to stdout", width, (kml ? height : height + 30));
+		fflush(stderr);
 	}
+
 	for (y = 0, lat = north; y < (int)height;
 	     y++, lat = north - (dpp * (double)y)) {
 		for (x = 0, lon = max_west; x < (int)width;
@@ -242,7 +252,10 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 		}
 	}
 
-	fclose(fd);
+	if( filename != NULL ) {
+		fclose(fd);
+		fd = NULL;
+	}
 
 }
 
@@ -269,28 +282,39 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 
 	LoadSignalColors(xmtr[0]);
 
-	if (filename[0] == 0) {
-		strncpy(filename, xmtr[0].filename, 254);
-		filename[strlen(filename) - 4] = 0;	/* Remove .qth */
+	if( filename != NULL ) {
+
+		if (filename[0] == 0) {
+			strncpy(filename, xmtr[0].filename, 254);
+			filename[strlen(filename) - 4] = 0;	/* Remove .qth */
+		}
+
+		y = strlen(filename);
+
+		if (y > 4) {
+			if (filename[y - 1] == 'm' && filename[y - 2] == 'p'
+			    && filename[y - 3] == 'p' && filename[y - 4] == '.')
+				y -= 4;
+		}
+
+		for (x = 0; x < y; x++) {
+			mapfile[x] = filename[x];
+		}
+
+		mapfile[x] = '.';
+		mapfile[x + 1] = 'p';
+		mapfile[x + 2] = 'p';
+		mapfile[x + 3] = 'm';
+		mapfile[x + 4] = 0;
+
+		fd = fopen(mapfile,"wb");
+
+	} else {
+
+		fprintf(stderr,"Writing to stdout\n");
+		fd = stdout;
+
 	}
-
-	y = strlen(filename);
-
-	if (y > 4) {
-		if (filename[y - 1] == 'm' && filename[y - 2] == 'p'
-		    && filename[y - 3] == 'p' && filename[y - 4] == '.')
-			y -= 4;
-	}
-
-	for (x = 0; x < y; x++) {
-		mapfile[x] = filename[x];
-	}
-
-	mapfile[x] = '.';
-	mapfile[x + 1] = 'p';
-	mapfile[x + 2] = 'p';
-	mapfile[x + 3] = 'm';
-	mapfile[x + 4] = 0;
 
 	minwest = ((double)min_west) + dpp;
 
@@ -303,14 +327,14 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 
 	east = (minwest < 180.0 ? -minwest : 360.0 - min_west);
 	west = (double)(max_west < 180 ? -max_west : 360 - max_west);
-	fd = fopen(mapfile, "wb");
 
 	fprintf(fd, "P6\n%u %u\n255\n", width, (kml ? height : height + 30));
 	if (debug) {
-		fprintf(stdout, "\nWriting \"%s\" (%ux%u pixmap image)... ",
-			mapfile, width, (kml ? height : height + 30));
-		fflush(stdout);
+		fprintf(stderr, "\nWriting \"%s\" (%ux%u pixmap image)...\n",
+			filename != NULL ? mapfile : "to stdout", width, (kml ? height : height + 30));
+		fflush(stderr);
 	}
+
 	for (y = 0, lat = north; y < (int)height;
 	     y++, lat = north - (dpp * (double)y)) {
 		for (x = 0, lon = max_west; x < (int)width;
@@ -483,7 +507,10 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 		}
 	}
 
-	fclose(fd);
+	if( filename != NULL ) {
+		fclose(fd);
+		fd = NULL;
+	}
 
 }
 
@@ -510,28 +537,39 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 
 	LoadDBMColors(xmtr[0]);
 
-	if (filename[0] == 0) {
-		strncpy(filename, xmtr[0].filename, 254);
-		filename[strlen(filename) - 4] = 0;	/* Remove .qth */
+	if( filename != NULL ) {
+
+		if (filename[0] == 0) {
+			strncpy(filename, xmtr[0].filename, 254);
+			filename[strlen(filename) - 4] = 0;	/* Remove .qth */
+		}
+
+		y = strlen(filename);
+
+		if (y > 4) {
+			if (filename[y - 1] == 'm' && filename[y - 2] == 'p'
+			    && filename[y - 3] == 'p' && filename[y - 4] == '.')
+				y -= 4;
+		}
+
+		for (x = 0; x < y; x++) {
+			mapfile[x] = filename[x];
+		}
+
+		mapfile[x] = '.';
+		mapfile[x + 1] = 'p';
+		mapfile[x + 2] = 'p';
+		mapfile[x + 3] = 'm';
+		mapfile[x + 4] = 0;
+
+		fd = fopen(mapfile,"wb");
+
+	} else {
+
+		fprintf(stderr,"Writing to stdout\n");
+		fd = stdout;
+
 	}
-
-	y = strlen(filename);
-
-	if (y > 4) {
-		if (filename[y - 1] == 'm' && filename[y - 2] == 'p'
-		    && filename[y - 3] == 'p' && filename[y - 4] == '.')
-			y -= 4;
-	}
-
-	for (x = 0; x < y; x++) {
-		mapfile[x] = filename[x];
-	}
-
-	mapfile[x] = '.';
-	mapfile[x + 1] = 'p';
-	mapfile[x + 2] = 'p';
-	mapfile[x + 3] = 'm';
-	mapfile[x + 4] = 0;
 
 	minwest = ((double)min_west) + dpp;
 
@@ -545,13 +583,11 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 	east = (minwest < 180.0 ? -minwest : 360.0 - min_west);
 	west = (double)(max_west < 180 ? -max_west : 360 - max_west);
 
-	fd = fopen(mapfile, "wb");
-
 	fprintf(fd, "P6\n%u %u\n255\n", width, (kml ? height : height));
 	if (debug) {
-		fprintf(stdout, "\nWriting \"%s\" (%ux%u pixmap image)...\n",
-			mapfile, width, (kml ? height : height));
-		fflush(stdout);
+		fprintf(stderr, "\nWriting \"%s\" (%ux%u pixmap image)...\n",
+			(filename != NULL ? mapfile : "to stdout"), width, (kml ? height : height));
+		fflush(stderr);
 	}
 
 	// Draw image of x by y pixels
@@ -719,8 +755,12 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 		}
 	}
 
+	fflush(fd);
 
-	fclose(fd);
+	if( filename != NULL ) {
+		fclose(fd);
+		fd = NULL;
+	}
 
 }
 
@@ -745,28 +785,39 @@ void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 	    255.0 / pow((double)(max_elevation - min_elevation),
 			one_over_gamma);
 
-	if (filename[0] == 0) {
-		strncpy(filename, xmtr[0].filename, 254);
-		filename[strlen(filename) - 4] = 0;	/* Remove .qth */
+	if( filename != NULL ){
+
+		if (filename[0] == 0) {
+			strncpy(filename, xmtr[0].filename, 254);
+			filename[strlen(filename) - 4] = 0;	/* Remove .qth */
+		}
+
+		y = strlen(filename);
+
+		if (y > 4) {
+			if (filename[y - 1] == 'm' && filename[y - 2] == 'p'
+			    && filename[y - 3] == 'p' && filename[y - 4] == '.')
+				y -= 4;
+		}
+
+		for (x = 0; x < y; x++) {
+			mapfile[x] = filename[x];
+		}
+
+		mapfile[x] = '.';
+		mapfile[x + 1] = 'p';
+		mapfile[x + 2] = 'p';
+		mapfile[x + 3] = 'm';
+		mapfile[x + 4] = 0;
+
+		fd = fopen(mapfile,"wb");
+
+	} else {
+		
+		fprintf(stderr,"Writing to stdout\n");
+		fd = stdout;
+
 	}
-
-	y = strlen(filename);
-
-	if (y > 4) {
-		if (filename[y - 1] == 'm' && filename[y - 2] == 'p'
-		    && filename[y - 3] == 'p' && filename[y - 4] == '.')
-			y -= 4;
-	}
-
-	for (x = 0; x < y; x++) {
-		mapfile[x] = filename[x];
-	}
-
-	mapfile[x] = '.';
-	mapfile[x + 1] = 'p';
-	mapfile[x + 2] = 'p';
-	mapfile[x + 3] = 'm';
-	mapfile[x + 4] = 0;
 
 	minwest = ((double)min_west) + dpp;
 
@@ -780,13 +831,11 @@ void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 	east = (minwest < 180.0 ? -minwest : 360.0 - min_west);
 	west = (double)(max_west < 180 ? -max_west : 360 - max_west);
 
-	fd = fopen(mapfile, "wb");
-
 	fprintf(fd, "P6\n%u %u\n255\n", width, (kml ? height : height + 30));
 	if (debug) {
-		fprintf(stdout, "\nWriting \"%s\" (%ux%u pixmap image)... ",
-			mapfile, width, (kml ? height : height + 30));
-		fflush(stdout);
+		fprintf(stderr, "\nWriting \"%s\" (%ux%u pixmap image)...\n",
+			filename != NULL ? mapfile : "to stdout", width, (kml ? height : height + 30));
+		fflush(stderr);
 	}
 
 	for (y = 0, lat = north; y < (int)height;
@@ -954,7 +1003,10 @@ void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 		}
 	}
 
-	fclose(fd);
+	if( filename != NULL) {
+		fclose(fd);
+		fd = NULL;
+	}
 
 }
 
@@ -1622,7 +1674,7 @@ void PathReport(struct site source, struct site destination, char *name,
 
 	fclose(fd2);
 
-	fprintf(stdout,
+	fprintf(stderr,
 		"Path loss (dB), Received Power (dBm), Field strength (dBuV):\n%.1f\n%.1f\n%.1f",
 		loss, dBm, field_strength);
 
@@ -1992,7 +2044,7 @@ void SeriesData(struct site source, struct site destination, char *name,
 		}
 	}
 
-	fprintf(stdout, "\n");
-	fflush(stdout);
+	fprintf(stderr, "\n");
+	fflush(stderr);
 
 }

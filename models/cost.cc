@@ -28,8 +28,8 @@ modes 1 = URBAN, 2 = SUBURBAN, 3 = OPEN
 http://morse.colorado.edu/~tlen5510/text/classwebch3.html
 */
 	if (f < 150 || f > 2000) {
-		printf
-		    ("Error: COST231 Hata model frequency range 150-2000MHz\n");
+		fprintf
+		    (stderr,"Error: COST231 Hata model frequency range 150-2000MHz\n");
 		exit(EXIT_FAILURE);
 	}
 
