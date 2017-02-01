@@ -150,7 +150,7 @@ namespace {
 
 		int rc = pthread_create(&threads[thread_count], NULL, rangePropagation, arg);
 		if (rc)
-			printf("ERROR; return code from pthread_create() is %d\n", rc);
+			fprintf(stderr,"ERROR; return code from pthread_create() is %d\n", rc);
 		else
 			++thread_count;
 	}
@@ -161,7 +161,7 @@ namespace {
 		for(unsigned int i=0; i<thread_count; i++) {
 			int rc = pthread_join(threads[i], &status);
 			if (rc)
-				printf("ERROR; return code from pthread_join() is %d\n", rc);
+				fprintf(stderr,"ERROR; return code from pthread_join() is %d\n", rc);
 		}
 		thread_count = 0;
 	}

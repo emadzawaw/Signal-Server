@@ -16,7 +16,7 @@ double SUIpathLoss(float f, float TxH, float RxH, float d, int mode)
 	 */
 	d = d * 1000;		// km to m
 	if (f < 1900 || f > 11000) {
-		printf("Error: SUI model frequency range 1.9-11GHz\n");
+		fprintf(stderr,"Error: SUI model frequency range 1.9-11GHz\n");
 		exit(EXIT_FAILURE);
 	}
 	// Terrain mode A is default
