@@ -749,6 +749,8 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 
 	fflush(fd);
 
+	image_free(&ctx);
+
 	if( filename != NULL ) {
 		fclose(fd);
 		fd = NULL;

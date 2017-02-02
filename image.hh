@@ -36,6 +36,7 @@ int image_set_pixel(PIMAGE_CTX ctx, const size_t, const size_t, const uint8_t, c
 int image_get_pixel(PIMAGE_CTX ctx,const size_t,const size_t, uint8_t const*, uint8_t const*, uint8_t const*, uint8_t const*);
 int image_get_filename(PIMAGE_CTX, char*, size_t, char*);
 int image_write(PIMAGE_CTX, FILE*);
+void image_free(PIMAGE_CTX);
 int image_set_library(char*);
 
 #define ADD_PIXEL(ctx,r,g,b) image_add_pixel((ctx),(r),(g),(b),0xff)

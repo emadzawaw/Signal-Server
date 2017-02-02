@@ -106,7 +106,7 @@ int image_init(PIMAGE_CTX ctx, \
 	return success;
 }
 /*
- * image_add_pixel, image_set_pixel, image_get_pixel, image_write
+ * image_add_pixel, image_set_pixel, image_get_pixel, image_write, image_free
  * Various setters ad getters for assigning pixel data. image_write
  * takes an open file handle and writes image data to it.
  * These functions simply wrap the underlying format-specific functions
@@ -133,6 +133,10 @@ int image_write(PIMAGE_CTX ctx, FILE *fd){
 	struct image_dispatch_table *dt = (struct image_dispatch_table*)ctx->_dt;
 	if(ctx->initialized != 1) return EINVAL;
 	return dt->write(ctx,fd);
+}
+void image_free(PIMAGE_CTX ctx){
+	if(ctx->initialized != 1) return;
+	free(ctx->canvas);
 }
 
 /*
