@@ -31,6 +31,13 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 	int indx, x, y, z, x0 = 0, y0 = 0, loss, match;
 	double lat, lon, conversion, one_over_gamma, minwest;
 	FILE *fd;
+	IMAGE_CTX ctx;
+	int success;
+
+	if((success = image_init(&ctx, width, (kml ? height : height + 30), IMAGE_RGB, IMAGE_DEFAULT)) != 0){
+		fprintf(stderr,"Error initializing image\n");
+		exit(success);
+	}
 
 	one_over_gamma = 1.0 / GAMMA;
 	conversion =
@@ -46,23 +53,10 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 			filename[strlen(filename) - 4] = 0;	/* Remove .qth */
 		}
 
-		y = strlen(filename);
-
-		if (y > 4) {
-			if (filename[y - 1] == 'm' && filename[y - 2] == 'p'
-			    && filename[y - 3] == 'p' && filename[y - 4] == '.')
-				y -= 4;
+		if(image_get_filename(&ctx,mapfile,sizeof(mapfile),filename) != 0){
+			fprintf(stderr,"Error creating file name\n");
+			exit(1);
 		}
-
-		for (x = 0; x < y; x++) {
-			mapfile[x] = filename[x];
-		}
-
-		mapfile[x] = '.';
-		mapfile[x + 1] = 'p';
-		mapfile[x + 2] = 'p';
-		mapfile[x + 3] = 'm';
-		mapfile[x + 4] = 0;
 
 		fd = fopen(mapfile,"wb");
 
@@ -88,7 +82,6 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 	east = (minwest < 180.0 ? -minwest : 360.0 - min_west);
 	west = (double)(max_west < 180 ? -max_west : 360 - max_west);
 
-	fprintf(fd, "P6\n%u %u\n255\n", width, (kml ? height : height + 30));
 	if (debug) {
 		fprintf(stderr, "\nWriting \"%s\" (%ux%u pixmap image)...\n",
 			filename != NULL ? mapfile : "to stdout", width, (kml ? height : height + 30));
@@ -161,11 +154,11 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 
 					if (red >= 180 && green <= 75
 					    && blue <= 75 && loss == 0)
-						fprintf(fd, "%c%c%c", 255 ^ red,
+						ADD_PIXEL(&ctx, 255 ^ red,
 							255 ^ green,
 							255 ^ blue);
 					else
-						fprintf(fd, "%c%c%c", 255, 0,
+						ADD_PIXEL(&ctx, 255, 0,
 							0);
 
 					cityorcounty = 1;
@@ -174,7 +167,7 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 				else if (mask & 4) {
 					/* County Boundaries: Black */
 
-					fprintf(fd, "%c%c%c", 0, 0, 0);
+					ADD_PIXEL(&ctx, 0, 0, 0);
 
 					cityorcounty = 1;
 				}
@@ -185,15 +178,14 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 						&& loss >
 						abs(contour_threshold))) {
 						if (ngs)	/* No terrain */
-							fprintf(fd, "%c%c%c",
+							ADD_PIXEL(&ctx, 
 								255, 255, 255);
 						else {
 							/* Display land or sea elevation */
 
 							if (dem[indx].
 							    data[x0][y0] == 0)
-								fprintf(fd,
-									"%c%c%c",
+								ADD_PIXEL(&ctx, 
 									0, 0,
 									170);
 							else {
@@ -201,8 +193,7 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 								    (unsigned)
 								    (0.5 +
 								     pow((double)(dem[indx].data[x0][y0] - min_elevation), one_over_gamma) * conversion);
-								fprintf(fd,
-									"%c%c%c",
+								ADD_PIXEL(&ctx, 
 									terrain,
 									terrain,
 									terrain);
@@ -215,7 +206,7 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 
 						if (red != 0 || green != 0
 						    || blue != 0)
-							fprintf(fd, "%c%c%c",
+							ADD_PIXEL(&ctx, 
 								red, green,
 								blue);
 
@@ -223,8 +214,7 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 
 							if (dem[indx].
 							    data[x0][y0] == 0)
-								fprintf(fd,
-									"%c%c%c",
+								ADD_PIXEL(&ctx, 
 									0, 0,
 									170);
 							else {
@@ -233,8 +223,7 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 								    (unsigned)
 								    (0.5 +
 								     pow((double)(dem[indx].data[x0][y0] - min_elevation), one_over_gamma) * conversion);
-								fprintf(fd,
-									"%c%c%c",
+								ADD_PIXEL(&ctx, 
 									terrain,
 									terrain,
 									terrain);
@@ -248,10 +237,17 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 				/* We should never get here, but if */
 				/* we do, display the region as black */
 
-				fprintf(fd, "%c%c%c", 0, 0, 0);
+				ADD_PIXEL(&ctx, 0, 0, 0);
 			}
 		}
 	}
+
+	if((success = image_write(&ctx,fd)) != 0){
+		fprintf(stderr,"Error writing image\n");
+		exit(success);
+	}
+
+	image_free(&ctx);
 
 	if( filename != NULL ) {
 		fclose(fd);
@@ -275,6 +271,13 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 	int indx, x, y, z = 1, x0 = 0, y0 = 0, signal, match;
 	double conversion, one_over_gamma, lat, lon, minwest;
 	FILE *fd;
+	IMAGE_CTX ctx;
+	int success;
+
+	if((success = image_init(&ctx, width, (kml ? height : height + 30), IMAGE_RGB, IMAGE_DEFAULT)) != 0){
+		fprintf(stderr,"Error initializing image\n");
+		exit(success);
+	}
 
 	one_over_gamma = 1.0 / GAMMA;
 	conversion =
@@ -290,23 +293,10 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 			filename[strlen(filename) - 4] = 0;	/* Remove .qth */
 		}
 
-		y = strlen(filename);
-
-		if (y > 4) {
-			if (filename[y - 1] == 'm' && filename[y - 2] == 'p'
-			    && filename[y - 3] == 'p' && filename[y - 4] == '.')
-				y -= 4;
+		if(image_get_filename(&ctx,mapfile,sizeof(mapfile),filename) != 0){
+			fprintf(stderr,"Error creating file name\n");
+			exit(1);
 		}
-
-		for (x = 0; x < y; x++) {
-			mapfile[x] = filename[x];
-		}
-
-		mapfile[x] = '.';
-		mapfile[x + 1] = 'p';
-		mapfile[x + 2] = 'p';
-		mapfile[x + 3] = 'm';
-		mapfile[x + 4] = 0;
 
 		fd = fopen(mapfile,"wb");
 
@@ -329,7 +319,6 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 	east = (minwest < 180.0 ? -minwest : 360.0 - min_west);
 	west = (double)(max_west < 180 ? -max_west : 360 - max_west);
 
-	fprintf(fd, "P6\n%u %u\n255\n", width, (kml ? height : height + 30));
 	if (debug) {
 		fprintf(stderr, "\nWriting \"%s\" (%ux%u pixmap image)...\n",
 			filename != NULL ? mapfile : "to stdout", width, (kml ? height : height + 30));
@@ -403,11 +392,11 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 
 					if (red >= 180 && green <= 75
 					    && blue <= 75)
-						fprintf(fd, "%c%c%c", 255 ^ red,
+						ADD_PIXEL(&ctx, 255 ^ red,
 							255 ^ green,
 							255 ^ blue);
 					else
-						fprintf(fd, "%c%c%c", 255, 0,
+						ADD_PIXEL(&ctx, 255, 0,
 							0);
 
 					cityorcounty = 1;
@@ -416,7 +405,7 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 				else if (mask & 4) {
 					/* County Boundaries: Black */
 
-					fprintf(fd, "%c%c%c", 0, 0, 0);
+					ADD_PIXEL(&ctx, 0, 0, 0);
 
 					cityorcounty = 1;
 				}
@@ -425,15 +414,14 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 					if (contour_threshold != 0
 					    && signal < contour_threshold) {
 						if (ngs)
-							fprintf(fd, "%c%c%c",
+							ADD_PIXEL(&ctx, 
 								255, 255, 255);
 						else {
 							/* Display land or sea elevation */
 
 							if (dem[indx].
 							    data[x0][y0] == 0)
-								fprintf(fd,
-									"%c%c%c",
+								ADD_PIXEL(&ctx, 
 									0, 0,
 									170);
 							else {
@@ -441,8 +429,7 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 								    (unsigned)
 								    (0.5 +
 								     pow((double)(dem[indx].data[x0][y0] - min_elevation), one_over_gamma) * conversion);
-								fprintf(fd,
-									"%c%c%c",
+								ADD_PIXEL(&ctx, 
 									terrain,
 									terrain,
 									terrain);
@@ -455,15 +442,14 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 
 						if (red != 0 || green != 0
 						    || blue != 0)
-							fprintf(fd, "%c%c%c",
+							ADD_PIXEL(&ctx, 
 								red, green,
 								blue);
 
 						else {	/* terrain / sea-level */
 
 							if (ngs)
-								fprintf(fd,
-									"%c%c%c",
+								ADD_PIXEL(&ctx, 
 									255,
 									255,
 									255);
@@ -471,9 +457,7 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 								if (dem[indx].
 								    data[x0][y0]
 								    == 0)
-									fprintf
-									    (fd,
-									     "%c%c%c",
+									ADD_PIXEL(&ctx, 
 									     0,
 									     0,
 									     170);
@@ -486,9 +470,7 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 									     +
 									     pow
 									     ((double)(dem[indx].data[x0][y0] - min_elevation), one_over_gamma) * conversion);
-									fprintf
-									    (fd,
-									     "%c%c%c",
+									ADD_PIXEL(&ctx, 
 									     terrain,
 									     terrain,
 									     terrain);
@@ -503,10 +485,17 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 				/* We should never get here, but if */
 				/* we do, display the region as black */
 
-				fprintf(fd, "%c%c%c", 0, 0, 0);
+				ADD_PIXEL(&ctx, 0, 0, 0);
 			}
 		}
 	}
+
+	if((success = image_write(&ctx,fd)) != 0){
+		fprintf(stderr,"Error writing image\n");
+		exit(success);
+	}
+
+	image_free(&ctx);
 
 	if( filename != NULL ) {
 		fclose(fd);
@@ -773,6 +762,13 @@ void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 	int indx, x, y, x0 = 0, y0 = 0;
 	double conversion, one_over_gamma, lat, lon, minwest;
 	FILE *fd;
+	IMAGE_CTX ctx;
+	int success;
+
+	if((success = image_init(&ctx, width, (kml ? height : height + 30), IMAGE_RGB, IMAGE_DEFAULT)) != 0){
+		fprintf(stderr,"Error initializing image\n");
+		exit(success);
+	}
 
 	one_over_gamma = 1.0 / GAMMA;
 	conversion =
@@ -786,23 +782,10 @@ void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 			filename[strlen(filename) - 4] = 0;	/* Remove .qth */
 		}
 
-		y = strlen(filename);
-
-		if (y > 4) {
-			if (filename[y - 1] == 'm' && filename[y - 2] == 'p'
-			    && filename[y - 3] == 'p' && filename[y - 4] == '.')
-				y -= 4;
+		if(image_get_filename(&ctx,mapfile,sizeof(mapfile),filename) != 0){
+			fprintf(stderr,"Error creating file name\n");
+			exit(1);
 		}
-
-		for (x = 0; x < y; x++) {
-			mapfile[x] = filename[x];
-		}
-
-		mapfile[x] = '.';
-		mapfile[x + 1] = 'p';
-		mapfile[x + 2] = 'p';
-		mapfile[x + 3] = 'm';
-		mapfile[x + 4] = 0;
 
 		fd = fopen(mapfile,"wb");
 
@@ -825,7 +808,6 @@ void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 	east = (minwest < 180.0 ? -minwest : 360.0 - min_west);
 	west = (double)(max_west < 180 ? -max_west : 360 - max_west);
 
-	fprintf(fd, "P6\n%u %u\n255\n", width, (kml ? height : height + 30));
 	if (debug) {
 		fprintf(stderr, "\nWriting \"%s\" (%ux%u pixmap image)...\n",
 			filename != NULL ? mapfile : "to stdout", width, (kml ? height : height + 30));
@@ -862,114 +844,113 @@ void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 
 				if (mask & 2)
 					/* Text Labels: Red */
-					fprintf(fd, "%c%c%c", 255, 0, 0);
+					ADD_PIXEL(&ctx, 255, 0, 0);
 
 				else if (mask & 4)
 					/* County Boundaries: Light Cyan */
-					fprintf(fd, "%c%c%c", 128, 128, 255);
+					ADD_PIXEL(&ctx, 128, 128, 255);
 
 				else
 					switch (mask & 57) {
 					case 1:
 						/* TX1: Green */
-						fprintf(fd, "%c%c%c", 0, 255,
+						ADD_PIXEL(&ctx, 0, 255,
 							0);
 						break;
 
 					case 8:
 						/* TX2: Cyan */
-						fprintf(fd, "%c%c%c", 0, 255,
+						ADD_PIXEL(&ctx, 0, 255,
 							255);
 						break;
 
 					case 9:
 						/* TX1 + TX2: Yellow */
-						fprintf(fd, "%c%c%c", 255, 255,
+						ADD_PIXEL(&ctx, 255, 255,
 							0);
 						break;
 
 					case 16:
 						/* TX3: Medium Violet */
-						fprintf(fd, "%c%c%c", 147, 112,
+						ADD_PIXEL(&ctx, 147, 112,
 							219);
 						break;
 
 					case 17:
 						/* TX1 + TX3: Pink */
-						fprintf(fd, "%c%c%c", 255, 192,
+						ADD_PIXEL(&ctx, 255, 192,
 							203);
 						break;
 
 					case 24:
 						/* TX2 + TX3: Orange */
-						fprintf(fd, "%c%c%c", 255, 165,
+						ADD_PIXEL(&ctx, 255, 165,
 							0);
 						break;
 
 					case 25:
 						/* TX1 + TX2 + TX3: Dark Green */
-						fprintf(fd, "%c%c%c", 0, 100,
+						ADD_PIXEL(&ctx, 0, 100,
 							0);
 						break;
 
 					case 32:
 						/* TX4: Sienna 1 */
-						fprintf(fd, "%c%c%c", 255, 130,
+						ADD_PIXEL(&ctx, 255, 130,
 							71);
 						break;
 
 					case 33:
 						/* TX1 + TX4: Green Yellow */
-						fprintf(fd, "%c%c%c", 173, 255,
+						ADD_PIXEL(&ctx, 173, 255,
 							47);
 						break;
 
 					case 40:
 						/* TX2 + TX4: Dark Sea Green 1 */
-						fprintf(fd, "%c%c%c", 193, 255,
+						ADD_PIXEL(&ctx, 193, 255,
 							193);
 						break;
 
 					case 41:
 						/* TX1 + TX2 + TX4: Blanched Almond */
-						fprintf(fd, "%c%c%c", 255, 235,
+						ADD_PIXEL(&ctx, 255, 235,
 							205);
 						break;
 
 					case 48:
 						/* TX3 + TX4: Dark Turquoise */
-						fprintf(fd, "%c%c%c", 0, 206,
+						ADD_PIXEL(&ctx, 0, 206,
 							209);
 						break;
 
 					case 49:
 						/* TX1 + TX3 + TX4: Medium Spring Green */
-						fprintf(fd, "%c%c%c", 0, 250,
+						ADD_PIXEL(&ctx, 0, 250,
 							154);
 						break;
 
 					case 56:
 						/* TX2 + TX3 + TX4: Tan */
-						fprintf(fd, "%c%c%c", 210, 180,
+						ADD_PIXEL(&ctx, 210, 180,
 							140);
 						break;
 
 					case 57:
 						/* TX1 + TX2 + TX3 + TX4: Gold2 */
-						fprintf(fd, "%c%c%c", 238, 201,
+						ADD_PIXEL(&ctx, 238, 201,
 							0);
 						break;
 
 					default:
 						if (ngs)	/* No terrain */
-							fprintf(fd, "%c%c%c",
+							ADD_PIXEL(&ctx, 
 								255, 255, 255);
 						else {
 							/* Sea-level: Medium Blue */
 							if (dem[indx].
 							    data[x0][y0] == 0)
-								fprintf(fd,
-									"%c%c%c",
+								ADD_PIXEL(&ctx, 
 									0, 0,
 									170);
 							else {
@@ -978,8 +959,7 @@ void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 								    (unsigned)
 								    (0.5 +
 								     pow((double)(dem[indx].data[x0][y0] - min_elevation), one_over_gamma) * conversion);
-								fprintf(fd,
-									"%c%c%c",
+								ADD_PIXEL(&ctx, 
 									terrain,
 									terrain,
 									terrain);
@@ -992,10 +972,17 @@ void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 				/* We should never get here, but if */
 				/* we do, display the region as black */
 
-				fprintf(fd, "%c%c%c", 0, 0, 0);
+				ADD_PIXEL(&ctx, 0, 0, 0);
 			}
 		}
 	}
+
+	if((success = image_write(&ctx,fd)) != 0){
+		fprintf(stderr,"Error writing image\n");
+		exit(success);
+	}
+
+	image_free(&ctx);
 
 	if( filename != NULL) {
 		fclose(fd);
