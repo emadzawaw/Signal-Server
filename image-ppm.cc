@@ -16,6 +16,7 @@ int ppm_init(PIMAGE_CTX ctx){
 
 	buf_size = ctx->width * ctx->height * RGB_SIZE;
 
+	/* Allocate the canvas buffer */
 	ctx->canvas = (uint8_t*) calloc(buf_size,sizeof(uint8_t));
 	ctx->next_pixel = ctx->canvas;
 	if(ctx->canvas == NULL)
@@ -32,10 +33,7 @@ int ppm_add_pixel(PIMAGE_CTX ctx,const uint8_t r,const uint8_t g,const uint8_t b
 	next[0] = r;
 	next[1] = g;
 	next[2] = b;
-	/*if(ctx->model == IMAGE_RGBA){
-		next[3] = a;
-		ctx->next_pixel += 1;
-	}*/
+
 	ctx->next_pixel += 3;
 
 	return 0;

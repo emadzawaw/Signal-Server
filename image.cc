@@ -1,3 +1,10 @@
+/*
+ * Generic image output handling. This feature allows
+ * for extensible image output formats and permits for
+ * cleaner image rendering code in the model generation
+ * routines by moving all of the file-format specific
+ * logic to be handled here.
+ */
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -12,6 +19,9 @@ typedef int _add_pixel(PIMAGE_CTX,const uint8_t,const uint8_t,const uint8_t,cons
 typedef int _get_pixel(PIMAGE_CTX,const size_t,const size_t,const uint8_t*,const uint8_t*,const uint8_t*,const uint8_t*);
 typedef int _write(PIMAGE_CTX,FILE*);
 
+int get_dt(struct image_dispatch_table *dt, IMAGE_FORMAT format);
+int load_library(struct image_dispatch_table *dt);
+
 struct image_dispatch_table{
 	_init *init;
 	_add_pixel *add_pixel;
@@ -19,64 +29,31 @@ struct image_dispatch_table{
 	_write *write;
 };
 
-static IMAGE_FORMAT format = IMAGE_PPM;
+static IMAGE_FORMAT default_format = IMAGE_PPM;
 char *dynamic_backend = NULL;
 
-int load_library(struct image_dispatch_table *dt){
-	void *hndl;
-	int success = 0;
-
-	if(dynamic_backend == NULL){
-		fprintf(stderr,"Custom image processor requested without specification\n");
+/*
+ * image_set_format
+ * Changes the default format for the next
+ * uninitialized image canvas
+ */
+int image_set_format(IMAGE_FORMAT format){
+	if(format <= IMAGE_DEFAULT || format >= IMAGE_FORMAT_MAX)
 		return EINVAL;
-	}
-	
-	hndl = dlopen(dynamic_backend,RTLD_LAZY);
-	if(hndl == NULL){
-		fprintf(stderr,"Error loading shared object\n");
-		return EINVAL;
-	}
-	
-	dt->init = (_init*)dlsym(hndl,"lib_init");
-	dt->add_pixel = (_add_pixel*)dlsym(hndl,"lib_add_pixel");
-	dt->get_pixel = (_get_pixel*)dlsym(hndl,"lib_get_pixel");
-	dt->write = (_write*)dlsym(hndl,"lib_write");
-
-	if(dt->init == NULL ||
-		dt->add_pixel == NULL ||
-		dt->get_pixel == NULL ||
-		dt->write == NULL){
-		fprintf(stderr,"Invalid image processing module specified\n");
-		success = dlclose(hndl);
-	}
-
-	return success;
+	default_format = format;
+	return 0;
 }
 
-int get_dt(struct image_dispatch_table *dt, IMAGE_FORMAT format){
-	int success = 0;
-
-	memset((void*)dt,0x00,sizeof(struct image_dispatch_table));
-	switch(format){
-		case IMAGE_PPM:
-			dt->init = ppm_init;
-			dt->add_pixel = ppm_add_pixel;
-			dt->get_pixel = ppm_get_pixel;
-			dt->write = ppm_write;
-			break;
-		case IMAGE_LIBRARY:
-			success = load_library(dt);
-			break;
-		default:
-			success = EINVAL;
-	}
-	return success;
-}
-
+/*
+ * image_init
+ * Initialize an image context. Must be called
+ * before attempting to write any image data
+ */
 int image_init(PIMAGE_CTX ctx, \
 				const size_t width, \
 				const size_t height, \
-				const IMAGE_MODEL model) {
+				const IMAGE_MODEL model, \
+				const IMAGE_FORMAT format) {
 
 	int success = 0;
 	struct image_dispatch_table *dt;
@@ -88,7 +65,7 @@ int image_init(PIMAGE_CTX ctx, \
 		return EINVAL;
 	if(model < 0 || model > IMAGE_MODEL_MAX)
 		return EINVAL;
-	if(format < 0 || format > IMAGE_FORMAT_MAX)
+	if(format >= IMAGE_FORMAT_MAX || (format == IMAGE_LIBRARY && dynamic_backend == NULL))
 		return EINVAL;
 
 	memset(ctx,0x00,sizeof(IMAGE_CTX));
@@ -97,7 +74,10 @@ int image_init(PIMAGE_CTX ctx, \
 	ctx->width = width;
 	ctx->height = height;
 	ctx->model = model;
-	ctx->format = format;
+	if(format == IMAGE_DEFAULT)
+		ctx->format = default_format;
+	else
+		ctx->format = format;
 
 	/* Get the dispatch table for this image format */
 	dt = (struct image_dispatch_table*) calloc(1,sizeof(struct image_dispatch_table));
@@ -105,7 +85,7 @@ int image_init(PIMAGE_CTX ctx, \
 		fprintf(stderr,"Error allocating dispatch table\n");
 		return ENOMEM;
 	}
-	success = get_dt(dt,format);
+	success = get_dt(dt,ctx->format);
 	if(success != 0){
 		fprintf(stderr,"Error locating dispatch table\n");
 		free(dt);
@@ -125,12 +105,20 @@ int image_init(PIMAGE_CTX ctx, \
 
 	return success;
 }
+/*
+ * image_add_pixel, image_set_pixel, image_get_pixel, image_write
+ * Various setters ad getters for assigning pixel data. image_write
+ * takes an open file handle and writes image data to it.
+ * These functions simply wrap the underlying format-specific functions
+ */
 int image_add_pixel(PIMAGE_CTX ctx, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a){
 	struct image_dispatch_table *dt = (struct image_dispatch_table*)ctx->_dt;
+	if(ctx->initialized != 1) return EINVAL;
 	return dt->add_pixel(ctx,r,g,b,a);
 }
 int image_set_pixel(PIMAGE_CTX ctx, const size_t x, const size_t y, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a){
 	size_t block_size;
+	if(ctx->initialized != 1) return EINVAL;
 	block_size = ctx->model == IMAGE_RGB ? RGB_SIZE : RGBA_SIZE;
 	ctx->next_pixel = ctx->canvas + (x * block_size) + (ctx->width * block_size * y);
 	struct image_dispatch_table *dt = (struct image_dispatch_table*)ctx->_dt;
@@ -138,23 +126,35 @@ int image_set_pixel(PIMAGE_CTX ctx, const size_t x, const size_t y, const uint8_
 }
 int image_get_pixel(PIMAGE_CTX ctx, const size_t x, const size_t y, const uint8_t *r, const uint8_t *g, const uint8_t *b, const uint8_t *a){
 	struct image_dispatch_table *dt = (struct image_dispatch_table*)ctx->_dt;
+	if(ctx->initialized != 1) return EINVAL;
 	return dt->get_pixel(ctx,x,y,r,g,b,a);
 }
+int image_write(PIMAGE_CTX ctx, FILE *fd){
+	struct image_dispatch_table *dt = (struct image_dispatch_table*)ctx->_dt;
+	if(ctx->initialized != 1) return EINVAL;
+	return dt->write(ctx,fd);
+}
+
+/*
+ * image_get_filename
+ * Creates an appropriate file name using data supplied
+ * by the user. If the extension is already correct, return
+ * that; if not append if there is space
+ */
 int image_get_filename(PIMAGE_CTX ctx, char *out, size_t len_out, char *in){
 	size_t len_src;
 	size_t len_ext;
 	int success = 0;
 
-	if(ctx->initialized != 1){
-		fprintf(stderr,"Called get filename before initialization\n");
+	if(ctx->initialized != 1)
 		return EINVAL;
-	}
 
+	/* Get various lengths */
 	len_src = strlen(in);
 	len_ext = strlen(ctx->extension);
 
 	if(len_src == 0){
-		in = "output";
+		in = (char*)"output";
 		len_src = 6;
 	}
 
@@ -178,10 +178,43 @@ int image_get_filename(PIMAGE_CTX ctx, char *out, size_t len_out, char *in){
 	}
 	return success;
 }
-int image_write(PIMAGE_CTX ctx, FILE *fd){
-	struct image_dispatch_table *dt = (struct image_dispatch_table*)ctx->_dt;
-	return dt->write(ctx,fd);
+
+/*
+ * get_dt
+ * Load the dispatch table for the specified image
+ * format. Currently only pixmap supported.
+ */
+int get_dt(struct image_dispatch_table *dt, IMAGE_FORMAT format){
+	int success = 0;
+
+	memset((void*)dt,0x00,sizeof(struct image_dispatch_table));
+	switch(format){
+		case IMAGE_PPM:
+			dt->init = ppm_init;
+			dt->add_pixel = ppm_add_pixel;
+			dt->get_pixel = ppm_get_pixel;
+			dt->write = ppm_write;
+			break;
+		case IMAGE_LIBRARY:
+			success = load_library(dt);
+			break;
+		default:
+			success = EINVAL;
+	}
+	return success;
 }
+
+/*
+ * ==WARNING==: Here be dragons!
+ * Experimantal features beyond this point.
+ * Only use if you are sure you know what you
+ * are doing!
+ */
+
+/*
+ * image_set_library
+ * Set the library to use for generating images
+ */
 int image_set_library(char *library){
 	char *libname;
 	size_t length;
@@ -193,7 +226,48 @@ int image_set_library(char *library){
 	strncpy(libname,library,length);
 
 	dynamic_backend = libname;
-	format = IMAGE_LIBRARY;
+	default_format = IMAGE_LIBRARY;
 	return 0;
 }
+/*
+ * image_get_library
+ * Returns the current saved image rendering
+ * library
+ */
+char* image_get_library(){
+	return dynamic_backend;
+}
 
+/* 
+ * load_library
+ * External image processing: experimental feature
+ * Load an external library to perform image processing
+ * It must be a custom compatible library
+ */
+int load_library(struct image_dispatch_table *dt){
+	void *hndl;
+	int success = 0;
+
+	/* Validate object file */
+	if(dynamic_backend == NULL || strlen(dynamic_backend) == 0){
+		fprintf(stderr,"Custom image processor requested without specification\n");
+		return EINVAL;
+	}
+	
+	/* Load shared object and locate required exports */
+	hndl = dlopen(dynamic_backend,RTLD_LAZY);
+	if(hndl == NULL){
+		fprintf(stderr,"Error loading shared object\n");
+		return EINVAL;
+	}
+	/* Perform symbol lookup */
+	if((dt->init = (_init*)dlsym(hndl,"lib_init")) == NULL ||
+		(dt->add_pixel = (_add_pixel*)dlsym(hndl,"lib_add_pixel")) == NULL ||
+		(dt->get_pixel = (_get_pixel*)dlsym(hndl,"lib_get_pixel")) == NULL ||
+		(dt->write = (_write*)dlsym(hndl,"lib_write")) == NULL){
+		fprintf(stderr,"Invalid image processing module specified\n\t%s",dlerror());
+		success = dlclose(hndl);
+	}
+
+	return success;
+}
