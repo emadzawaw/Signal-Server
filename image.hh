@@ -31,14 +31,18 @@ typedef struct _image_ctx{
 
 typedef int _init(image_ctx_t*);
 typedef int _add_pixel(image_ctx_t*,const uint8_t,const uint8_t,const uint8_t,const uint8_t);
+typedef int _set_pixel(image_ctx_t*,const size_t,const size_t,const uint8_t,const uint8_t,const uint8_t,const uint8_t);
 typedef int _get_pixel(image_ctx_t*,const size_t,const size_t,const uint8_t*,const uint8_t*,const uint8_t*,const uint8_t*);
 typedef int _write(image_ctx_t*,FILE*);
+typedef void _free(image_ctx_t*);
 
 typedef struct _image_dispatch_table{
-	_init *init;
-	_add_pixel *add_pixel;
-	_get_pixel *get_pixel;
-	_write *write;
+	_init		*init;
+	_add_pixel	*add_pixel;
+	_set_pixel	*set_pixel;
+	_get_pixel	*get_pixel;
+	_write		*write;
+	_free		*free;
 } image_dispatch_table_t;
 
 int image_set_format(int);
