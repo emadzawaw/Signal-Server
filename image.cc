@@ -14,22 +14,10 @@
 #include "image.hh"
 #include "image-ppm.hh"
 
-typedef int _init(PIMAGE_CTX);
-typedef int _add_pixel(PIMAGE_CTX,const uint8_t,const uint8_t,const uint8_t,const uint8_t);
-typedef int _get_pixel(PIMAGE_CTX,const size_t,const size_t,const uint8_t*,const uint8_t*,const uint8_t*,const uint8_t*);
-typedef int _write(PIMAGE_CTX,FILE*);
+int get_dt(image_dispatch_table_t *dt, int format);
+int load_library(image_dispatch_table_t *dt);
 
-int get_dt(struct image_dispatch_table *dt, IMAGE_FORMAT format);
-int load_library(struct image_dispatch_table *dt);
-
-struct image_dispatch_table{
-	_init *init;
-	_add_pixel *add_pixel;
-	_get_pixel *get_pixel;
-	_write *write;
-};
-
-static IMAGE_FORMAT default_format = IMAGE_PPM;
+static int default_format = IMAGE_PPM;
 char *dynamic_backend = NULL;
 
 /*
@@ -37,7 +25,7 @@ char *dynamic_backend = NULL;
  * Changes the default format for the next
  * uninitialized image canvas
  */
-int image_set_format(IMAGE_FORMAT format){
+int image_set_format(int format){
 	if(format <= IMAGE_DEFAULT || format >= IMAGE_FORMAT_MAX)
 		return EINVAL;
 	default_format = format;
@@ -49,14 +37,14 @@ int image_set_format(IMAGE_FORMAT format){
  * Initialize an image context. Must be called
  * before attempting to write any image data
  */
-int image_init(PIMAGE_CTX ctx, \
+int image_init(image_ctx_t *ctx, \
 				const size_t width, \
 				const size_t height, \
-				const IMAGE_MODEL model, \
-				const IMAGE_FORMAT format) {
+				const int model, \
+				const int format) {
 
 	int success = 0;
-	struct image_dispatch_table *dt;
+	image_dispatch_table_t *dt;
 
 	/* Perform some sanity checking on provided arguments */
 	if(ctx == NULL)
@@ -68,7 +56,7 @@ int image_init(PIMAGE_CTX ctx, \
 	if(format >= IMAGE_FORMAT_MAX || (format == IMAGE_LIBRARY && dynamic_backend == NULL))
 		return EINVAL;
 
-	memset(ctx,0x00,sizeof(IMAGE_CTX));
+	memset(ctx,0x00,sizeof(image_ctx_t));
 
 	/* Assign the initialize values to the processing context */
 	ctx->width = width;
@@ -80,7 +68,7 @@ int image_init(PIMAGE_CTX ctx, \
 		ctx->format = format;
 
 	/* Get the dispatch table for this image format */
-	dt = (struct image_dispatch_table*) calloc(1,sizeof(struct image_dispatch_table));
+	dt = (image_dispatch_table_t *) calloc(1,sizeof(image_dispatch_table_t));
 	if(dt == NULL){
 		fprintf(stderr,"Error allocating dispatch table\n");
 		return ENOMEM;
@@ -111,30 +99,26 @@ int image_init(PIMAGE_CTX ctx, \
  * takes an open file handle and writes image data to it.
  * These functions simply wrap the underlying format-specific functions
  */
-int image_add_pixel(PIMAGE_CTX ctx, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a){
-	struct image_dispatch_table *dt = (struct image_dispatch_table*)ctx->_dt;
+int image_add_pixel(image_ctx_t *ctx, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a){
 	if(ctx->initialized != 1) return EINVAL;
-	return dt->add_pixel(ctx,r,g,b,a);
+	return ((image_dispatch_table_t*)ctx->_dt)->add_pixel(ctx,r,g,b,a);
 }
-int image_set_pixel(PIMAGE_CTX ctx, const size_t x, const size_t y, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a){
+int image_set_pixel(image_ctx_t *ctx, const size_t x, const size_t y, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a){
 	size_t block_size;
 	if(ctx->initialized != 1) return EINVAL;
 	block_size = ctx->model == IMAGE_RGB ? RGB_SIZE : RGBA_SIZE;
-	ctx->next_pixel = ctx->canvas + (x * block_size) + (ctx->width * block_size * y);
-	struct image_dispatch_table *dt = (struct image_dispatch_table*)ctx->_dt;
-	return dt->add_pixel(ctx,r,g,b,a);
+	ctx->next_pixel = ctx->canvas + PIXEL_OFFSET(x,y,ctx->width,block_size);
+	return ((image_dispatch_table_t*)ctx->_dt)->add_pixel(ctx,r,g,b,a);
 }
-int image_get_pixel(PIMAGE_CTX ctx, const size_t x, const size_t y, const uint8_t *r, const uint8_t *g, const uint8_t *b, const uint8_t *a){
-	struct image_dispatch_table *dt = (struct image_dispatch_table*)ctx->_dt;
+int image_get_pixel(image_ctx_t *ctx, const size_t x, const size_t y, const uint8_t *r, const uint8_t *g, const uint8_t *b, const uint8_t *a){
 	if(ctx->initialized != 1) return EINVAL;
-	return dt->get_pixel(ctx,x,y,r,g,b,a);
+	return ((image_dispatch_table_t*)ctx->_dt)->get_pixel(ctx,x,y,r,g,b,a);
 }
-int image_write(PIMAGE_CTX ctx, FILE *fd){
-	struct image_dispatch_table *dt = (struct image_dispatch_table*)ctx->_dt;
+int image_write(image_ctx_t *ctx, FILE *fd){
 	if(ctx->initialized != 1) return EINVAL;
-	return dt->write(ctx,fd);
+	return ((image_dispatch_table_t*)ctx->_dt)->write(ctx,fd);
 }
-void image_free(PIMAGE_CTX ctx){
+void image_free(image_ctx_t *ctx){
 	if(ctx->initialized != 1) return;
 	free(ctx->canvas);
 }
@@ -145,7 +129,7 @@ void image_free(PIMAGE_CTX ctx){
  * by the user. If the extension is already correct, return
  * that; if not append if there is space
  */
-int image_get_filename(PIMAGE_CTX ctx, char *out, size_t len_out, char *in){
+int image_get_filename(image_ctx_t *ctx, char *out, size_t len_out, char *in){
 	size_t len_src;
 	size_t len_ext;
 	int success = 0;
@@ -188,16 +172,13 @@ int image_get_filename(PIMAGE_CTX ctx, char *out, size_t len_out, char *in){
  * Load the dispatch table for the specified image
  * format. Currently only pixmap supported.
  */
-int get_dt(struct image_dispatch_table *dt, IMAGE_FORMAT format){
+int get_dt(image_dispatch_table_t *dt, int format){
 	int success = 0;
 
-	memset((void*)dt,0x00,sizeof(struct image_dispatch_table));
+	memset((void*)dt,0x00,sizeof(image_dispatch_table_t));
 	switch(format){
 		case IMAGE_PPM:
-			dt->init = ppm_init;
-			dt->add_pixel = ppm_add_pixel;
-			dt->get_pixel = ppm_get_pixel;
-			dt->write = ppm_write;
+			*dt = ppm_dt;
 			break;
 		case IMAGE_LIBRARY:
 			success = load_library(dt);
@@ -248,7 +229,7 @@ char* image_get_library(){
  * Load an external library to perform image processing
  * It must be a custom compatible library
  */
-int load_library(struct image_dispatch_table *dt){
+int load_library(image_dispatch_table_t *dt){
 	void *hndl;
 	int success = 0;
 

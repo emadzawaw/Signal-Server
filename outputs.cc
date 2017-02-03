@@ -31,7 +31,7 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 	int indx, x, y, z, x0 = 0, y0 = 0, loss, match;
 	double lat, lon, conversion, one_over_gamma, minwest;
 	FILE *fd;
-	IMAGE_CTX ctx;
+	image_ctx_t ctx;
 	int success;
 
 	if((success = image_init(&ctx, width, (kml ? height : height + 30), IMAGE_RGB, IMAGE_DEFAULT)) != 0){
@@ -271,7 +271,7 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 	int indx, x, y, z = 1, x0 = 0, y0 = 0, signal, match;
 	double conversion, one_over_gamma, lat, lon, minwest;
 	FILE *fd;
-	IMAGE_CTX ctx;
+	image_ctx_t ctx;
 	int success;
 
 	if((success = image_init(&ctx, width, (kml ? height : height + 30), IMAGE_RGB, IMAGE_DEFAULT)) != 0){
@@ -519,7 +519,7 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 	int indx, x, y, z = 1, x0 = 0, y0 = 0, dBm, match;
 	double conversion, one_over_gamma, lat, lon, minwest;
 	FILE *fd;
-	IMAGE_CTX ctx;
+	image_ctx_t ctx;
 	int success;
 
 	if((success = image_init(&ctx, width, (kml ? height : height + 30), IMAGE_RGB, IMAGE_DEFAULT)) != 0){
@@ -762,7 +762,7 @@ void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 	int indx, x, y, x0 = 0, y0 = 0;
 	double conversion, one_over_gamma, lat, lon, minwest;
 	FILE *fd;
-	IMAGE_CTX ctx;
+	image_ctx_t ctx;
 	int success;
 
 	if((success = image_init(&ctx, width, (kml ? height : height + 30), IMAGE_RGB, IMAGE_DEFAULT)) != 0){

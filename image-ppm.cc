@@ -4,7 +4,7 @@
 #include <errno.h>
 #include "image.hh"
 
-int ppm_init(PIMAGE_CTX ctx){
+int ppm_init(image_ctx_t *ctx){
 	size_t buf_size;
 
 	/* Perform simple sanity checking */
@@ -12,7 +12,7 @@ int ppm_init(PIMAGE_CTX ctx){
 		return EINVAL;
 	ctx->model = IMAGE_RGB; //Override this as we only support RGB
 	ctx->format = IMAGE_PPM;
-	ctx->extension = ".ppm";
+	ctx->extension = (char*)".ppm";
 
 	buf_size = ctx->width * ctx->height * RGB_SIZE;
 
@@ -25,7 +25,7 @@ int ppm_init(PIMAGE_CTX ctx){
 	return 0;
 }
 
-int ppm_add_pixel(PIMAGE_CTX ctx,const uint8_t r,const uint8_t g,const uint8_t b,const uint8_t a){
+int ppm_add_pixel(image_ctx_t *ctx,const uint8_t r,const uint8_t g,const uint8_t b,const uint8_t a){
 	register uint8_t* next;
 
 	next = ctx->next_pixel;
@@ -39,12 +39,12 @@ int ppm_add_pixel(PIMAGE_CTX ctx,const uint8_t r,const uint8_t g,const uint8_t b
 	return 0;
 }
 
-int ppm_get_pixel(PIMAGE_CTX ctx,const size_t x,const size_t y,const uint8_t *r,const uint8_t *g,const uint8_t *b,const uint8_t *a){
+int ppm_get_pixel(image_ctx_t *ctx,const size_t x,const size_t y,const uint8_t *r,const uint8_t *g,const uint8_t *b,const uint8_t *a){
 	/* STUB */
 	return 0;
 }
 
-int ppm_write(PIMAGE_CTX ctx, FILE* fd){
+int ppm_write(image_ctx_t *ctx, FILE* fd){
 	size_t written;
 	size_t count;
 
