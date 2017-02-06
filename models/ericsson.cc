@@ -12,8 +12,8 @@ double EricssonpathLoss(float f, float TxH, float RxH, float d, int mode)
 	double a0 = 36.2, a1 = 30.2, a2 = -12, a3 = 0.1;
 
 	if (f < 150 || f > 3500) {
-		printf
-		    ("Error: Ericsson9999 model frequency range 150-3500MHz\n");
+		fprintf
+		    (stderr,"Error: Ericsson9999 model frequency range 150-3500MHz\n");
 		exit(EXIT_FAILURE);
 	}
 

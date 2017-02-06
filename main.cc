@@ -27,6 +27,7 @@ double version = 2.95;
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "common.h"
 #include "inputs.hh"
@@ -34,6 +35,7 @@ double version = 2.95;
 #include "models/itwom3.0.hh"
 #include "models/los.hh"
 #include "models/pel.hh"
+#include "image.hh"
 
 int MAXPAGES = 64;
 int ARRAYSIZE = 76810;//76810;
@@ -53,6 +55,8 @@ int ippd, mpi,
     0, MAXRAD, hottest = 10, height, width;
 
 unsigned char got_elevation_pattern, got_azimuth_pattern, metric = 0, dbm = 0;
+
+bool to_stdout = false;
 
 __thread double *elev;
 __thread struct path path;
@@ -1197,7 +1201,21 @@ int main(int argc, char *argv[])
 				strncpy(tx_site[0].name, "Tx", 2);
 				strncpy(tx_site[0].filename, argv[z], 253);
 				LoadPAT(argv[z]);
+			} else if (z <= y && argv[z][0] && argv[z][0] == '-' && argv[z][1] == '\0' ) {
+				/* Handle writing image data to stdout */
+				to_stdout = true;
+				mapfile[0] = '\0';
+				strncpy(tx_site[0].name, "Tx", 2);
+				tx_site[0].filename[0] = '\0';
+				fprintf(stderr,"Writing to stdout\n");
+			}
+		}
 
+		if (strcmp(argv[x], "-so") == 0) {
+			z = x + 1;
+			if(image_set_library(argv[z]) != 0){
+				fprintf(stderr,"Error configuring image processor\n");
+				exit(EINVAL);
 			}
 		}
 
@@ -1497,66 +1515,72 @@ int main(int argc, char *argv[])
 
 	/* ERROR DETECTION */
 	if (tx_site[0].lat > 90 || tx_site[0].lat < -90) {
-		fprintf(stdout,
+		fprintf(stderr,
 			"ERROR: Either the lat was missing or out of range!");
-		exit(0);
+		exit(EINVAL);
 
 	}
 	if (tx_site[0].lon > 360 || tx_site[0].lon < 0) {
-		fprintf(stdout,
+		fprintf(stderr,
 			"ERROR: Either the lon was missing or out of range!");
-		exit(0);
+		exit(EINVAL);
 
 	}
 	if (LR.frq_mhz < 20 || LR.frq_mhz > 100000) {
-		fprintf(stdout,
+		fprintf(stderr,
 			"ERROR: Either the Frequency was missing or out of range!");
-		exit(0);
+		exit(EINVAL);
 	}
 	if (LR.erp > 500000000) {
-		fprintf(stdout, "ERROR: Power was out of range!");
-		exit(0);
+		fprintf(stderr, "ERROR: Power was out of range!");
+		exit(EINVAL);
 
 	}
 	if (LR.eps_dielect > 80 || LR.eps_dielect < 0.1) {
-		fprintf(stdout, "ERROR: Ground Dielectric value out of range!");
-		exit(0);
+		fprintf(stderr, "ERROR: Ground Dielectric value out of range!");
+		exit(EINVAL);
 
 	}
 	if (LR.sgm_conductivity > 0.01 || LR.sgm_conductivity < 0.000001) {
-		fprintf(stdout, "ERROR: Ground conductivity out of range!");
-		exit(0);
+		fprintf(stderr, "ERROR: Ground conductivity out of range!");
+		exit(EINVAL);
 
 	}
 
 	if (tx_site[0].alt < 0 || tx_site[0].alt > 60000) {
-		fprintf(stdout,
+		fprintf(stderr,
 			"ERROR: Tx altitude above ground was too high: %f",
 			tx_site[0].alt);
-		exit(0);
+		exit(EINVAL);
 	}
 	if (altitudeLR < 0 || altitudeLR > 60000) {
-		fprintf(stdout,
+		fprintf(stderr,
 			"ERROR: Rx altitude above ground was too high!");
-		exit(0);
+		exit(EINVAL);
 	}
 
 	if(!lidar){
 		if (ippd < 300 || ippd > 10000) {
-			fprintf(stdout, "ERROR: resolution out of range!");
-			exit(0);
+			fprintf(stderr, "ERROR: resolution out of range!");
+			exit(EINVAL);
 		}
 	}
 
 	if (contour_threshold < -200 || contour_threshold > 200) {
-		fprintf(stdout,
+		fprintf(stderr,
 			"ERROR: Receiver threshold out of range (-200 / +200)");
-		exit(0);
+		exit(EINVAL);
 	}
 	if (propmodel > 2 && propmodel < 7 && LR.frq_mhz < 150) {
-		fprintf(stdout,
+		fprintf(stderr,
 			"ERROR: Frequency too low for Propagation model");
-		exit(0);
+		exit(EINVAL);
+	}
+
+	if (to_stdout == true && ppa != 0) {
+		fprintf(stderr,
+			"ERROR: Cannot write to stdout in ppa mode");
+		exit(EINVAL);
 	}
 
 	if (metric) {
@@ -1627,7 +1651,7 @@ int main(int argc, char *argv[])
 
 		err = loadLIDAR(lidar_tiles);
 		if (err) {
-			fprintf(stdout, "Couldn't find one or more of the "
+			fprintf(stderr, "Couldn't find one or more of the "
 				"lidar files. Please ensure their paths are "
 				"correct and try again.\n");
 			exit(EXIT_FAILURE);
@@ -1635,7 +1659,7 @@ int main(int argc, char *argv[])
 
 
 		if(debug){
-			fprintf(stdout,"%.4f,%.4f,%.4f,%.4f,%d x %d\n",max_north,min_west,min_north,max_west,width,height);
+			fprintf(stderr,"%.4f,%.4f,%.4f,%.4f,%d x %d\n",max_north,min_west,min_north,max_west,width,height);
 		}
 		ppd=rint(height / (max_north-min_north));
 		yppd=rint(width / (max_west-min_west));
@@ -1768,7 +1792,7 @@ int main(int argc, char *argv[])
 					propmodel, knifeedge, haf, pmenv, use_threads);
 
                         if(debug)
-                        	fprintf(stdout,"Finished PlotPropagation()\n");
+                        	fprintf(stderr,"Finished PlotPropagation()\n");
 
 			if(!lidar){
 				if (LR.erp == 0.0)
@@ -1786,13 +1810,13 @@ int main(int argc, char *argv[])
 				}
 			
 			}
-		
+
 			// Write bitmap
 			if (LR.erp == 0.0)
 				DoPathLoss(mapfile, geo, kml, ngs, tx_site,
 					   txsites);
 			else if (dbm)
-				DoRxdPwr(mapfile, geo, kml, ngs, tx_site,
+				DoRxdPwr((to_stdout == true ? NULL : mapfile), geo, kml, ngs, tx_site,
 					 txsites);
 			else
 				DoSigStr(mapfile, geo, kml, ngs, tx_site,
@@ -1805,10 +1829,11 @@ int main(int argc, char *argv[])
 		}
 
 		// Print WGS84 bounds
-		fprintf(stdout, "|%.6f", north);
-		fprintf(stdout, "|%.6f", east);
-		fprintf(stdout, "|%.6f", south);
-		fprintf(stdout, "|%.6f|", west);
+		fprintf(stderr, "|%.6f", north);
+		fprintf(stderr, "|%.6f", east);
+		fprintf(stderr, "|%.6f", south);
+		fprintf(stderr, "|%.6f|", west);
+		fprintf(stderr, "\n");
 
 	} else {
 		strncpy(tx_site[0].name, "Tx", 3);
@@ -1819,7 +1844,7 @@ int main(int argc, char *argv[])
 		SeriesData(tx_site[1], tx_site[0], tx_site[0].filename, 1,
 			   normalise);
 	}
-	fflush(stdout);
+	fflush(stderr);
 
 	return 0;
 }
