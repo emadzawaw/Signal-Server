@@ -1,7 +1,7 @@
 #!/bin/bash
 mkdir tests
 RAD=5
-MAXRAD=40
+MAXRAD=20
 FRQ=446
 ERP=25
 

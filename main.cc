@@ -1,4 +1,4 @@
-double version = 2.95;
+double version = 3.00;
 /****************************************************************************\
 *  Signal Server: Radio propagation simulator by Alex Farrant QCVS, 2E0TDW   *
 ******************************************************************************
@@ -38,7 +38,7 @@ double version = 2.95;
 #include "image.hh"
 
 int MAXPAGES = 64;
-int ARRAYSIZE = 76810;//76810;
+int ARRAYSIZE = 76810;
 int IPPD = 1200;
 
 char string[255], sdf_path[255], udt_file[255], opened = 0, gpsav =
@@ -1821,7 +1821,6 @@ int main(int argc, char *argv[])
 			else
 				DoSigStr(mapfile, geo, kml, ngs, tx_site,
 					 txsites);
-					 
 		}
 		if(lidar){
 			east=eastoffset;
