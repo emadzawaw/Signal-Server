@@ -106,6 +106,8 @@ extern __thread double *elev;
 extern double westoffset;
 extern double eastoffset;
 extern double delta;
+extern double cropLat;
+extern double cropLon;
 
 extern char string[];
 extern char sdf_path[];

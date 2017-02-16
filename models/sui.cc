@@ -9,9 +9,9 @@ double SUIpathLoss(float f, float TxH, float RxH, float d, int mode)
 	   TxH =  Transmitter height (m)
 	   RxH = Receiver height (m)
 	   d = distance (km)
-	   mode 1 = Hilly + trees
-	   mode 2 = Flat + trees OR hilly + light foliage
-	   mode 3 = Flat + light foliage
+	   mode A1 = Hilly + trees
+	   mode B2 = Flat + trees OR hilly + light foliage
+	   mode C3 = Flat + light foliage
 	   http://www.cl.cam.ac.uk/research/dtg/lce-pub/public/vsa23/VTC05_Empirical.pdf
 	 */
 	d = d * 1000;		// km to m
@@ -45,5 +45,5 @@ double SUIpathLoss(float f, float TxH, float RxH, float d, int mode)
 	double Xf = 6 * log10(f / 2000);
 	double Xh = XhCF * log10(RxH / 2000);
 
-	return A + (10 * y) * (log10(d / d0)) + Xf + Xh + s;
+	return A + (10 * y * log10(d / d0)) + Xf + Xh + s;
 }

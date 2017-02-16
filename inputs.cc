@@ -261,7 +261,7 @@ int loadLIDAR(char *filenames)
 					}
 					// add fudge as reprojected tiles sometimes vary by a pixel or ten
 					IPPD+=50;
-					ARRAYSIZE = (MAXPAGES * IPPD) + 50;
+					ARRAYSIZE = (MAXPAGES * IPPD)+50;
 					do_allocs();
 					dem_alloced = 1;
 				}

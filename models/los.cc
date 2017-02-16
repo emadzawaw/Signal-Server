@@ -304,7 +304,7 @@ void PlotPropPath(struct site source, struct site destination,
 	    xmtr_alt, dest_alt, xmtr_alt2, dest_alt2,
 	    cos_rcvr_angle, cos_test_angle = 0.0, test_alt,
 	    elevation = 0.0, distance = 0.0, four_thirds_earth,
-	    field_strength = 0.0, rxp, dBm, txelev, dkm, diffloss;
+	    field_strength = 0.0, rxp, dBm, dkm, diffloss;
 	struct site temp;
 
 	ReadPath(source, destination);
@@ -323,7 +323,6 @@ void PlotPropPath(struct site source, struct site destination,
 	/* Copy ending points without clutter */
 
 	elev[2] = path.elevation[0] * METERS_PER_FOOT;
-	txelev = elev[2] + (source.alt * METERS_PER_FOOT);
 
 	elev[path.length + 1] =
 	    path.elevation[path.length - 1] * METERS_PER_FOOT;
@@ -446,6 +445,8 @@ void PlotPropPath(struct site source, struct site destination,
 			dkm = (elev[1] * elev[0]) / 1000;	// km
 
 
+
+
 			switch (propmodel) {
 			case 1:
 				// Longley Rice ITM
@@ -462,16 +463,15 @@ void PlotPropPath(struct site source, struct site destination,
 			case 3:
 				//HATA 1, 2 & 3
 				loss =
-				    HATApathLoss(LR.frq_mhz, txelev,
-						 path.elevation[y] +
-						 (destination.alt *
-						  METERS_PER_FOOT), dkm, pmenv);
+				    HATApathLoss(LR.frq_mhz, source.alt * METERS_PER_FOOT,
+						(path.elevation[y] * METERS_PER_FOOT) +	 (destination.alt * METERS_PER_FOOT), dkm, pmenv);
 				break;
 			case 4:
 				// ECC33
 				loss =
-				    ECC33pathLoss(LR.frq_mhz, txelev,
-						  path.elevation[y] +
+				    ECC33pathLoss(LR.frq_mhz, source.alt * METERS_PER_FOOT,
+						(path.elevation[y] *
+						 METERS_PER_FOOT) +
 						  (destination.alt *
 						   METERS_PER_FOOT), dkm,
 						  pmenv);
@@ -479,16 +479,18 @@ void PlotPropPath(struct site source, struct site destination,
 			case 5:
 				// SUI
 				loss =
-				    SUIpathLoss(LR.frq_mhz, txelev,
-						path.elevation[y] +
+				    SUIpathLoss(LR.frq_mhz, source.alt * METERS_PER_FOOT,
+						(path.elevation[y] *
+						 METERS_PER_FOOT) +
 						(destination.alt *
 						 METERS_PER_FOOT), dkm, pmenv);
 				break;
 			case 6:
 				// COST231-Hata
 				loss =
-				    COST231pathLoss(LR.frq_mhz, txelev,
-						    path.elevation[y] +
+				    COST231pathLoss(LR.frq_mhz, source.alt * METERS_PER_FOOT,
+						(path.elevation[y] *
+						 METERS_PER_FOOT) +
 						    (destination.alt *
 						     METERS_PER_FOOT), dkm,
 						    pmenv);
@@ -512,8 +514,9 @@ void PlotPropPath(struct site source, struct site destination,
 			case 9:
 				// Ericsson
 				loss =
-				    EricssonpathLoss(LR.frq_mhz, txelev,
-						     path.elevation[y] +
+				    EricssonpathLoss(LR.frq_mhz, source.alt * METERS_PER_FOOT,
+						(path.elevation[y] *
+						 METERS_PER_FOOT) +
 						     (destination.alt *
 						      METERS_PER_FOOT), dkm,
 						     pmenv);
@@ -521,7 +524,7 @@ void PlotPropPath(struct site source, struct site destination,
 
 			case 10:
 				// Plane earth
-				loss =	PlaneEarthLoss(dkm, txelev, path.elevation[y] + (destination.alt * METERS_PER_FOOT));
+				loss =	PlaneEarthLoss(dkm, source.alt * METERS_PER_FOOT, (path.elevation[y] * METERS_PER_FOOT) + (destination.alt * METERS_PER_FOOT));
 				break;
 
 			default:
@@ -537,6 +540,7 @@ void PlotPropPath(struct site source, struct site destination,
 
 			}
 
+		
 			if (knifeedge == 1) {
 				diffloss =
 				    ked(LR.frq_mhz,
@@ -677,6 +681,11 @@ void PlotPropPath(struct site source, struct site destination,
 		}
 	}
 
+	if(path.lat[y]>cropLat)
+		cropLat=path.lat[y];
+
+	if(path.lon[y]>cropLon)
+		cropLon=path.lon[y];
 }
 
 void PlotLOSMap(struct site source, double altitude, char *plo_filename,

@@ -1,4 +1,4 @@
-double version = 3.00;
+double version = 3.01;
 /****************************************************************************\
 *  Signal Server: Radio propagation simulator by Alex Farrant QCVS, 2E0TDW   *
 ******************************************************************************
@@ -47,7 +47,8 @@ char string[255], sdf_path[255], udt_file[255], opened = 0, gpsav =
 double earthradius, max_range = 0.0, forced_erp, dpp, ppd, yppd,
     fzone_clearance = 0.6, forced_freq, clutter, lat, lon, txh, tercon, terdic,
     north, east, south, west, dBm, loss, field_strength,
-	min_north = 90, max_north = -90, min_west = 360, max_west = -1, westoffset=180, eastoffset=-180, delta=0, rxGain=0;
+    min_north = 90, max_north = -90, min_west = 360, max_west = -1, westoffset=180, eastoffset=-180, delta=0, rxGain=0,
+    cropLat=-70, cropLon=0;
 
 int ippd, mpi,
     max_elevation = -32768, min_elevation = 32768, bzerror, contour_threshold,
@@ -349,6 +350,23 @@ int AddElevation(double lat, double lon, double height, int size)
 	
 
 	return found;
+}
+
+double dist(double lat1, double lon1, double lat2, double lon2)
+{
+	//ENHANCED HAVERSINE FORMULA WITH RADIUS SLIDER
+	double dx, dy, dz;
+	int polarRadius=6357;
+	int equatorRadius=6378;
+	int delta = equatorRadius-polarRadius; // 21km
+	float earthRadius = equatorRadius - ((lat1/100) * delta);
+	lon1 -= lon2;
+	lon1 *= DEG2RAD, lat1 *= DEG2RAD, lat2 *= DEG2RAD;
+ 
+	dz = sin(lat1) - sin(lat2);
+	dx = cos(lon1) * cos(lat1) - cos(lat2);
+	dy = sin(lon1) * cos(lat1);
+	return asin(sqrt(dx * dx + dy * dy + dz * dz) / 2) * 2 * earthRadius;
 }
 
 double Distance(struct site site1, struct site site2)
@@ -1024,7 +1042,7 @@ int main(int argc, char *argv[])
 	int x, y, z = 0, min_lat, min_lon, max_lat, max_lon,
 	    rxlat, rxlon, txlat, txlon, west_min, west_max,
 	    nortRxHin, nortRxHax, propmodel, knifeedge = 0, ppa =
-	    0, normalise = 0, haf = 0, pmenv = 1, lidar=0;
+	    0, normalise = 0, haf = 0, pmenv = 1, lidar=0, cropped;
 
 	bool use_threads = true;
 
@@ -1799,18 +1817,25 @@ int main(int argc, char *argv[])
 					hottest=9; // 9dB nearfield
 
 				// nearfield bugfix
-				for (lat = tx_site[0].lat - 0.001;
-					 lat <= tx_site[0].lat + 0.001;
-					 lat = lat + 0.0001) {
-					for (lon = tx_site[0].lon - 0.001;
-						 lon <= tx_site[0].lon + 0.001;
-						 lon = lon + 0.0001) {
+				for (lat = tx_site[0].lat - 0.0005;
+					 lat <= tx_site[0].lat + 0.0005;
+					 lat = lat + 0.0005) {
+					for (lon = tx_site[0].lon - 0.0005;
+						 lon <= tx_site[0].lon + 0.0005;
+						 lon = lon + 0.0005) {
 						PutSignal(lat, lon, hottest);
 					}
 				}
-			
 			}
 
+			// CROPPING. croplat assigned in propPathLoss()
+			max_north=cropLat; // MAX(path.lat[y]) 
+			max_west=cropLon; // MAX(path.lon[y])
+			cropLat-=tx_site[0].lat; // angle from tx to edge
+			cropLon-=tx_site[0].lon; 
+			width=(int)((cropLon*ppd)*2);
+			height=(int)((cropLat*ppd)*2);
+		
 			// Write bitmap
 			if (LR.erp == 0.0)
 				DoPathLoss(mapfile, geo, kml, ngs, tx_site,
@@ -1827,12 +1852,27 @@ int main(int argc, char *argv[])
 			west=westoffset;
 		}
 
-		// Print WGS84 bounds
-		fprintf(stderr, "|%.6f", north);
-		fprintf(stderr, "|%.6f", east);
-		fprintf(stderr, "|%.6f", south);
-		fprintf(stderr, "|%.6f|", west);
+		if (tx_site[0].lon > 0.0){
+					tx_site[0].lon *= -1;
+		} 
+		if (tx_site[0].lon < -180.0){
+					tx_site[0].lon += 360;
+		} 
+		if (propmodel == 2) {
+			// No croppping because this is LOS
+			fprintf(stderr, "|%.6f", max_north);
+			fprintf(stderr, "|%.6f", east);
+			fprintf(stderr, "|%.6f", min_north);
+			fprintf(stderr, "|%.6f|",west);
+		}else{
+			// Cropped EPSG4326 coordinates
+			fprintf(stderr, "|%.6f", tx_site[0].lat+cropLat);
+			fprintf(stderr, "|%.6f", tx_site[0].lon+cropLon);
+			fprintf(stderr, "|%.6f", tx_site[0].lat-cropLat);
+			fprintf(stderr, "|%.6f|",tx_site[0].lon-cropLon);
+		}
 		fprintf(stderr, "\n");
+		
 
 	} else {
 		strncpy(tx_site[0].name, "Tx", 3);
