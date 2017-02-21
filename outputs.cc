@@ -1012,7 +1012,7 @@ void PathReport(struct site source, struct site destination, char *name,
 	    source_alt, test_alt, dest_alt, source_alt2, dest_alt2,
 	    distance, elevation, four_thirds_earth,
 	    free_space_loss = 0.0, eirp =
-	    0.0, voltage, rxp, power_density, dkm, txelev;
+	    0.0, voltage, rxp, power_density, dkm;
 	FILE *fd = NULL, *fd2 = NULL;
 
 	snprintf(report_name, 80, "%s.txt%c", name, 0);
@@ -1080,23 +1080,14 @@ void PathReport(struct site source, struct site destination, char *name,
 		fprintf(fd2, "Distance to %s: %.2f miles\n", destination.name,
 			Distance(source, destination));
 
-	fprintf(fd2, "Azimuth to %s: %.2f degrees\n", destination.name,
+	fprintf(fd2, "Azimuth to %s: %.2f degrees grid\n", destination.name,
 		azimuth);
 
-	if (angle1 >= 0.0)
-		fprintf(fd2, "Elevation angle to %s: %+.4f degrees\n",
-			destination.name, angle1);
 
-	else
-		fprintf(fd2, "Depression angle to %s: %+.4f degrees\n",
-			destination.name, angle1);
+	fprintf(fd2, "Downtilt angle to %s: %+.4f degrees\n",
+		destination.name, angle1);
 
-	if ((angle2 - angle1) > 0.0001) {
-		if (angle2 < 0.0)
-			fprintf(fd2, "Depression\n");
-		else
-			fprintf(fd2, "Elevation\n");
-	}
+
 
 	/* Receiver */
 
@@ -1151,22 +1142,11 @@ void PathReport(struct site source, struct site destination, char *name,
 	angle1 = ElevationAngle(destination, source);
 	angle2 = ElevationAngle2(destination, source, earthradius);
 
-	fprintf(fd2, "Azimuth to %s: %.2f degrees\n", source.name, azimuth);
+	fprintf(fd2, "Azimuth to %s: %.2f degrees grid\n", source.name, azimuth);
 
-	if (angle1 >= 0.0)
-		fprintf(fd2, "Elevation angle to %s: %+.4f degrees\n",
-			source.name, angle1);
 
-	else
-		fprintf(fd2, "Depression angle to %s: %+.4f degrees\n",
-			source.name, angle1);
-
-	if ((angle2 - angle1) > 0.0001) {
-		if (angle2 < 0.0)
-			fprintf(fd2, "Depression");
-		else
-			fprintf(fd2, "Elevation");
-	}
+	fprintf(fd2, "Downtilt angle to %s: %+.4f degrees\n",
+		source.name, angle1);
 
 	if (LR.frq_mhz > 0.0) {
 		fprintf(fd2, "\n\nPropagation model: ");
@@ -1270,8 +1250,7 @@ void PathReport(struct site source, struct site destination, char *name,
 		fprintf(fd2, "Fraction of Time: %.1lf%c\n", LR.rel * 100.0, 37);
 
 		if (LR.erp != 0.0) {
-			fprintf(fd2, "\nReceiver gain: %.2f dBd\n", rxGain);
-			fprintf(fd2, "Receiver gain: %.2f dBi\n", rxGain+2.14);
+			fprintf(fd2, "\nReceiver gain: %.1f dBd / %.1f dBi\n", rxGain, rxGain+2.14);
 			fprintf(fd2, "Transmitter ERP plus Receiver gain: ");
 
 			if (LR.erp < 1.0)
@@ -1426,8 +1405,7 @@ void PathReport(struct site source, struct site destination, char *name,
 			   strmode, errnum);
 			 */
 			dkm = (elev[1] * elev[0]) / 1000;	// km
-			txelev = elev[2] + (source.alt * METERS_PER_FOOT);
-
+		
 			switch (propmodel) {
 			case 1:
 				// Longley Rice ITM
@@ -1444,35 +1422,29 @@ void PathReport(struct site source, struct site destination, char *name,
 			case 3:
 				//HATA 1, 2 & 3
 				loss =
-				    HATApathLoss(LR.frq_mhz, txelev,
-						 path.elevation[y] +
-						 (destination.alt *
-						  METERS_PER_FOOT), dkm, pmenv);
+				    HATApathLoss(LR.frq_mhz, source_alt * METERS_PER_FOOT,
+						 (path.elevation[y] * METERS_PER_FOOT) +
+						 (destination.alt * METERS_PER_FOOT), dkm, pmenv);
 				break;
 			case 4:
 				// COST231-HATA
 				loss =
-				    ECC33pathLoss(LR.frq_mhz, txelev,
-						  path.elevation[y] +
-						  (destination.alt *
-						   METERS_PER_FOOT), dkm,
-						  pmenv);
+				    ECC33pathLoss(LR.frq_mhz, source_alt * METERS_PER_FOOT,
+						  (path.elevation[y] * METERS_PER_FOOT) +
+						  (destination.alt * METERS_PER_FOOT), dkm, pmenv);
 				break;
 			case 5:
 				// SUI
 				loss =
-				    SUIpathLoss(LR.frq_mhz, txelev,
-						path.elevation[y] +
-						(destination.alt *
-						 METERS_PER_FOOT), dkm, pmenv);
+				    SUIpathLoss(LR.frq_mhz, source.alt * METERS_PER_FOOT,
+						(path.elevation[y] * METERS_PER_FOOT) +
+						(destination.alt * METERS_PER_FOOT), dkm, pmenv);
 				break;
 			case 6:
 				loss =
-				    COST231pathLoss(LR.frq_mhz, txelev,
-						    path.elevation[y] +
-						    (destination.alt *
-						     METERS_PER_FOOT), dkm,
-						    pmenv);
+				    COST231pathLoss(LR.frq_mhz, source_alt * METERS_PER_FOOT,
+						    (path.elevation[y] * METERS_PER_FOOT) +
+						    (destination.alt * METERS_PER_FOOT), dkm,pmenv);
 				break;
 			case 7:
 				// ITU-R P.525 Free space path loss
@@ -1492,8 +1464,8 @@ void PathReport(struct site source, struct site destination, char *name,
 			case 9:
 				// Ericsson
 				loss =
-				    EricssonpathLoss(LR.frq_mhz, txelev,
-						     path.elevation[y] +
+				    EricssonpathLoss(LR.frq_mhz, source_alt * METERS_PER_FOOT,
+						     (path.elevation[y] * METERS_PER_FOOT) +
 						     (destination.alt *
 						      METERS_PER_FOOT), dkm,
 						     pmenv);
