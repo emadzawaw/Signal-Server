@@ -1050,6 +1050,7 @@ int main(int argc, char *argv[])
 	    0, area_mode = 0, max_txsites, ngs = 0;
 
 	char mapfile[255], udt_file[255], ano_filename[255], lidar_tiles[4096], clutter_file[255];
+	char *az_filename, *el_filename;
 
 	double altitude = 0.0, altitudeLR = 0.0, tx_range = 0.0,
 	    rx_range = 0.0, deg_range = 0.0, deg_limit = 0.0, deg_range_lon;
@@ -1218,10 +1219,26 @@ int main(int argc, char *argv[])
 				strncpy(mapfile, argv[z], 253);
 				strncpy(tx_site[0].name, "Tx", 2);
 				strncpy(tx_site[0].filename, argv[z], 253);
-				if( (result = LoadPAT(argv[z])) != 0 ){
-					fprintf(stderr,"Error reading antenna pattern file\n");
+				/* Antenna pattern files have the same basic name as the output file
+				 * but with a different extension. If they exist, load them now */
+				if( (az_filename = (char*) calloc(strlen(argv[z]) + strlen(AZ_FILE_SUFFIX) + 1, sizeof(char))) == NULL )
+					return ENOMEM;
+				strcpy(az_filename, argv[z]);
+				strcat(az_filename, AZ_FILE_SUFFIX);
+				if( (el_filename = (char*) calloc(strlen(argv[z]) + strlen(EL_FILE_SUFFIX) + 1, sizeof(char))) == NULL ){
+					free(az_filename);
+					return ENOMEM;
+				}
+				strcpy(el_filename, argv[z]);
+				strcat(el_filename, EL_FILE_SUFFIX);
+				if( (result = LoadPAT(az_filename,el_filename)) != 0 ){
+					fprintf(stderr,"Permissions error reading antenna pattern file\n");
+					free(az_filename);
+					free(el_filename);
 					exit(result);
 				}
+				free(az_filename);
+				free(el_filename);
 			} else if (z <= y && argv[z][0] && argv[z][0] == '-' && argv[z][1] == '\0' ) {
 				/* Handle writing image data to stdout */
 				to_stdout = true;

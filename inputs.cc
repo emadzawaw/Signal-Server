@@ -659,35 +659,20 @@ char LoadSDF(char *name)
 	return return_value;
 }
 
-int LoadPAT(char *filename)
+int LoadPAT(char *az_filename, char *el_filename)
 {
 	/* This function reads and processes antenna pattern (.az
 	   and .el) files that correspond in name to previously
 	   loaded ss .lrp files.  */
 
 	int a, b, w, x, y, z, last_index, next_index, span;
-	char string[255], azfile[255], elfile[255], *pointer = NULL;
+	char string[255], *pointer = NULL;
 	float az, xx, elevation, amplitude, rotation, valid1, valid2,
 	    delta, azimuth[361], azimuth_pattern[361], el_pattern[10001],
 	    elevation_pattern[361][1001], slant_angle[361], tilt,
 	    mechanical_tilt = 0.0, tilt_azimuth, tilt_increment, sum;
 	FILE *fd = NULL;
 	unsigned char read_count[10001];
-
-	for (x = 0; filename[x] != '.' && filename[x] != 0 && x < 250; x++) {
-		azfile[x] = filename[x];
-		elfile[x] = filename[x];
-	}
-
-	azfile[x] = '.';
-	azfile[x + 1] = 'a';
-	azfile[x + 2] = 'z';
-	azfile[x + 3] = 0;
-
-	elfile[x] = '.';
-	elfile[x + 1] = 'e';
-	elfile[x + 2] = 'l';
-	elfile[x + 3] = 0;
 
 	rotation = 0.0;
 
@@ -696,8 +681,11 @@ int LoadPAT(char *filename)
 
 	/* Load .az antenna pattern file */
 
-	if( (fd = fopen(azfile, "r")) != NULL ){
+	if( az_filename != NULL && (fd = fopen(az_filename, "r")) == NULL && errno != ENOENT )
+		/* Any error other than file not existing is an error */
+		return errno;
 
+	if( fd != NULL ){
 		/* Clear azimuth pattern array */
 
 		for (x = 0; x <= 360; x++) {
@@ -757,6 +745,7 @@ int LoadPAT(char *filename)
 		} while (feof(fd) == 0);
 
 		fclose(fd);
+		fd = NULL;
 
 		/* Handle 0=360 degree ambiguity */
 
@@ -823,13 +812,15 @@ int LoadPAT(char *filename)
 		azimuth_pattern[360] = azimuth_pattern[0];
 
 		got_azimuth_pattern = 255;
-	}else if( errno == EACCES ){
-		return errno;
 	}
 
 	/* Read and process .el file */
 
-	if( (fd = fopen(elfile, "r")) != NULL ){
+	if( el_filename != NULL && (fd = fopen(el_filename, "r")) == NULL && errno != ENOENT )
+		/* Any error other than file not existing is an error */
+		return errno;
+
+	if( fd != NULL ){
 
 		for (x = 0; x <= 10000; x++) {
 			el_pattern[x] = 0.0;
@@ -1009,8 +1000,6 @@ int LoadPAT(char *filename)
 				LR.antenna_pattern[x][y] = az * elevation;
 			}
 		}
-	}else if( errno == EACCES ){
-		return errno;
 	}
 	return 0;
 }
