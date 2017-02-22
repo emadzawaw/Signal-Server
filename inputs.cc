@@ -234,107 +234,103 @@ int loadLIDAR(char *filenames)
 	}
 
 	while (indx < fc) {
-		fd = fopen(files[indx], "rb");
+		if( (fd = fopen(files[indx], "rb")) == NULL )
+			return errno;
 
-		if (fd != NULL) {
+		if (fgets(line, 255, fd) != NULL) {
+			pch = strtok (line," ");
+			pch = strtok (NULL, " ");
+			width = atoi(pch); // ncols
 
-			if (fgets(line, 255, fd) != NULL) {
-				pch = strtok (line," ");
-				pch = strtok (NULL, " ");
-				width = atoi(pch); // ncols
+			if (debug) {
+				fprintf(stderr, "Loading \"%s\" into page %d with width %d...\n", files[indx], indx, width);
+				fflush(stderr);
+			}
 
-				if (debug) {
-					fprintf(stderr, "Loading \"%s\" into page %d with width %d...\n", files[indx], indx, width);
-					fflush(stderr);
+                    if (fgets(line, 255, fd) != NULL)
+                            height = atoi(pch); // nrows
+
+			if (!dem_alloced) {
+				//Reduce MAXPAGES to increase speed
+				MAXPAGES=fc;
+				if(width>height){
+					IPPD = width;
+				}else{
+					IPPD = height;
 				}
-
-                        if (fgets(line, 255, fd) != NULL)
-                                height = atoi(pch); // nrows
-
-				if (!dem_alloced) {
-					//Reduce MAXPAGES to increase speed
-					MAXPAGES=fc;
-					if(width>height){
-						IPPD = width;
-					}else{
-						IPPD = height;
-					}
-					// add fudge as reprojected tiles sometimes vary by a pixel or ten
-					IPPD+=50;
-					ARRAYSIZE = (MAXPAGES * IPPD)+50;
-					do_allocs();
-					dem_alloced = 1;
-				}
-
-			}
-			if (fgets(line, 255, fd) != NULL) {
-				sscanf(pch, "%lf", &xll); // xll
+				// add fudge as reprojected tiles sometimes vary by a pixel or ten
+				IPPD+=50;
+				ARRAYSIZE = (MAXPAGES * IPPD)+50;
+				do_allocs();
+				dem_alloced = 1;
 			}
 
-			if (fgets(line, 255, fd) != NULL) {
-				sscanf(pch, "%lf", &yll); // yll
-			}
-
-			if (fgets(line, 255, fd) != NULL)
-				sscanf(pch, "%lf", &cellsize); 
-
-			avgCellsize=avgCellsize+cellsize;
-
-			/*if(cellsize>=0.5){ // 50cm LIDAR?
-				// compute xur and yur with inverse haversine if cellsize in *metres*
-				double roundDistance = (width*cellsize)/6371000;
-				yur = asin(sin(yll*DEG2RAD) * cos(roundDistance) + cos(yll * DEG2RAD) * sin(roundDistance) * cos(0)) * TO_DEG;
-				xur = ((xll*DEG2RAD) + atan2(sin(90*DEG2RAD) * sin(roundDistance) * cos(yll*DEG2RAD), cos(roundDistance) - sin(yll * DEG2RAD) * sin(yur*DEG2RAD))) * TO_DEG;
-			}else{*/
-				// Degrees with GDAL option: -co "FORCE_CELLSIZE=YES"
-				xur = xll+(cellsize*width);
-				yur = yll+(cellsize*height);
-			//}
-
-			if (xur > eastoffset)
-				eastoffset = xur;
-			if (xll < westoffset)
-				westoffset = xll;
-
-			if (debug)
-				fprintf(stderr,"%d, %d, %.7f, %.7f, %.7f, %.7f, %.7f\n",width,height,xll,yll,cellsize,yur,xur);
-
-
-			// Greenwich straddling hack
-			if (xll <= 0 && xur > 0) {
-				xll = (xur - xll); // full width
-				xur = 0.0; // budge it along so it's west of greenwich
-				delta = eastoffset; // add to Tx longitude later
-			} else {
-				// Transform WGS84 longitudes into 'west' values as society finishes east of Greenwich ;)
-				if (xll >= 0)
-					xll = 360-xll;
-				if(xur >= 0)
-					xur = 360-xur;
-				if(xll < 0)
-					xll = xll * -1;
-				if(xur < 0)
-					xur = xur * -1;
-			}
-			if (debug)
-				fprintf(stderr, "POST yll %.7f yur %.7f xur %.7f xll %.7f delta %.6f\n", yll, yur, xur, xll, delta);
-
-
-			fgets(line, 255, fd); // NODATA
-			pos = ftell(fd);
-
-			// tile 0 [x| ]
-			if (debug)
-				fprintf(stderr, "readLIDAR(fd,%d,%d,%d,%.4f,%.4f,%.4f,%.4f)\n", height, width, indx, yur, xur, yll, xll);
-
-			readLIDAR(fd, height, width, indx, yur, xur, yll, xll);
-
-			fclose(fd);
-			if (debug)
-				fprintf(stderr, "LIDAR LOADED %d x %d\n", width, height);
-		} else {
-			return -1;
 		}
+		if (fgets(line, 255, fd) != NULL) {
+			sscanf(pch, "%lf", &xll); // xll
+		}
+
+		if (fgets(line, 255, fd) != NULL) {
+			sscanf(pch, "%lf", &yll); // yll
+		}
+
+		if (fgets(line, 255, fd) != NULL)
+			sscanf(pch, "%lf", &cellsize); 
+
+		avgCellsize=avgCellsize+cellsize;
+
+		/*if(cellsize>=0.5){ // 50cm LIDAR?
+			// compute xur and yur with inverse haversine if cellsize in *metres*
+			double roundDistance = (width*cellsize)/6371000;
+			yur = asin(sin(yll*DEG2RAD) * cos(roundDistance) + cos(yll * DEG2RAD) * sin(roundDistance) * cos(0)) * TO_DEG;
+			xur = ((xll*DEG2RAD) + atan2(sin(90*DEG2RAD) * sin(roundDistance) * cos(yll*DEG2RAD), cos(roundDistance) - sin(yll * DEG2RAD) * sin(yur*DEG2RAD))) * TO_DEG;
+		}else{*/
+			// Degrees with GDAL option: -co "FORCE_CELLSIZE=YES"
+			xur = xll+(cellsize*width);
+			yur = yll+(cellsize*height);
+		//}
+
+		if (xur > eastoffset)
+			eastoffset = xur;
+		if (xll < westoffset)
+			westoffset = xll;
+
+		if (debug)
+			fprintf(stderr,"%d, %d, %.7f, %.7f, %.7f, %.7f, %.7f\n",width,height,xll,yll,cellsize,yur,xur);
+
+
+		// Greenwich straddling hack
+		if (xll <= 0 && xur > 0) {
+			xll = (xur - xll); // full width
+			xur = 0.0; // budge it along so it's west of greenwich
+			delta = eastoffset; // add to Tx longitude later
+		} else {
+			// Transform WGS84 longitudes into 'west' values as society finishes east of Greenwich ;)
+			if (xll >= 0)
+				xll = 360-xll;
+			if(xur >= 0)
+				xur = 360-xur;
+			if(xll < 0)
+				xll = xll * -1;
+			if(xur < 0)
+				xur = xur * -1;
+		}
+		if (debug)
+			fprintf(stderr, "POST yll %.7f yur %.7f xur %.7f xll %.7f delta %.6f\n", yll, yur, xur, xll, delta);
+
+
+		fgets(line, 255, fd); // NODATA
+		pos = ftell(fd);
+
+		// tile 0 [x| ]
+		if (debug)
+			fprintf(stderr, "readLIDAR(fd,%d,%d,%d,%.4f,%.4f,%.4f,%.4f)\n", height, width, indx, yur, xur, yll, xll);
+
+		readLIDAR(fd, height, width, indx, yur, xur, yll, xll);
+
+		fclose(fd);
+		if (debug)
+			fprintf(stderr, "LIDAR LOADED %d x %d\n", width, height);
 		indx++;
 	} // filename(s)
 	IPPD=width;
