@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
+#include <errno.h>
 #include "common.h"
 #include "main.hh"
 
@@ -22,105 +23,104 @@ int loadClutter(char *filename, double radius, struct site tx)
 	char * pch;
 	FILE *fd;
 
-	fd = fopen(filename, "rb");
+	if( (fd = fopen(filename, "rb")) == NULL)
+		return errno;
 
-	if (fd != NULL) {
+	if (fgets(line, 19, fd) != NULL) {
+		pch = strtok (line," ");
+		pch = strtok (NULL, " ");
+		w = atoi(pch);
+	}
 
-		if (fgets(line, 19, fd) != NULL) {
-			pch = strtok (line," ");
-			pch = strtok (NULL, " ");
-			w = atoi(pch);
-		}
+	if (fgets(line, 19, fd) != NULL) {
+		//pch = strtok (line," ");
+		//pch = strtok (NULL, " ");
+		h = atoi(pch);
+	}
 
-		if (fgets(line, 19, fd) != NULL) {
-			//pch = strtok (line," ");
-			//pch = strtok (NULL, " ");
-			h = atoi(pch);
-		}
-
-		if(w==2880 && h==3840){
-			cellsize=0.004167;
-			cellsize2 = cellsize * 2;
-		}else{
-			return 0; // can't work with this yet
-		}
-			if (debug) {
-				fprintf(stderr, "\nLoading clutter file \"%s\" %d x %d...\n", filename, w,h);
-				fflush(stderr);
-			}
-		if (fgets(line, 25, fd) != NULL) {
-			sscanf(pch, "%lf", &xll);
-		}
-
-		fgets(line, 25, fd);
-		if (fgets(line, 25, fd) != NULL) {
-			sscanf(pch, "%lf", &yll);
-		}
-
+	if(w==2880 && h==3840){
+		cellsize=0.004167;
+		cellsize2 = cellsize * 2;
+	}else{
+		return 0; // can't work with this yet
+	}
 		if (debug) {
-			fprintf(stderr, "\nxll %.2f yll %.2f\n", xll, yll);
+			fprintf(stderr, "\nLoading clutter file \"%s\" %d x %d...\n", filename, w,h);
 			fflush(stderr);
 		}
-
-		fgets(line, 25, fd); // cellsize
-
-		//loop over matrix
-		for (y = h; y > 0; y--) {
-				x = 0;
-				if (fgets(line, 100000, fd) != NULL) {
-					pch = strtok(line, " ");
-					while (pch != NULL && x < w) {
-						z = atoi(pch);
-						
-						// Apply ITU-R P.452-11
-						// Treat classes 0, 9, 10, 11, 15, 16 as water, (Water, savanna, grassland, wetland, snow, barren)
-						clh = 0.0;
-
-						// evergreen, evergreen, urban
-						if(z == 1 || z == 2 || z == 13)
-							clh = 20.0;
-						// deciduous, deciduous, mixed
-						if(z==3 || z==4 || z==5)
-							clh = 15.0;
-						// woody shrublands & savannas
-						if(z==6 || z==8)
-							clh = 4.0;
-						// shurblands, savannas, croplands...
-						if(z==7 || z==9 || z==10 || z==12 || z==14)
-							clh = 2.0;
-
-						if(clh>1){
-							xOffset=x*cellsize; // 12 deg wide
-							yOffset=y*cellsize; // 16 deg high
-
-							// make all longitudes positive 
-							if(xll+xOffset>0){
-								lon=360-(xll+xOffset);
-							}else{
-								lon=(xll+xOffset)*-1;
-							}
-							lat = yll+yOffset;
-
-							// bounding box
-							if(lat > tx.lat - radius && lat < tx.lat + radius && lon > tx.lon - radius && lon < tx.lon + radius){
-								
-								// not in near field
-								if((lat > tx.lat+cellsize2 || lat < tx.lat-cellsize2) || (lon > tx.lon + cellsize2 || lon < tx.lon - cellsize2)){
-									AddElevation(lat,lon,clh,3);
-
-								}
-
-							}
-						}
-	
-						x++;
-						pch = strtok(NULL, " ");
-					}//while
-				} else {
-					fprintf(stderr, "Clutter error @ x %d y %d\n", x, y);
-				}//if
-			}//for
+	if (fgets(line, 25, fd) != NULL) {
+		sscanf(pch, "%lf", &xll);
 	}
+
+	fgets(line, 25, fd);
+	if (fgets(line, 25, fd) != NULL) {
+		sscanf(pch, "%lf", &yll);
+	}
+
+	if (debug) {
+		fprintf(stderr, "\nxll %.2f yll %.2f\n", xll, yll);
+		fflush(stderr);
+	}
+
+	fgets(line, 25, fd); // cellsize
+
+	//loop over matrix
+	for (y = h; y > 0; y--) {
+		x = 0;
+		if (fgets(line, 100000, fd) != NULL) {
+			pch = strtok(line, " ");
+			while (pch != NULL && x < w) {
+				z = atoi(pch);
+				
+				// Apply ITU-R P.452-11
+				// Treat classes 0, 9, 10, 11, 15, 16 as water, (Water, savanna, grassland, wetland, snow, barren)
+				clh = 0.0;
+
+				// evergreen, evergreen, urban
+				if(z == 1 || z == 2 || z == 13)
+					clh = 20.0;
+				// deciduous, deciduous, mixed
+				if(z==3 || z==4 || z==5)
+					clh = 15.0;
+				// woody shrublands & savannas
+				if(z==6 || z==8)
+					clh = 4.0;
+				// shurblands, savannas, croplands...
+				if(z==7 || z==9 || z==10 || z==12 || z==14)
+					clh = 2.0;
+
+				if(clh>1){
+					xOffset=x*cellsize; // 12 deg wide
+					yOffset=y*cellsize; // 16 deg high
+
+					// make all longitudes positive 
+					if(xll+xOffset>0){
+						lon=360-(xll+xOffset);
+					}else{
+						lon=(xll+xOffset)*-1;
+					}
+					lat = yll+yOffset;
+
+					// bounding box
+					if(lat > tx.lat - radius && lat < tx.lat + radius && lon > tx.lon - radius && lon < tx.lon + radius){
+						
+						// not in near field
+						if((lat > tx.lat+cellsize2 || lat < tx.lat-cellsize2) || (lon > tx.lon + cellsize2 || lon < tx.lon - cellsize2)){
+							AddElevation(lat,lon,clh,3);
+
+						}
+
+					}
+				}
+
+				x++;
+				pch = strtok(NULL, " ");
+			}//while
+		} else {
+			fprintf(stderr, "Clutter error @ x %d y %d\n", x, y);
+		}//if
+	}//for
+
 	fclose(fd);
 	return 0;
 }

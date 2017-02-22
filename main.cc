@@ -1042,7 +1042,7 @@ int main(int argc, char *argv[])
 	int x, y, z = 0, min_lat, min_lon, max_lat, max_lon,
 	    rxlat, rxlon, txlat, txlon, west_min, west_max,
 	    nortRxHin, nortRxHax, propmodel, knifeedge = 0, ppa =
-	    0, normalise = 0, haf = 0, pmenv = 1, lidar=0, cropped;
+	    0, normalise = 0, haf = 0, pmenv = 1, lidar=0, cropped, result;
 
 	bool use_threads = true;
 
@@ -1797,7 +1797,10 @@ int main(int argc, char *argv[])
 		Clutter tiles cover 16 x 12 degs but we only need a fraction of that area.
 		Limit by max_range / miles per degree (at equator)
 		*/
-		loadClutter(clutter_file,max_range/45,tx_site[0]); 
+		if( (result = loadClutter(clutter_file,max_range/45,tx_site[0])) != 0 ){
+			fprintf(stderr, "Error, invalid or clutter file not found\n");
+			return result;
+		}
 	}
 
 	if (ppa == 0) {
