@@ -696,57 +696,37 @@ int LoadPAT(char *filename)
 
 	/* Load .az antenna pattern file */
 
-	if( (fd = fopen(azfile, "r")) == NULL )
-		return errno;
+	if( (fd = fopen(azfile, "r")) != NULL ){
 
-	/* Clear azimuth pattern array */
+		/* Clear azimuth pattern array */
 
-	for (x = 0; x <= 360; x++) {
-		azimuth[x] = 0.0;
-		read_count[x] = 0;
-	}
-
-	/* Read azimuth pattern rotation
-	   in degrees measured clockwise
-	   from true North. */
-
-	if (fgets(string, 254, fd) == NULL) {
-		//fprintf(stderr,"Azimuth read error\n");
-		//exit(0);
-	}
-	pointer = strchr(string, ';');
-
-	if (pointer != NULL)
-		*pointer = 0;
-
-	sscanf(string, "%f", &rotation);
-
-	/* Read azimuth (degrees) and corresponding
-	   normalized field radiation pattern amplitude
-	   (0.0 to 1.0) until EOF is reached. */
-
-	if (fgets(string, 254, fd) == NULL) {
-		//fprintf(stderr,"Azimuth read error\n");
-		//exit(0);
-	}
-	pointer = strchr(string, ';');
-
-	if (pointer != NULL)
-		*pointer = 0;
-
-	sscanf(string, "%f %f", &az, &amplitude);
-
-	do {
-		x = (int)rintf(az);
-
-		if (x >= 0 && x <= 360 && fd != NULL) {
-			azimuth[x] += amplitude;
-			read_count[x]++;
+		for (x = 0; x <= 360; x++) {
+			azimuth[x] = 0.0;
+			read_count[x] = 0;
 		}
+
+		/* Read azimuth pattern rotation
+		   in degrees measured clockwise
+		   from true North. */
 
 		if (fgets(string, 254, fd) == NULL) {
 			//fprintf(stderr,"Azimuth read error\n");
-			// exit(0);
+			//exit(0);
+		}
+		pointer = strchr(string, ';');
+
+		if (pointer != NULL)
+			*pointer = 0;
+
+		sscanf(string, "%f", &rotation);
+
+		/* Read azimuth (degrees) and corresponding
+		   normalized field radiation pattern amplitude
+		   (0.0 to 1.0) until EOF is reached. */
+
+		if (fgets(string, 254, fd) == NULL) {
+			//fprintf(stderr,"Azimuth read error\n");
+			//exit(0);
 		}
 		pointer = strchr(string, ';');
 
@@ -755,258 +735,282 @@ int LoadPAT(char *filename)
 
 		sscanf(string, "%f %f", &az, &amplitude);
 
-	} while (feof(fd) == 0);
+		do {
+			x = (int)rintf(az);
 
-	fclose(fd);
+			if (x >= 0 && x <= 360 && fd != NULL) {
+				azimuth[x] += amplitude;
+				read_count[x]++;
+			}
 
-	/* Handle 0=360 degree ambiguity */
+			if (fgets(string, 254, fd) == NULL) {
+				//fprintf(stderr,"Azimuth read error\n");
+				// exit(0);
+			}
+			pointer = strchr(string, ';');
 
-	if ((read_count[0] == 0) && (read_count[360] != 0)) {
-		read_count[0] = read_count[360];
-		azimuth[0] = azimuth[360];
-	}
+			if (pointer != NULL)
+				*pointer = 0;
 
-	if ((read_count[0] != 0) && (read_count[360] == 0)) {
-		read_count[360] = read_count[0];
-		azimuth[360] = azimuth[0];
-	}
+			sscanf(string, "%f %f", &az, &amplitude);
 
-	/* Average pattern values in case more than
-	   one was read for each degree of azimuth. */
+		} while (feof(fd) == 0);
 
-	for (x = 0; x <= 360; x++) {
-		if (read_count[x] > 1)
-			azimuth[x] /= (float)read_count[x];
-	}
+		fclose(fd);
 
-	/* Interpolate missing azimuths
-	   to completely fill the array */
+		/* Handle 0=360 degree ambiguity */
 
-	last_index = -1;
-	next_index = -1;
-
-	for (x = 0; x <= 360; x++) {
-		if (read_count[x] != 0) {
-			if (last_index == -1)
-				last_index = x;
-			else
-				next_index = x;
+		if ((read_count[0] == 0) && (read_count[360] != 0)) {
+			read_count[0] = read_count[360];
+			azimuth[0] = azimuth[360];
 		}
 
-		if (last_index != -1 && next_index != -1) {
-			valid1 = azimuth[last_index];
-			valid2 = azimuth[next_index];
-
-			span = next_index - last_index;
-			delta = (valid2 - valid1) / (float)span;
-
-			for (y = last_index + 1; y < next_index; y++)
-				azimuth[y] = azimuth[y - 1] + delta;
-
-			last_index = y;
-			next_index = -1;
+		if ((read_count[0] != 0) && (read_count[360] == 0)) {
+			read_count[360] = read_count[0];
+			azimuth[360] = azimuth[0];
 		}
+
+		/* Average pattern values in case more than
+		   one was read for each degree of azimuth. */
+
+		for (x = 0; x <= 360; x++) {
+			if (read_count[x] > 1)
+				azimuth[x] /= (float)read_count[x];
+		}
+
+		/* Interpolate missing azimuths
+		   to completely fill the array */
+
+		last_index = -1;
+		next_index = -1;
+
+		for (x = 0; x <= 360; x++) {
+			if (read_count[x] != 0) {
+				if (last_index == -1)
+					last_index = x;
+				else
+					next_index = x;
+			}
+
+			if (last_index != -1 && next_index != -1) {
+				valid1 = azimuth[last_index];
+				valid2 = azimuth[next_index];
+
+				span = next_index - last_index;
+				delta = (valid2 - valid1) / (float)span;
+
+				for (y = last_index + 1; y < next_index; y++)
+					azimuth[y] = azimuth[y - 1] + delta;
+
+				last_index = y;
+				next_index = -1;
+			}
+		}
+
+		/* Perform azimuth pattern rotation
+		   and load azimuth_pattern[361] with
+		   azimuth pattern data in its final form. */
+
+		for (x = 0; x < 360; x++) {
+			y = x + (int)rintf(rotation);
+
+			if (y >= 360)
+				y -= 360;
+
+			azimuth_pattern[y] = azimuth[x];
+		}
+
+		azimuth_pattern[360] = azimuth_pattern[0];
+
+		got_azimuth_pattern = 255;
+	}else if( errno == EACCES ){
+		return errno;
 	}
-
-	/* Perform azimuth pattern rotation
-	   and load azimuth_pattern[361] with
-	   azimuth pattern data in its final form. */
-
-	for (x = 0; x < 360; x++) {
-		y = x + (int)rintf(rotation);
-
-		if (y >= 360)
-			y -= 360;
-
-		azimuth_pattern[y] = azimuth[x];
-	}
-
-	azimuth_pattern[360] = azimuth_pattern[0];
-
-	got_azimuth_pattern = 255;
 
 	/* Read and process .el file */
 
-	if( (fd = fopen(elfile, "r")) == NULL )
-		return errno;
+	if( (fd = fopen(elfile, "r")) != NULL ){
 
-	for (x = 0; x <= 10000; x++) {
-		el_pattern[x] = 0.0;
-		read_count[x] = 0;
-	}
-
-	/* Read mechanical tilt (degrees) and
-	   tilt azimuth in degrees measured
-	   clockwise from true North. */
-
-	if (fgets(string, 254, fd) == NULL) {
-		//fprintf(stderr,"Tilt read error\n");
-		//exit(0);
-	}
-	pointer = strchr(string, ';');
-
-	if (pointer != NULL)
-		*pointer = 0;
-
-	sscanf(string, "%f %f", &mechanical_tilt, &tilt_azimuth);
-
-	/* Read elevation (degrees) and corresponding
-	   normalized field radiation pattern amplitude
-	   (0.0 to 1.0) until EOF is reached. */
-
-	if (fgets(string, 254, fd) == NULL) {
-		//fprintf(stderr,"Ant elevation read error\n");
-		//exit(0);
-	}
-	pointer = strchr(string, ';');
-
-	if (pointer != NULL)
-		*pointer = 0;
-
-	sscanf(string, "%f %f", &elevation, &amplitude);
-
-	while (feof(fd) == 0) {
-		/* Read in normalized radiated field values
-		   for every 0.01 degrees of elevation between
-		   -10.0 and +90.0 degrees */
-
-		x = (int)rintf(100.0 * (elevation + 10.0));
-
-		if (x >= 0 && x <= 10000) {
-			el_pattern[x] += amplitude;
-			read_count[x]++;
+		for (x = 0; x <= 10000; x++) {
+			el_pattern[x] = 0.0;
+			read_count[x] = 0;
 		}
 
-		if (fgets(string, 254, fd) != NULL) {
-			pointer = strchr(string, ';');
+		/* Read mechanical tilt (degrees) and
+		   tilt azimuth in degrees measured
+		   clockwise from true North. */
+
+		if (fgets(string, 254, fd) == NULL) {
+			//fprintf(stderr,"Tilt read error\n");
+			//exit(0);
 		}
+		pointer = strchr(string, ';');
+
+		if (pointer != NULL)
+			*pointer = 0;
+
+		sscanf(string, "%f %f", &mechanical_tilt, &tilt_azimuth);
+
+		/* Read elevation (degrees) and corresponding
+		   normalized field radiation pattern amplitude
+		   (0.0 to 1.0) until EOF is reached. */
+
+		if (fgets(string, 254, fd) == NULL) {
+			//fprintf(stderr,"Ant elevation read error\n");
+			//exit(0);
+		}
+		pointer = strchr(string, ';');
+
 		if (pointer != NULL)
 			*pointer = 0;
 
 		sscanf(string, "%f %f", &elevation, &amplitude);
-	}
 
-	fclose(fd);
+		while (feof(fd) == 0) {
+			/* Read in normalized radiated field values
+			   for every 0.01 degrees of elevation between
+			   -10.0 and +90.0 degrees */
 
-	/* Average the field values in case more than
-	   one was read for each 0.01 degrees of elevation. */
+			x = (int)rintf(100.0 * (elevation + 10.0));
 
-	for (x = 0; x <= 10000; x++) {
-		if (read_count[x] > 1)
-			el_pattern[x] /= (float)read_count[x];
-	}
-
-	/* Interpolate between missing elevations (if
-	   any) to completely fill the array and provide
-	   radiated field values for every 0.01 degrees of
-	   elevation. */
-
-	last_index = -1;
-	next_index = -1;
-
-	for (x = 0; x <= 10000; x++) {
-		if (read_count[x] != 0) {
-			if (last_index == -1)
-				last_index = x;
-			else
-				next_index = x;
-		}
-
-		if (last_index != -1 && next_index != -1) {
-			valid1 = el_pattern[last_index];
-			valid2 = el_pattern[next_index];
-
-			span = next_index - last_index;
-			delta = (valid2 - valid1) / (float)span;
-
-			for (y = last_index + 1; y < next_index; y++)
-				el_pattern[y] =
-				    el_pattern[y - 1] + delta;
-
-			last_index = y;
-			next_index = -1;
-		}
-	}
-
-	/* Fill slant_angle[] array with offset angles based
-	   on the antenna's mechanical beam tilt (if any)
-	   and tilt direction (azimuth). */
-
-	if (mechanical_tilt == 0.0) {
-		for (x = 0; x <= 360; x++)
-			slant_angle[x] = 0.0;
-	}
-
-	else {
-		tilt_increment = mechanical_tilt / 90.0;
-
-		for (x = 0; x <= 360; x++) {
-			xx = (float)x;
-			y = (int)rintf(tilt_azimuth + xx);
-
-			while (y >= 360)
-				y -= 360;
-
-			while (y < 0)
-				y += 360;
-
-			if (x <= 180)
-				slant_angle[y] =
-				    -(tilt_increment * (90.0 - xx));
-
-			if (x > 180)
-				slant_angle[y] =
-				    -(tilt_increment * (xx - 270.0));
-		}
-	}
-
-	slant_angle[360] = slant_angle[0];	/* 360 degree wrap-around */
-
-	for (w = 0; w <= 360; w++) {
-		tilt = slant_angle[w];
-
-    /** Convert tilt angle to
-            an array index offset **/
-
-		y = (int)rintf(100.0 * tilt);
-
-		/* Copy shifted el_pattern[10001] field
-		   values into elevation_pattern[361][1001]
-		   at the corresponding azimuth, downsampling
-		   (averaging) along the way in chunks of 10. */
-
-		for (x = y, z = 0; z <= 1000; x += 10, z++) {
-			for (sum = 0.0, a = 0; a < 10; a++) {
-				b = a + x;
-
-				if (b >= 0 && b <= 10000)
-					sum += el_pattern[b];
-				if (b < 0)
-					sum += el_pattern[0];
-				if (b > 10000)
-					sum += el_pattern[10000];
+			if (x >= 0 && x <= 10000) {
+				el_pattern[x] += amplitude;
+				read_count[x]++;
 			}
 
-			elevation_pattern[w][z] = sum / 10.0;
+			if (fgets(string, 254, fd) != NULL) {
+				pointer = strchr(string, ';');
+			}
+			if (pointer != NULL)
+				*pointer = 0;
+
+			sscanf(string, "%f %f", &elevation, &amplitude);
 		}
-	}
 
-	got_elevation_pattern = 255;
+		fclose(fd);
 
-	for (x = 0; x <= 360; x++) {
-		for (y = 0; y <= 1000; y++) {
-			if (got_elevation_pattern)
-				elevation = elevation_pattern[x][y];
-			else
-				elevation = 1.0;
+		/* Average the field values in case more than
+		   one was read for each 0.01 degrees of elevation. */
 
-			if (got_azimuth_pattern)
-				az = azimuth_pattern[x];
-			else
-				az = 1.0;
-
-			LR.antenna_pattern[x][y] = az * elevation;
+		for (x = 0; x <= 10000; x++) {
+			if (read_count[x] > 1)
+				el_pattern[x] /= (float)read_count[x];
 		}
+
+		/* Interpolate between missing elevations (if
+		   any) to completely fill the array and provide
+		   radiated field values for every 0.01 degrees of
+		   elevation. */
+
+		last_index = -1;
+		next_index = -1;
+
+		for (x = 0; x <= 10000; x++) {
+			if (read_count[x] != 0) {
+				if (last_index == -1)
+					last_index = x;
+				else
+					next_index = x;
+			}
+
+			if (last_index != -1 && next_index != -1) {
+				valid1 = el_pattern[last_index];
+				valid2 = el_pattern[next_index];
+
+				span = next_index - last_index;
+				delta = (valid2 - valid1) / (float)span;
+
+				for (y = last_index + 1; y < next_index; y++)
+					el_pattern[y] =
+					    el_pattern[y - 1] + delta;
+
+				last_index = y;
+				next_index = -1;
+			}
+		}
+
+		/* Fill slant_angle[] array with offset angles based
+		   on the antenna's mechanical beam tilt (if any)
+		   and tilt direction (azimuth). */
+
+		if (mechanical_tilt == 0.0) {
+			for (x = 0; x <= 360; x++)
+				slant_angle[x] = 0.0;
+		}
+
+		else {
+			tilt_increment = mechanical_tilt / 90.0;
+
+			for (x = 0; x <= 360; x++) {
+				xx = (float)x;
+				y = (int)rintf(tilt_azimuth + xx);
+
+				while (y >= 360)
+					y -= 360;
+
+				while (y < 0)
+					y += 360;
+
+				if (x <= 180)
+					slant_angle[y] =
+					    -(tilt_increment * (90.0 - xx));
+
+				if (x > 180)
+					slant_angle[y] =
+					    -(tilt_increment * (xx - 270.0));
+			}
+		}
+
+		slant_angle[360] = slant_angle[0];	/* 360 degree wrap-around */
+
+		for (w = 0; w <= 360; w++) {
+			tilt = slant_angle[w];
+
+	    /** Convert tilt angle to
+	            an array index offset **/
+
+			y = (int)rintf(100.0 * tilt);
+
+			/* Copy shifted el_pattern[10001] field
+			   values into elevation_pattern[361][1001]
+			   at the corresponding azimuth, downsampling
+			   (averaging) along the way in chunks of 10. */
+
+			for (x = y, z = 0; z <= 1000; x += 10, z++) {
+				for (sum = 0.0, a = 0; a < 10; a++) {
+					b = a + x;
+
+					if (b >= 0 && b <= 10000)
+						sum += el_pattern[b];
+					if (b < 0)
+						sum += el_pattern[0];
+					if (b > 10000)
+						sum += el_pattern[10000];
+				}
+
+				elevation_pattern[w][z] = sum / 10.0;
+			}
+		}
+
+		got_elevation_pattern = 255;
+
+		for (x = 0; x <= 360; x++) {
+			for (y = 0; y <= 1000; y++) {
+				if (got_elevation_pattern)
+					elevation = elevation_pattern[x][y];
+				else
+					elevation = 1.0;
+
+				if (got_azimuth_pattern)
+					az = azimuth_pattern[x];
+				else
+					az = 1.0;
+
+				LR.antenna_pattern[x][y] = az * elevation;
+			}
+		}
+	}else if( errno == EACCES ){
+		return errno;
 	}
 	return 0;
 }
