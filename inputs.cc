@@ -400,138 +400,133 @@ int LoadSDF_SDF(char *name)
 
 		strncpy(path_plus_name, sdf_file, 255);
 
-		fd = fopen(path_plus_name, "rb");
-
-		if (fd == NULL) {
+		if( (fd = fopen(path_plus_name, "rb")) == NULL ){
 			/* Next, try loading SDF file from path specified
 			   in $HOME/.ss_path file or by -d argument */
 
 			strncpy(path_plus_name, sdf_path, 255);
 			strncat(path_plus_name, sdf_file, 255);
-			fd = fopen(path_plus_name, "rb");
+			if( (fd = fopen(path_plus_name, "rb")) == NULL ){
+				return -errno;
+			}
 		}
 
-		if (fd != NULL) {
-			if (debug == 1) {
-				fprintf(stderr,
-					"Loading \"%s\" into page %d...",
-					path_plus_name, indx + 1);
-				fflush(stderr);
-			}
-
-			if (fgets(line, 19, fd) != NULL) {
-				sscanf(line, "%f", &dem[indx].max_west);
-			}
-
-			if (fgets(line, 19, fd) != NULL) {
-				sscanf(line, "%f", &dem[indx].min_north);
-			}
-
-			if (fgets(line, 19, fd) != NULL) {
-				sscanf(line, "%f", &dem[indx].min_west);
-			}
-
-			if (fgets(line, 19, fd) != NULL) {
-				sscanf(line, "%f", &dem[indx].max_north);
-			}
-			/*
-			   Here X lines of DEM will be read until IPPD is reached.
-			   Each .sdf tile contains 1200x1200 = 1.44M 'points'
-			   Each point is sampled for 1200 resolution!
-			 */
-			for (x = 0; x < ippd; x++) {
-				for (y = 0; y < ippd; y++) {
-
-					for (j = 0; j < jgets; j++) {
-						junk = fgets(jline, 19, fd);
-					}
-
-					if (fgets(line, 19, fd) != NULL) {
-						data = atoi(line);
-					}
-
-					dem[indx].data[x][y] = data;
-					dem[indx].signal[x][y] = 0;
-					dem[indx].mask[x][y] = 0;
-
-					if (data > dem[indx].max_el)
-						dem[indx].max_el = data;
-
-					if (data < dem[indx].min_el)
-						dem[indx].min_el = data;
-
-				}
-
-				if (ippd == 600) {
-					for (j = 0; j < IPPD; j++) {
-						junk = fgets(jline, 19, fd);
-					}
-				}
-				if (ippd == 300) {
-					for (j = 0; j < IPPD; j++) {
-						junk = fgets(jline, 19, fd);
-						junk = fgets(jline, 19, fd);
-						junk = fgets(jline, 19, fd);
-
-					}
-				}
-			}
-
-			fclose(fd);
-
-			if (dem[indx].min_el < min_elevation)
-				min_elevation = dem[indx].min_el;
-
-			if (dem[indx].max_el > max_elevation)
-				max_elevation = dem[indx].max_el;
-
-			if (max_north == -90)
-				max_north = dem[indx].max_north;
-
-			else if (dem[indx].max_north > max_north)
-				max_north = dem[indx].max_north;
-
-			if (min_north == 90)
-				min_north = dem[indx].min_north;
-
-			else if (dem[indx].min_north < min_north)
-				min_north = dem[indx].min_north;
-
-			if (max_west == -1)
-				max_west = dem[indx].max_west;
-
-			else {
-				if (abs(dem[indx].max_west - max_west) < 180) {
-					if (dem[indx].max_west > max_west)
-						max_west = dem[indx].max_west;
-				}
-
-				else {
-					if (dem[indx].max_west < max_west)
-						max_west = dem[indx].max_west;
-				}
-			}
-
-			if (min_west == 360)
-				min_west = dem[indx].min_west;
-
-			else {
-				if (fabs(dem[indx].min_west - min_west) < 180.0) {
-					if (dem[indx].min_west < min_west)
-						min_west = dem[indx].min_west;
-				}
-
-				else {
-					if (dem[indx].min_west > min_west)
-						min_west = dem[indx].min_west;
-				}
-			}
-
-			return 1;
+		if (debug == 1) {
+			fprintf(stderr,
+				"Loading \"%s\" into page %d...",
+				path_plus_name, indx + 1);
+			fflush(stderr);
 		}
 
-		else
-			return -1;
+		if (fgets(line, 19, fd) != NULL) {
+			sscanf(line, "%f", &dem[indx].max_west);
+		}
+
+		if (fgets(line, 19, fd) != NULL) {
+			sscanf(line, "%f", &dem[indx].min_north);
+		}
+
+		if (fgets(line, 19, fd) != NULL) {
+			sscanf(line, "%f", &dem[indx].min_west);
+		}
+
+		if (fgets(line, 19, fd) != NULL) {
+			sscanf(line, "%f", &dem[indx].max_north);
+		}
+		/*
+		   Here X lines of DEM will be read until IPPD is reached.
+		   Each .sdf tile contains 1200x1200 = 1.44M 'points'
+		   Each point is sampled for 1200 resolution!
+		 */
+		for (x = 0; x < ippd; x++) {
+			for (y = 0; y < ippd; y++) {
+
+				for (j = 0; j < jgets; j++) {
+					junk = fgets(jline, 19, fd);
+				}
+
+				if (fgets(line, 19, fd) != NULL) {
+					data = atoi(line);
+				}
+
+				dem[indx].data[x][y] = data;
+				dem[indx].signal[x][y] = 0;
+				dem[indx].mask[x][y] = 0;
+
+				if (data > dem[indx].max_el)
+					dem[indx].max_el = data;
+
+				if (data < dem[indx].min_el)
+					dem[indx].min_el = data;
+
+			}
+
+			if (ippd == 600) {
+				for (j = 0; j < IPPD; j++) {
+					junk = fgets(jline, 19, fd);
+				}
+			}
+			if (ippd == 300) {
+				for (j = 0; j < IPPD; j++) {
+					junk = fgets(jline, 19, fd);
+					junk = fgets(jline, 19, fd);
+					junk = fgets(jline, 19, fd);
+
+				}
+			}
+		}
+
+		fclose(fd);
+
+		if (dem[indx].min_el < min_elevation)
+			min_elevation = dem[indx].min_el;
+
+		if (dem[indx].max_el > max_elevation)
+			max_elevation = dem[indx].max_el;
+
+		if (max_north == -90)
+			max_north = dem[indx].max_north;
+
+		else if (dem[indx].max_north > max_north)
+			max_north = dem[indx].max_north;
+
+		if (min_north == 90)
+			min_north = dem[indx].min_north;
+
+		else if (dem[indx].min_north < min_north)
+			min_north = dem[indx].min_north;
+
+		if (max_west == -1)
+			max_west = dem[indx].max_west;
+
+		else {
+			if (abs(dem[indx].max_west - max_west) < 180) {
+				if (dem[indx].max_west > max_west)
+					max_west = dem[indx].max_west;
+			}
+
+			else {
+				if (dem[indx].max_west < max_west)
+					max_west = dem[indx].max_west;
+			}
+		}
+
+		if (min_west == 360)
+			min_west = dem[indx].min_west;
+
+		else {
+			if (fabs(dem[indx].min_west - min_west) < 180.0) {
+				if (dem[indx].min_west < min_west)
+					min_west = dem[indx].min_west;
+			}
+
+			else {
+				if (dem[indx].min_west > min_west)
+					min_west = dem[indx].min_west;
+			}
+		}
+
+		return 1;
 	}
 
 	else
@@ -557,7 +552,7 @@ char LoadSDF(char *name)
 
 	/* If neither format can be found, then assume the area is water. */
 
-	if (return_value == 0 || return_value == -1) {
+	if ( return_value == 0 || return_value < 0 ) {
 
 
 			sscanf(name, "%d:%d:%d:%d", &minlat, &maxlat, &minlon,
