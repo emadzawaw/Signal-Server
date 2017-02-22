@@ -5,7 +5,7 @@
 
 int LoadSDF_SDF(char *name, int winfiles);
 char LoadSDF(char *name, int winfiles);
-void LoadPAT(char *filename);
+int LoadPAT(char *filename);
 void LoadSignalColors(struct site xmtr);
 void LoadLossColors(struct site xmtr);
 void LoadDBMColors(struct site xmtr);

@@ -1218,7 +1218,10 @@ int main(int argc, char *argv[])
 				strncpy(mapfile, argv[z], 253);
 				strncpy(tx_site[0].name, "Tx", 2);
 				strncpy(tx_site[0].filename, argv[z], 253);
-				LoadPAT(argv[z]);
+				if( (result = LoadPAT(argv[z])) != 0 ){
+					fprintf(stderr,"Error reading antenna pattern file\n");
+					exit(result);
+				}
 			} else if (z <= y && argv[z][0] && argv[z][0] == '-' && argv[z][1] == '\0' ) {
 				/* Handle writing image data to stdout */
 				to_stdout = true;
