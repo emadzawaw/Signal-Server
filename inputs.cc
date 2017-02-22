@@ -1008,9 +1008,10 @@ int LoadPAT(char *filename)
 			LR.antenna_pattern[x][y] = az * elevation;
 		}
 	}
+	return 0;
 }
 
-void LoadSignalColors(struct site xmtr)
+int LoadSignalColors(struct site xmtr)
 {
 	int x, y, ok, val[4];
 	char filename[255], string[80], *pointer = NULL, *s = NULL;
@@ -1095,14 +1096,13 @@ void LoadSignalColors(struct site xmtr)
 
 	region.levels = 13;
 
-	fd = fopen(filename, "r");
-
-	if (fd == NULL && xmtr.filename[0] == '\0')
-		/* Don't save if we don't have an output file */
-		return;
+	/* Don't save if we don't have an output file */
+	if ( xmtr.filename[0] == '\0' && (fd = fopen(filename, "r")) == NULL )
+		return 0;
 
 	if (fd == NULL) {
-		fd = fopen(filename, "w");
+		if( (fd = fopen(filename, "w")) == NULL )
+			return errno;
 
 		for (x = 0; x < region.levels; x++)
 			fprintf(fd, "%3d: %3d, %3d, %3d\n", region.level[x],
@@ -1147,6 +1147,7 @@ void LoadSignalColors(struct site xmtr)
 		fclose(fd);
 		region.levels = x;
 	}
+	return 0;
 }
 
 void LoadLossColors(struct site xmtr)

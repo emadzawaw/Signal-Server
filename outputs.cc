@@ -256,7 +256,7 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 
 }
 
-void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
+int DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 	      unsigned char ngs, struct site *xmtr, unsigned char txsites)
 {
 	/* This function generates a topographic map in Portable Pix Map
@@ -284,7 +284,10 @@ void DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 	    255.0 / pow((double)(max_elevation - min_elevation),
 			one_over_gamma);
 
-	LoadSignalColors(xmtr[0]);
+	if( (success = LoadSignalColors(xmtr[0])) != 0 ){
+		fprintf(stderr,"Error loading signal colors\n");
+		return success;
+	}
 
 	if( filename != NULL ) {
 

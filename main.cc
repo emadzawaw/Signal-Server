@@ -1846,8 +1846,8 @@ int main(int argc, char *argv[])
 				DoRxdPwr((to_stdout == true ? NULL : mapfile), geo, kml, ngs, tx_site,
 					 txsites);
 			else
-				DoSigStr(mapfile, geo, kml, ngs, tx_site,
-					 txsites);
+				if( (result = DoSigStr(mapfile, geo, kml, ngs, tx_site,txsites)) != 0 )
+					return result;
 		}
 		if(lidar){
 			east=eastoffset;
