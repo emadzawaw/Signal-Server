@@ -1297,7 +1297,7 @@ int LoadLossColors(struct site xmtr)
 	return 0;
 }
 
-void LoadDBMColors(struct site xmtr)
+int LoadDBMColors(struct site xmtr)
 {
 	int x, y, ok, val[4];
 	char filename[255], string[80], *pointer = NULL, *s = NULL;
@@ -1397,14 +1397,13 @@ void LoadDBMColors(struct site xmtr)
 
 	region.levels = 16;
 
-	fd = fopen(filename, "r");
-
-	if (fd == NULL && xmtr.filename[0] == '\0')
+	if ( (fd = fopen(filename, "r")) == NULL && xmtr.filename[0] == '\0' )
 		/* Don't save if we don't have an output file */
-		return;
+		return 0;
 
 	if (fd == NULL) {
-		fd = fopen(filename, "w");
+		if( (fd = fopen(filename, "w")) == NULL )
+			return errno;
 
 		for (x = 0; x < region.levels; x++)
 			fprintf(fd, "%+4d: %3d, %3d, %3d\n", region.level[x],
@@ -1456,6 +1455,7 @@ void LoadDBMColors(struct site xmtr)
 		fclose(fd);
 		region.levels = x;
 	}
+	return 0;
 }
 
 void LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat)
