@@ -364,8 +364,8 @@ int LoadSDF_SDF(char *name)
 
 	/* Parse filename for minimum latitude and longitude values */
 
-		sscanf(sdf_file, "%d:%d:%d:%d", &minlat, &maxlat, &minlon,
-		       &maxlon);
+	sscanf(sdf_file, "%d:%d:%d:%d", &minlat, &maxlat, &minlon,
+	       &maxlon);
 	
 
 	sdf_file[x] = '.';
@@ -533,7 +533,7 @@ int LoadSDF_SDF(char *name)
 		return 0;
 }
 
-char LoadSDF(char *name)
+int LoadSDF(char *name)
 {
 	/* This function loads the requested SDF file from the filesystem.
 	   It first tries to invoke the LoadSDF_SDF() function to load an
@@ -555,8 +555,8 @@ char LoadSDF(char *name)
 	if ( return_value == 0 || return_value < 0 ) {
 
 
-			sscanf(name, "%d:%d:%d:%d", &minlat, &maxlat, &minlon,
-			       &maxlon);
+		sscanf(name, "%d:%d:%d:%d", &minlat, &maxlat, &minlon,
+		       &maxlon);
 		
 		/* Is it already in memory? */
 
@@ -1458,12 +1458,13 @@ int LoadDBMColors(struct site xmtr)
 	return 0;
 }
 
-void LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat)
+int LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat)
 {
 	/* This function loads the SDF files required
 	   to cover the limits of the region specified. */
 
 	int x, y, width, ymin, ymax;
+	int success;
 
 	width = ReduceAngle(max_lon - min_lon);
 
@@ -1495,7 +1496,9 @@ void LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat)
 						snprintf(string, 16,
 							 "%d:%d:%d:%d", x,
 							 x + 1, ymin, ymax);
-				LoadSDF(string);
+				if( (success = LoadSDF(string)) < 0 ){
+					return -success;
+				}
 			}
 	}
 
@@ -1526,9 +1529,12 @@ void LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat)
 						snprintf(string, 16,
 							 "%d:%d:%d:%d", x,
 							 x + 1, ymin, ymax);
-				LoadSDF(string);
+				if( (success = LoadSDF(string)) < 0 ){
+					return -success;
+				}
 			}
 	}
+	return 0;
 }
 
 void LoadUDT(char *filename)

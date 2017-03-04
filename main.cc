@@ -1708,9 +1708,13 @@ int main(int argc, char *argv[])
 	
 	}else{
 		// DEM first
-		LoadTopoData(max_lon, min_lon, max_lat, min_lat);
+		if( (result = LoadTopoData(max_lon, min_lon, max_lat, min_lat)) != 0 ){
+			// This only fails on errors loading SDF tiles
+			fprintf(stderr, "Error loading topo data\n");
+			return result;
+		}
 
-			if (area_mode || topomap) {
+		if (area_mode || topomap) {
 			for (z = 0; z < txsites && z < max_txsites; z++) {
 				/* "Ball park" estimates used to load any additional
 				   SDF files required to conduct this analysis. */
@@ -1793,7 +1797,11 @@ int main(int argc, char *argv[])
 
 			/* Load any additional SDF files, if required */
 
-			LoadTopoData(max_lon, min_lon, max_lat, min_lat);
+			if( (result = LoadTopoData(max_lon, min_lon, max_lat, min_lat)) != 0 ){
+				// This only fails on errors loading SDF tiles
+				fprintf(stderr, "Error loading topo data\n");
+				return result;
+			}
 		}
 		ppd=(double)ippd;
 		yppd=ppd; 
