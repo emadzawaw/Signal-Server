@@ -28,6 +28,7 @@ double version = 3.02;
 #include <ctype.h>
 #include <unistd.h>
 #include <errno.h>
+#include <limits.h>
 
 #include "common.h"
 #include "inputs.hh"
@@ -1049,8 +1050,8 @@ int main(int argc, char *argv[])
 	unsigned char LRmap = 0, txsites = 0, topomap = 0, geo = 0, kml =
 	    0, area_mode = 0, max_txsites, ngs = 0;
 
-	char mapfile[255], udt_file[255], ano_filename[255], lidar_tiles[4096], clutter_file[255];
-	char *az_filename, *el_filename;
+	char mapfile[255], ano_filename[255], lidar_tiles[4096], clutter_file[255];
+	char *az_filename, *el_filename, *udt_file = NULL;
 
 	double altitude = 0.0, altitudeLR = 0.0, tx_range = 0.0,
 	    rx_range = 0.0, deg_range = 0.0, deg_limit = 0.0, deg_range_lon;
@@ -1142,7 +1143,7 @@ int main(int argc, char *argv[])
 	forced_erp = -1.0;
 	forced_freq = 0.0;
 	sdf_path[0] = 0;
-	udt_file[0] = 0;
+	udt_file = NULL;
 	path.length = 0;
 	max_txsites = 30;
 	fzone_clearance = 0.6;
@@ -1488,10 +1489,14 @@ int main(int argc, char *argv[])
 		}
 
 	
-		 /*UDT*/ if (strcmp(argv[x], "-udt") == 0) {
+		 /*UDT*/
+		if (strcmp(argv[x], "-udt") == 0) {
 			z = x + 1;
 
 			if (z <= y && argv[z][0]) {
+				udt_file = (char*) calloc(PATH_MAX+1, sizeof(char));
+				if( udt_file == NULL )
+					return ENOMEM;
 				strncpy(udt_file, argv[z], 253);
 			}
 		}
@@ -1813,7 +1818,10 @@ int main(int argc, char *argv[])
 	mpi = ippd-1; 
 
 	// User defined clutter file
-	LoadUDT(udt_file);
+	if( udt_file != NULL && (result = LoadUDT(udt_file)) != 0 ){
+		fprintf(stderr, "Error loading clutter file\n");
+		return result;
+	}
 
 	// Enrich with Clutter
 	if(strlen(clutter_file) > 1){

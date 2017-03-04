@@ -10,7 +10,7 @@ int LoadSignalColors(struct site xmtr);
 int LoadLossColors(struct site xmtr);
 int LoadDBMColors(struct site xmtr);
 int LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat);
-void LoadUDT(char *filename);
+int LoadUDT(char *filename);
 int loadLIDAR(char *filename);
 int loadClutter(char *filename, double radius, struct site tx);
 

@@ -1537,7 +1537,7 @@ int LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat)
 	return 0;
 }
 
-void LoadUDT(char *filename)
+int LoadUDT(char *filename)
 {
 	/* This function reads a file containing User-Defined Terrain
 	   features for their addition to the digital elevation model
@@ -1552,13 +1552,83 @@ void LoadUDT(char *filename)
 	double latitude, longitude, height, tempheight;
 	FILE *fd1 = NULL, *fd2 = NULL;
 
-	strcpy(tempname, "/tmp/XXXXXX\0");
+	strcpy(tempname, "/tmp/XXXXXX");
 
-	fd1 = fopen(filename, "r");
+	if( (fd1 = fopen(filename, "r")) == NULL )
+		return errno;
 
-	if (fd1 != NULL) {
-		fd = mkstemp(tempname);
-		fd2 = fopen(tempname, "w");
+	if( (fd = mkstemp(tempname)) == -1 )
+		return errno;
+
+	if( (fd2 = fdopen(fd,"w")) == NULL ){
+		fclose(fd1);
+		close(fd);
+		return errno;
+	}
+
+	s = fgets(input, 78, fd1);
+
+	pointer = strchr(input, ';');
+
+	if (pointer != NULL)
+		*pointer = 0;
+
+	while (feof(fd1) == 0) {
+		/* Parse line for latitude, longitude, height */
+
+		for (x = 0, y = 0, z = 0;
+		     x < 78 && input[x] != 0 && z < 3; x++) {
+			if (input[x] != ',' && y < 78) {
+				str[z][y] = input[x];
+				y++;
+			}
+
+			else {
+				str[z][y] = 0;
+				z++;
+				y = 0;
+			}
+		}
+
+		latitude = ReadBearing(str[0]);
+		longitude = ReadBearing(str[1]);
+
+		if (longitude < 0.0)
+			longitude += 360;
+
+		/* Remove <CR> and/or <LF> from antenna height string */
+
+		for (i = 0;
+		     str[2][i] != 13 && str[2][i] != 10
+		     && str[2][i] != 0; i++) ;
+
+		str[2][i] = 0;
+
+		/* The terrain feature may be expressed in either
+		   feet or meters.  If the letter 'M' or 'm' is
+		   discovered in the string, then this is an
+		   indication that the value given is expressed
+		   in meters.  Otherwise the height is interpreted
+		   as being expressed in feet.  */
+
+		for (i = 0;
+		     str[2][i] != 'M' && str[2][i] != 'm'
+		     && str[2][i] != 0 && i < 48; i++) ;
+
+		if (str[2][i] == 'M' || str[2][i] == 'm') {
+			str[2][i] = 0;
+			height = rint(atof(str[2]));
+		}
+
+		else {
+			str[2][i] = 0;
+			height = rint(METERS_PER_FOOT * atof(str[2]));
+		}
+
+		if (height > 0.0)
+			fprintf(fd2, "%d, %d, %f\n",
+				(int)rint(latitude / dpp),
+				(int)rint(longitude / dpp), height);
 
 		s = fgets(input, 78, fd1);
 
@@ -1566,125 +1636,64 @@ void LoadUDT(char *filename)
 
 		if (pointer != NULL)
 			*pointer = 0;
+	}
 
-		while (feof(fd1) == 0) {
-			/* Parse line for latitude, longitude, height */
+	fclose(fd1);
+	fclose(fd2);
 
-			for (x = 0, y = 0, z = 0;
-			     x < 78 && input[x] != 0 && z < 3; x++) {
-				if (input[x] != ',' && y < 78) {
-					str[z][y] = input[x];
-					y++;
-				}
+	if( (fd1 = fopen(tempname, "r")) == NULL )
+		return errno;
 
-				else {
-					str[z][y] = 0;
-					z++;
-					y = 0;
-				}
-			}
+	if( (fd2 = fopen(tempname, "r")) == NULL ){
+		fclose(fd1);
+		return errno;
+	}
 
-			latitude = ReadBearing(str[0]);
-			longitude = ReadBearing(str[1]);
+	y = 0;
 
-			if (longitude < 0.0)
-				longitude += 360;
+	n = fscanf(fd1, "%d, %d, %lf", &xpix, &ypix, &height);
 
-			/* Remove <CR> and/or <LF> from antenna height string */
+	do {
+		x = 0;
+		z = 0;
 
-			for (i = 0;
-			     str[2][i] != 13 && str[2][i] != 10
-			     && str[2][i] != 0; i++) ;
+		n = fscanf(fd2, "%d, %d, %lf", &tempxpix, &tempypix,
+			   &tempheight);
 
-			str[2][i] = 0;
+		do {
+			if (x > y && xpix == tempxpix
+			    && ypix == tempypix) {
+				z = 1;	/* Dupe! */
 
-			/* The terrain feature may be expressed in either
-			   feet or meters.  If the letter 'M' or 'm' is
-			   discovered in the string, then this is an
-			   indication that the value given is expressed
-			   in meters.  Otherwise the height is interpreted
-			   as being expressed in feet.  */
-
-			for (i = 0;
-			     str[2][i] != 'M' && str[2][i] != 'm'
-			     && str[2][i] != 0 && i < 48; i++) ;
-
-			if (str[2][i] == 'M' || str[2][i] == 'm') {
-				str[2][i] = 0;
-				height = rint(atof(str[2]));
+				if (tempheight > height)
+					height = tempheight;
 			}
 
 			else {
-				str[2][i] = 0;
-				height = rint(METERS_PER_FOOT * atof(str[2]));
+				n = fscanf(fd2, "%d, %d, %lf",
+					   &tempxpix, &tempypix,
+					   &tempheight);
+				x++;
 			}
 
-			if (height > 0.0)
-				fprintf(fd2, "%d, %d, %f\n",
-					(int)rint(latitude / dpp),
-					(int)rint(longitude / dpp), height);
+		} while (feof(fd2) == 0 && z == 0);
 
-			s = fgets(input, 78, fd1);
-
-			pointer = strchr(input, ';');
-
-			if (pointer != NULL)
-				*pointer = 0;
-		}
-
-		fclose(fd1);
-		fclose(fd2);
-		close(fd);
-
-		fd1 = fopen(tempname, "r");
-		fd2 = fopen(tempname, "r");
-
-		y = 0;
+		if (z == 0)
+			/* No duplicate found */
+			//fprintf(stderr,"%lf, %lf \n",xpix*dpp, ypix*dpp);
+			fflush(stderr);
+		    AddElevation(xpix * dpp, ypix * dpp, height, 1);
+		fflush(stderr);
 
 		n = fscanf(fd1, "%d, %d, %lf", &xpix, &ypix, &height);
+		y++;
 
-		do {
-			x = 0;
-			z = 0;
+		rewind(fd2);
 
-			n = fscanf(fd2, "%d, %d, %lf", &tempxpix, &tempypix,
-				   &tempheight);
+	} while (feof(fd1) == 0);
 
-			do {
-				if (x > y && xpix == tempxpix
-				    && ypix == tempypix) {
-					z = 1;	/* Dupe! */
-
-					if (tempheight > height)
-						height = tempheight;
-				}
-
-				else {
-					n = fscanf(fd2, "%d, %d, %lf",
-						   &tempxpix, &tempypix,
-						   &tempheight);
-					x++;
-				}
-
-			} while (feof(fd2) == 0 && z == 0);
-
-			if (z == 0)
-				/* No duplicate found */
-				//fprintf(stderr,"%lf, %lf \n",xpix*dpp, ypix*dpp);
-				fflush(stderr);
-			    AddElevation(xpix * dpp, ypix * dpp, height, 1);
-			fflush(stderr);
-
-			n = fscanf(fd1, "%d, %d, %lf", &xpix, &ypix, &height);
-			y++;
-
-			rewind(fd2);
-
-		} while (feof(fd1) == 0);
-
-		fclose(fd1);
-		fclose(fd2);
-		unlink(tempname);
-	}
-
+	fclose(fd1);
+	fclose(fd2);
+	unlink(tempname);
+	return 0;
 }

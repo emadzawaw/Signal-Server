@@ -507,7 +507,7 @@ int DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 		fclose(fd);
 		fd = NULL;
 	}
-
+	return 0;
 }
 
 void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
