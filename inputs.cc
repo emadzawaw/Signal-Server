@@ -1143,7 +1143,7 @@ int LoadSignalColors(struct site xmtr)
 	return 0;
 }
 
-void LoadLossColors(struct site xmtr)
+int LoadLossColors(struct site xmtr)
 {
 	int x, y, ok, val[4];
 	char filename[255], string[80], *pointer = NULL, *s = NULL;
@@ -1243,14 +1243,13 @@ void LoadLossColors(struct site xmtr)
 
 	region.levels = 16;
 
-	fd = fopen(filename, "r");
-
-	if (fd == NULL && xmtr.filename[0] == '\0')
+	if ( xmtr.filename[0] == '\0' && (fd = fopen(filename, "r")) == NULL )
 		/* Don't save if we don't have an output file */
-		return;
+		return 0;
 
 	if (fd == NULL) {
-		fd = fopen(filename, "w");
+		if( (fd = fopen(filename, "w")) == NULL )
+			return errno;
 
 		for (x = 0; x < region.levels; x++)
 			fprintf(fd, "%3d: %3d, %3d, %3d\n", region.level[x],
@@ -1295,6 +1294,7 @@ void LoadLossColors(struct site xmtr)
 		fclose(fd);
 		region.levels = x;
 	}
+	return 0;
 }
 
 void LoadDBMColors(struct site xmtr)

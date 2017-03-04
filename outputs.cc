@@ -34,7 +34,7 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 	image_ctx_t ctx;
 	int success;
 
-	if((success = image_init(&ctx, width, (kml ? height : height + 30), IMAGE_RGB, IMAGE_DEFAULT)) != 0){
+	if( (success = image_init(&ctx, width, (kml ? height : height + 30), IMAGE_RGB, IMAGE_DEFAULT)) != 0 ){
 		fprintf(stderr,"Error initializing image\n");
 		exit(success);
 	}
@@ -44,7 +44,10 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 	    255.0 / pow((double)(max_elevation - min_elevation),
 			one_over_gamma);
 
-	LoadLossColors(xmtr[0]);
+	if( (success = LoadLossColors(xmtr[0])) != 0 ){
+		fprintf(stderr,"Error loading loss colors\n");
+		exit(success);
+	}
 
 	if( filename != NULL ) {
 
