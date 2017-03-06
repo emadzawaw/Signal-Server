@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <errno.h>
+#include <limits.h>
 #include "common.h"
 #include "main.hh"
 
@@ -349,11 +350,12 @@ int LoadSDF_SDF(char *name)
 	   containing digital elevation model data into memory.
 	   Elevation data, maximum and minimum elevations, and
 	   quadrangle limits are stored in the first available
-	   dem[] structure. */
+	   dem[] structure. 
+	   NOTE: On error, this function returns a negative errno */
 
 	int x, y, data = 0, indx, minlat, minlon, maxlat, maxlon, j;
 	char found, free_page = 0, line[20], jline[20], sdf_file[255],
-	    path_plus_name[255], *junk = NULL;
+	    path_plus_name[PATH_MAX];
 
 	FILE *fd;
 
@@ -364,9 +366,8 @@ int LoadSDF_SDF(char *name)
 
 	/* Parse filename for minimum latitude and longitude values */
 
-	sscanf(sdf_file, "%d:%d:%d:%d", &minlat, &maxlat, &minlon,
-	       &maxlon);
-	
+	if( sscanf(sdf_file, "%d:%d:%d:%d", &minlat, &maxlat, &minlon, &maxlon) != 4 )
+		return -EINVAL;
 
 	sdf_file[x] = '.';
 	sdf_file[x + 1] = 's';
@@ -398,14 +399,14 @@ int LoadSDF_SDF(char *name)
 	if (free_page && found == 0 && indx >= 0 && indx < MAXPAGES) {
 		/* Search for SDF file in current working directory first */
 
-		strncpy(path_plus_name, sdf_file, 255);
+		strncpy(path_plus_name, sdf_file, sizeof(path_plus_name)-1);
 
 		if( (fd = fopen(path_plus_name, "rb")) == NULL ){
 			/* Next, try loading SDF file from path specified
 			   in $HOME/.ss_path file or by -d argument */
 
-			strncpy(path_plus_name, sdf_path, 255);
-			strncat(path_plus_name, sdf_file, 255);
+			strncpy(path_plus_name, sdf_path, sizeof(path_plus_name)-1);
+			strncat(path_plus_name, sdf_file, sizeof(path_plus_name)-1);
 			if( (fd = fopen(path_plus_name, "rb")) == NULL ){
 				return -errno;
 			}
@@ -419,19 +420,23 @@ int LoadSDF_SDF(char *name)
 		}
 
 		if (fgets(line, 19, fd) != NULL) {
-			sscanf(line, "%f", &dem[indx].max_west);
+			if( sscanf(line, "%f", &dem[indx].max_west) == EOF )
+				return -errno;
 		}
 
 		if (fgets(line, 19, fd) != NULL) {
-			sscanf(line, "%f", &dem[indx].min_north);
+			if( sscanf(line, "%f", &dem[indx].min_north) == EOF )
+				return -errno;
 		}
 
 		if (fgets(line, 19, fd) != NULL) {
-			sscanf(line, "%f", &dem[indx].min_west);
+			if( sscanf(line, "%f", &dem[indx].min_west) == EOF )
+				return -errno;
 		}
 
 		if (fgets(line, 19, fd) != NULL) {
-			sscanf(line, "%f", &dem[indx].max_north);
+			if( sscanf(line, "%f", &dem[indx].max_north) == EOF )
+				return -errno;
 		}
 		/*
 		   Here X lines of DEM will be read until IPPD is reached.
@@ -442,10 +447,11 @@ int LoadSDF_SDF(char *name)
 			for (y = 0; y < ippd; y++) {
 
 				for (j = 0; j < jgets; j++) {
-					junk = fgets(jline, 19, fd);
+					if( fgets(jline, sizeof(jline), fd) == NULL )
+						return -EIO;
 				}
 
-				if (fgets(line, 19, fd) != NULL) {
+				if (fgets(line, sizeof(line), fd) != NULL) {
 					data = atoi(line);
 				}
 
@@ -463,15 +469,18 @@ int LoadSDF_SDF(char *name)
 
 			if (ippd == 600) {
 				for (j = 0; j < IPPD; j++) {
-					junk = fgets(jline, 19, fd);
+					if( fgets(jline, sizeof(jline), fd) == NULL )
+						return -EIO;
 				}
 			}
 			if (ippd == 300) {
 				for (j = 0; j < IPPD; j++) {
-					junk = fgets(jline, 19, fd);
-					junk = fgets(jline, 19, fd);
-					junk = fgets(jline, 19, fd);
-
+					if( fgets(jline, sizeof(jline), fd) == NULL )
+						return -EIO;
+					if( fgets(jline, sizeof(jline), fd) == NULL )
+						return -EIO;
+					if( fgets(jline, sizeof(jline), fd) == NULL )
+						return -EIO;
 				}
 			}
 		}
