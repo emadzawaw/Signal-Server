@@ -28,6 +28,7 @@ double version = 3.02;
 #include <ctype.h>
 #include <unistd.h>
 #include <errno.h>
+#include <limits.h>
 
 #include "common.h"
 #include "inputs.hh"
@@ -1042,14 +1043,15 @@ int main(int argc, char *argv[])
 	int x, y, z = 0, min_lat, min_lon, max_lat, max_lon,
 	    rxlat, rxlon, txlat, txlon, west_min, west_max,
 	    nortRxHin, nortRxHax, propmodel, knifeedge = 0, ppa =
-	    0, normalise = 0, haf = 0, pmenv = 1, lidar=0, cropped;
+	    0, normalise = 0, haf = 0, pmenv = 1, lidar=0, cropped, result;
 
 	bool use_threads = true;
 
 	unsigned char LRmap = 0, txsites = 0, topomap = 0, geo = 0, kml =
 	    0, area_mode = 0, max_txsites, ngs = 0;
 
-	char mapfile[255], udt_file[255], ano_filename[255], lidar_tiles[4096], clutter_file[255];
+	char mapfile[255], ano_filename[255], lidar_tiles[4096], clutter_file[255];
+	char *az_filename, *el_filename, *udt_file = NULL;
 
 	double altitude = 0.0, altitudeLR = 0.0, tx_range = 0.0,
 	    rx_range = 0.0, deg_range = 0.0, deg_limit = 0.0, deg_range_lon;
@@ -1141,7 +1143,7 @@ int main(int argc, char *argv[])
 	forced_erp = -1.0;
 	forced_freq = 0.0;
 	sdf_path[0] = 0;
-	udt_file[0] = 0;
+	udt_file = NULL;
 	path.length = 0;
 	max_txsites = 30;
 	fzone_clearance = 0.6;
@@ -1218,7 +1220,26 @@ int main(int argc, char *argv[])
 				strncpy(mapfile, argv[z], 253);
 				strncpy(tx_site[0].name, "Tx", 2);
 				strncpy(tx_site[0].filename, argv[z], 253);
-				LoadPAT(argv[z]);
+				/* Antenna pattern files have the same basic name as the output file
+				 * but with a different extension. If they exist, load them now */
+				if( (az_filename = (char*) calloc(strlen(argv[z]) + strlen(AZ_FILE_SUFFIX) + 1, sizeof(char))) == NULL )
+					return ENOMEM;
+				strcpy(az_filename, argv[z]);
+				strcat(az_filename, AZ_FILE_SUFFIX);
+				if( (el_filename = (char*) calloc(strlen(argv[z]) + strlen(EL_FILE_SUFFIX) + 1, sizeof(char))) == NULL ){
+					free(az_filename);
+					return ENOMEM;
+				}
+				strcpy(el_filename, argv[z]);
+				strcat(el_filename, EL_FILE_SUFFIX);
+				if( (result = LoadPAT(az_filename,el_filename)) != 0 ){
+					fprintf(stderr,"Permissions error reading antenna pattern file\n");
+					free(az_filename);
+					free(el_filename);
+					exit(result);
+				}
+				free(az_filename);
+				free(el_filename);
 			} else if (z <= y && argv[z][0] && argv[z][0] == '-' && argv[z][1] == '\0' ) {
 				/* Handle writing image data to stdout */
 				to_stdout = true;
@@ -1468,10 +1489,14 @@ int main(int argc, char *argv[])
 		}
 
 	
-		 /*UDT*/ if (strcmp(argv[x], "-udt") == 0) {
+		 /*UDT*/
+		if (strcmp(argv[x], "-udt") == 0) {
 			z = x + 1;
 
 			if (z <= y && argv[z][0]) {
+				udt_file = (char*) calloc(PATH_MAX+1, sizeof(char));
+				if( udt_file == NULL )
+					return ENOMEM;
 				strncpy(udt_file, argv[z], 253);
 			}
 		}
@@ -1665,16 +1690,12 @@ int main(int argc, char *argv[])
 
 	/* Load the required tiles */
 	if(lidar){
-		int err;
-
-		err = loadLIDAR(lidar_tiles);
-		if (err) {
+		if( (result = loadLIDAR(lidar_tiles)) != 0 ){
 			fprintf(stderr, "Couldn't find one or more of the "
 				"lidar files. Please ensure their paths are "
 				"correct and try again.\n");
-			exit(EXIT_FAILURE);
+			exit(result);
 		}
-
 
 		if(debug){
 			fprintf(stderr,"%.4f,%.4f,%.4f,%.4f,%d x %d\n",max_north,min_west,min_north,max_west,width,height);
@@ -1692,9 +1713,13 @@ int main(int argc, char *argv[])
 	
 	}else{
 		// DEM first
-		LoadTopoData(max_lon, min_lon, max_lat, min_lat);
+		if( (result = LoadTopoData(max_lon, min_lon, max_lat, min_lat)) != 0 ){
+			// This only fails on errors loading SDF tiles
+			fprintf(stderr, "Error loading topo data\n");
+			return result;
+		}
 
-			if (area_mode || topomap) {
+		if (area_mode || topomap) {
 			for (z = 0; z < txsites && z < max_txsites; z++) {
 				/* "Ball park" estimates used to load any additional
 				   SDF files required to conduct this analysis. */
@@ -1777,7 +1802,11 @@ int main(int argc, char *argv[])
 
 			/* Load any additional SDF files, if required */
 
-			LoadTopoData(max_lon, min_lon, max_lat, min_lat);
+			if( (result = LoadTopoData(max_lon, min_lon, max_lat, min_lat)) != 0 ){
+				// This only fails on errors loading SDF tiles
+				fprintf(stderr, "Error loading topo data\n");
+				return result;
+			}
 		}
 		ppd=(double)ippd;
 		yppd=ppd; 
@@ -1789,7 +1818,10 @@ int main(int argc, char *argv[])
 	mpi = ippd-1; 
 
 	// User defined clutter file
-	LoadUDT(udt_file);
+	if( udt_file != NULL && (result = LoadUDT(udt_file)) != 0 ){
+		fprintf(stderr, "Error loading clutter file\n");
+		return result;
+	}
 
 	// Enrich with Clutter
 	if(strlen(clutter_file) > 1){
@@ -1797,7 +1829,10 @@ int main(int argc, char *argv[])
 		Clutter tiles cover 16 x 12 degs but we only need a fraction of that area.
 		Limit by max_range / miles per degree (at equator)
 		*/
-		loadClutter(clutter_file,max_range/45,tx_site[0]); 
+		if( (result = loadClutter(clutter_file,max_range/45,tx_site[0])) != 0 ){
+			fprintf(stderr, "Error, invalid or clutter file not found\n");
+			return result;
+		}
 	}
 
 	if (ppa == 0) {
@@ -1844,8 +1879,8 @@ int main(int argc, char *argv[])
 				DoRxdPwr((to_stdout == true ? NULL : mapfile), geo, kml, ngs, tx_site,
 					 txsites);
 			else
-				DoSigStr(mapfile, geo, kml, ngs, tx_site,
-					 txsites);
+				if( (result = DoSigStr(mapfile, geo, kml, ngs, tx_site,txsites)) != 0 )
+					return result;
 		}
 		if(lidar){
 			east=eastoffset;
