@@ -1,5 +1,26 @@
 SIGNAL SERVER CHANGELOG 
 
+3.03 - 19 March 2017
+Path profile bugfix for some models
+Error handling for when prop loss < free space loss
+
+3.02 - 22 Feb 2017
+Gareth's error handling
+
+3.01 - 16 Feb 2017
+Image crop (Major performance improvement later on), SUI bugfix, txelev replaced 
+
+3.0 - 02 Feb 2017
+Image rendering library support. Uses third party PNG lib instead of expensive PPM.
+Code cleanup by a professional developer.
+More errors to stderr 
+
+2.94 - 03 Oct 2016
+Reduced MAXPAGES array for LIDAR to allow for uber large tiles
+
+2.93 - 30 Sep 2016
+More tiles
+
 2.92 - 29 September 2016
 Overhauled LIDAR functions to read in (more) native format tiles.
 Replaced 'super tile' code with more scalable multi-tile code: currently limited to 16.

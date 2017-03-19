@@ -32,7 +32,7 @@ make
 
 ## Parameters
 ```
-Version: Signal Server 2.94 (Built for 64 DEM tiles at 1200 pixels)
+Version: Signal Server 3.03 (Built for 100 DEM tiles at 1200 pixels)
 License: GNU General Public License (GPL) version 2
 
 Radio propagation simulator by Alex Farrant QCVS, 2E0TDW

@@ -491,7 +491,7 @@ int DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 				/* We should never get here, but if */
 				/* we do, display the region as black */
 
-				ADD_PIXEL(&ctx, 0, 0, 0);
+				ADD_PIXEL(&ctx, 255, 255, 255);
 			}
 		}
 	}
@@ -735,7 +735,7 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 				/* We should never get here, but if */
 				/* we do, display the region as black */
 
-				ADD_PIXEL(&ctx, 0, 0, 0);
+				ADD_PIXEL(&ctx, 255, 255, 255);
 			}
 		}
 	}
@@ -981,7 +981,7 @@ void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 				/* We should never get here, but if */
 				/* we do, display the region as black */
 
-				ADD_PIXEL(&ctx, 0, 0, 0);
+				ADD_PIXEL(&ctx, 255, 255, 255);
 			}
 		}
 	}
@@ -1336,10 +1336,9 @@ void PathReport(struct site source, struct site destination, char *name,
 
 		for (y = 2; y < (path.length - 1); y++) {	/* path.length-1 avoids LR error */
 			distance = 5280.0 * path.distance[y];
-			source_alt =
-			    four_thirds_earth + source.alt + path.elevation[0];
-			dest_alt =
-			    four_thirds_earth + destination.alt +
+
+			source_alt = four_thirds_earth + source.alt + path.elevation[0];
+			dest_alt = four_thirds_earth + destination.alt +
 			    path.elevation[y];
 			dest_alt2 = dest_alt * dest_alt;
 			source_alt2 = source_alt * source_alt;
@@ -1414,7 +1413,7 @@ void PathReport(struct site source, struct site destination, char *name,
 			   strmode, errnum);
 			 */
 			dkm = (elev[1] * elev[0]) / 1000;	// km
-		
+
 			switch (propmodel) {
 			case 1:
 				// Longley Rice ITM
@@ -1431,14 +1430,14 @@ void PathReport(struct site source, struct site destination, char *name,
 			case 3:
 				//HATA 1, 2 & 3
 				loss =
-				    HATApathLoss(LR.frq_mhz, source_alt * METERS_PER_FOOT,
+				    HATApathLoss(LR.frq_mhz, source.alt * METERS_PER_FOOT,
 						 (path.elevation[y] * METERS_PER_FOOT) +
 						 (destination.alt * METERS_PER_FOOT), dkm, pmenv);
 				break;
 			case 4:
 				// COST231-HATA
 				loss =
-				    ECC33pathLoss(LR.frq_mhz, source_alt * METERS_PER_FOOT,
+				    ECC33pathLoss(LR.frq_mhz, source.alt * METERS_PER_FOOT,
 						  (path.elevation[y] * METERS_PER_FOOT) +
 						  (destination.alt * METERS_PER_FOOT), dkm, pmenv);
 				break;
@@ -1451,7 +1450,7 @@ void PathReport(struct site source, struct site destination, char *name,
 				break;
 			case 6:
 				loss =
-				    COST231pathLoss(LR.frq_mhz, source_alt * METERS_PER_FOOT,
+				    COST231pathLoss(LR.frq_mhz, source.alt * METERS_PER_FOOT,
 						    (path.elevation[y] * METERS_PER_FOOT) +
 						    (destination.alt * METERS_PER_FOOT), dkm,pmenv);
 				break;
@@ -1473,7 +1472,7 @@ void PathReport(struct site source, struct site destination, char *name,
 			case 9:
 				// Ericsson
 				loss =
-				    EricssonpathLoss(LR.frq_mhz, source_alt * METERS_PER_FOOT,
+				    EricssonpathLoss(LR.frq_mhz, source.alt * METERS_PER_FOOT,
 						     (path.elevation[y] * METERS_PER_FOOT) +
 						     (destination.alt *
 						      METERS_PER_FOOT), dkm,
@@ -1533,6 +1532,11 @@ void PathReport(struct site source, struct site destination, char *name,
 			    (20.0 * log10(distance));
 			fprintf(fd2, "Free space path loss: %.2f dB\n",
 				free_space_loss);
+		}
+
+		if((loss*1.1) < free_space_loss){
+			fprintf(stderr,"Model error! Computed loss of %.1fdB is greater than free space loss of %.1fdB. Check your inuts for model %d\n",loss,free_space_loss,propmodel);
+			return;
 		}
 
 		fprintf(fd2, "Computed path loss: %.2f dB\n", loss);
@@ -1633,7 +1637,6 @@ void PathReport(struct site source, struct site destination, char *name,
 	}
 
 	ObstructionAnalysis(source, destination, LR.frq_mhz, fd2);
-
 	fclose(fd2);
 
 	fprintf(stderr,

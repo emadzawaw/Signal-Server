@@ -1,4 +1,4 @@
-double version = 3.02;
+double version = 3.03;
 /****************************************************************************\
 *  Signal Server: Radio propagation simulator by Alex Farrant QCVS, 2E0TDW   *
 ******************************************************************************
@@ -38,9 +38,9 @@ double version = 3.02;
 #include "models/pel.hh"
 #include "image.hh"
 
-int MAXPAGES = 64;
-int ARRAYSIZE = 76810;
+int MAXPAGES = 10*10;
 int IPPD = 1200;
+int ARRAYSIZE = MAXPAGES * IPPD;
 
 char string[255], sdf_path[255], udt_file[255], opened = 0, gpsav =
     0, ss_name[16], dashes[80];
@@ -53,7 +53,7 @@ double earthradius, max_range = 0.0, forced_erp, dpp, ppd, yppd,
 
 int ippd, mpi,
     max_elevation = -32768, min_elevation = 32768, bzerror, contour_threshold,
-    pred, pblue, pgreen, ter, multiplier = 256, debug = 0, loops = 64, jgets =
+    pred, pblue, pgreen, ter, multiplier = 256, debug = 0, loops = 100, jgets =
     0, MAXRAD, hottest = 10, height, width;
 
 unsigned char got_elevation_pattern, got_azimuth_pattern, metric = 0, dbm = 0;
@@ -200,7 +200,6 @@ int OrMask(double lat, double lon, int value)
 		x = (int)rint(ppd * (lat - dem[indx].min_north));
 		y = mpi - (int)rint(yppd * (LonDiff(dem[indx].max_west, lon)));
 
-		
 		if (x >= 0 && x <= mpi && y >= 0 && y <= mpi)
 			found = 1;
 		else
@@ -234,7 +233,6 @@ int PutSignal(double lat, double lon, unsigned char signal)
 
 	int x = 0, y = 0, indx;
 	char found;
-			
 	if (signal > hottest)	// dBm, dBuV
 		hottest = signal;
 
@@ -348,7 +346,7 @@ int AddElevation(double lat, double lon, double height, int size)
 
 		}
 	}
-	
+
 
 	return found;
 }
@@ -1710,9 +1708,15 @@ int main(int argc, char *argv[])
 		if(delta>0){
 			tx_site[0].lon+=delta;
 		}
-	
+
 	}else{
 		// DEM first
+                if(debug){
+                        fprintf(stderr,"%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",max_north,min_west,min_north,max_west,max_lon,min_lon);
+                }
+
+		max_lon-=3;
+
 		if( (result = LoadTopoData(max_lon, min_lon, max_lat, min_lat)) != 0 ){
 			// This only fails on errors loading SDF tiles
 			fprintf(stderr, "Error loading topo data\n");
@@ -1810,10 +1814,11 @@ int main(int argc, char *argv[])
 		}
 		ppd=(double)ippd;
 		yppd=ppd; 
+
 		width = (unsigned)(ippd * ReduceAngle(max_west - min_west));
 		height = (unsigned)(ippd * ReduceAngle(max_north - min_north));
 	}
-	
+
 	dpp = 1 / ppd;
 	mpi = ippd-1; 
 
@@ -1863,14 +1868,27 @@ int main(int argc, char *argv[])
 				}
 			}
 
-			// CROPPING. croplat assigned in propPathLoss()
-			max_north=cropLat; // MAX(path.lat[y]) 
-			max_west=cropLon; // MAX(path.lon[y])
-			cropLat-=tx_site[0].lat; // angle from tx to edge
-			cropLon-=tx_site[0].lon; 
-			width=(int)((cropLon*ppd)*2);
-			height=(int)((cropLat*ppd)*2);
-		
+			if(max_range<=100){
+				// CROPPING. croplat assigned in propPathLoss()
+				max_north=cropLat; // MAX(path.lat[y])
+				// Edge case #1 - EAST/WEST
+				if(cropLon>357 && tx_site[0].lon < 3)
+					cropLon=tx_site[0].lon+3;
+				// Edge case #2 - EAST/EAST
+				if(cropLon>359.5 && tx_site[0].lon > 359.5)
+					cropLon=362;
+				max_west=cropLon; // MAX(path.lon[y])
+				cropLat-=tx_site[0].lat; // angle from tx to edge
+				cropLon-=tx_site[0].lon;
+				width=(int)((cropLon*ppd)*2);
+				height=(int)((cropLat*ppd)*2);
+
+				if(width>3600*10){
+					fprintf(stderr,"FATAL BOUNDS! max_west: %.4f cropLat: %.4f cropLon: %.4f longitude: %.5f\n",max_west,cropLat,cropLon,tx_site[0].lon);
+					return 0;
+				}
+			}
+
 			// Write bitmap
 			if (LR.erp == 0.0)
 				DoPathLoss(mapfile, geo, kml, ngs, tx_site,
@@ -1889,11 +1907,12 @@ int main(int argc, char *argv[])
 
 		if (tx_site[0].lon > 0.0){
 					tx_site[0].lon *= -1;
-		} 
+		}
 		if (tx_site[0].lon < -180.0){
 					tx_site[0].lon += 360;
-		} 
-		if (propmodel == 2) {
+		}
+
+		if (propmodel == 2 || max_range > 100) {
 			// No croppping because this is LOS
 			fprintf(stderr, "|%.6f", max_north);
 			fprintf(stderr, "|%.6f", east);
@@ -1907,7 +1926,7 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "|%.6f|",tx_site[0].lon-cropLon);
 		}
 		fprintf(stderr, "\n");
-		
+
 
 	} else {
 		strncpy(tx_site[0].name, "Tx", 3);
@@ -1915,7 +1934,7 @@ int main(int argc, char *argv[])
 		PlotPath(tx_site[0], tx_site[1], 1);
 		PathReport(tx_site[0], tx_site[1], tx_site[0].filename, 0,
 			   propmodel, pmenv, rxGain);
-		SeriesData(tx_site[1], tx_site[0], tx_site[0].filename, 1,
+		SeriesData(tx_site[0], tx_site[1], tx_site[0].filename, 1,
 			   normalise);
 	}
 	fflush(stderr);

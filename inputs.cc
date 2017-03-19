@@ -41,7 +41,7 @@ int loadClutter(char *filename, double radius, struct site tx)
 
 	if(w==2880 && h==3840){
 		cellsize=0.004167;
-		cellsize2 = cellsize * 2;
+		cellsize2 = cellsize * 3;
 	}else{
 		return 0; // can't work with this yet
 	}
@@ -107,8 +107,7 @@ int loadClutter(char *filename, double radius, struct site tx)
 						
 						// not in near field
 						if((lat > tx.lat+cellsize2 || lat < tx.lat-cellsize2) || (lon > tx.lon + cellsize2 || lon < tx.lon - cellsize2)){
-							AddElevation(lat,lon,clh,3);
-
+							AddElevation(lat,lon,clh,2);
 						}
 
 					}
@@ -414,7 +413,7 @@ int LoadSDF_SDF(char *name)
 
 		if (debug == 1) {
 			fprintf(stderr,
-				"Loading \"%s\" into page %d...",
+				"Loading \"%s\" into page %d...\n",
 				path_plus_name, indx + 1);
 			fflush(stderr);
 		}
@@ -566,7 +565,7 @@ int LoadSDF(char *name)
 
 		sscanf(name, "%d:%d:%d:%d", &minlat, &maxlat, &minlon,
 		       &maxlon);
-		
+
 		/* Is it already in memory? */
 
 		for (indx = 0, found = 0; indx < MAXPAGES && found == 0; indx++) {
