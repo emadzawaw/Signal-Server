@@ -10,6 +10,7 @@
 #include "itwom3.0.hh"
 #include "sui.hh"
 #include "pel.hh"
+#include "egli.hh"
 #include <pthread.h>
 
 #define NUM_SECTIONS 4
@@ -304,8 +305,9 @@ void PlotPropPath(struct site source, struct site destination,
 	    xmtr_alt, dest_alt, xmtr_alt2, dest_alt2,
 	    cos_rcvr_angle, cos_test_angle = 0.0, test_alt,
 	    elevation = 0.0, distance = 0.0, four_thirds_earth,
-	    field_strength = 0.0, rxp, dBm, dkm, diffloss;
+	    field_strength = 0.0, rxp, dBm, diffloss;
 	struct site temp;
+	float dkm;
 
 	ReadPath(source, destination);
 
@@ -445,7 +447,6 @@ void PlotPropPath(struct site source, struct site destination,
 
 			dkm = (elev[1] * elev[0]) / 1000;	// km
 
-
 			switch (propmodel) {
 			case 1:
 				// Longley Rice ITM
@@ -520,12 +521,14 @@ void PlotPropPath(struct site source, struct site destination,
 						      METERS_PER_FOOT), dkm,
 						     pmenv);
 				break;
-
 			case 10:
 				// Plane earth
 				loss =	PlaneEarthLoss(dkm, source.alt * METERS_PER_FOOT, (path.elevation[y] * METERS_PER_FOOT) + (destination.alt * METERS_PER_FOOT));
 				break;
-
+			case 11:
+				// Egli VHF/UHF
+				loss = EgliPathLoss(LR.frq_mhz, source.alt * METERS_PER_FOOT, (path.elevation[y] * METERS_PER_FOOT) + (destination.alt * METERS_PER_FOOT),dkm);
+				break;
 			default:
 				point_to_point_ITM(source.alt * METERS_PER_FOOT,
 						   destination.alt *

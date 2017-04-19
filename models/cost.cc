@@ -27,12 +27,12 @@ Distance 1-20km
 modes 1 = URBAN, 2 = SUBURBAN, 3 = OPEN
 http://morse.colorado.edu/~tlen5510/text/classwebch3.html
 */
-	if (f < 150 || f > 2000) {
+/*	if (f < 150 || f > 2000) {
 		fprintf
 		    (stderr,"Error: COST231 Hata model frequency range 150-2000MHz\n");
 		exit(EXIT_FAILURE);
 	}
-
+*/
 	int C = 3;		// 3dB for Urban
 	float lRxH = log10(11.75 * RxH);
 	float C_H = 3.2 * (lRxH * lRxH) - 4.97;	// Large city (conservative)

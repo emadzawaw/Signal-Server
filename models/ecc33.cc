@@ -10,10 +10,11 @@ double ECC33pathLoss(float f, float TxH, float RxH, float d, int mode)
 		RxH=RxH/(d*2);
 	}
 
-	if (f < 700 || f > 3500) {
+/*	if (f < 700 || f > 3500) {
 		fprintf(stderr,"Error: ECC33 model frequency range 700-3500MHz\n");
 		exit(EXIT_FAILURE);
 	}
+*/
 	// MHz to GHz
 	f = f / 1000;
 

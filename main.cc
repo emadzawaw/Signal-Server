@@ -1,9 +1,8 @@
-double version = 3.03;
+double version = 3.04;
 /****************************************************************************\
 *  Signal Server: Radio propagation simulator by Alex Farrant QCVS, 2E0TDW   *
 ******************************************************************************
 *    SPLAT! Project started in 1997 by John A. Magliacane, KD2BD             *
-*                                                                            *
 ******************************************************************************
 *         Please consult the SPLAT! documentation for a complete list of     *
 *         individuals who have contributed to this project.                  *
@@ -40,7 +39,7 @@ double version = 3.03;
 
 int MAXPAGES = 10*10;
 int IPPD = 1200;
-int ARRAYSIZE = MAXPAGES * IPPD;
+int ARRAYSIZE = (MAXPAGES * IPPD) + 10;
 
 char string[255], sdf_path[255], udt_file[255], opened = 0, gpsav =
     0, ss_name[16], dashes[80];
@@ -1105,7 +1104,7 @@ int main(int argc, char *argv[])
 		fprintf(stdout, "     -R Radius (miles/kilometers)\n");
 		fprintf(stdout,	"     -res Pixels per tile. 300/600/1200/3600 (Optional. LIDAR res is within the tile)\n");
 		fprintf(stdout,	"     -pm Propagation model. 1: ITM, 2: LOS, 3: Hata, 4: ECC33,\n");
-		fprintf(stdout,	"     	  5: SUI, 6: COST-Hata, 7: FSPL, 8: ITWOM, 9: Ericsson, 10: Plane earth\n");
+		fprintf(stdout,	"     	  5: SUI, 6: COST-Hata, 7: FSPL, 8: ITWOM, 9: Ericsson, 10: Plane earth, 11: Egli VHF/UHF\n");
 		fprintf(stdout,	"     -pe Propagation model mode: 1=Urban,2=Suburban,3=Rural\n");
 		fprintf(stdout,	"     -ked Knife edge diffraction (Already on for ITM)\n");
 		fprintf(stdout, "Debugging:\n");
@@ -1934,7 +1933,8 @@ int main(int argc, char *argv[])
 		PlotPath(tx_site[0], tx_site[1], 1);
 		PathReport(tx_site[0], tx_site[1], tx_site[0].filename, 0,
 			   propmodel, pmenv, rxGain);
-		SeriesData(tx_site[0], tx_site[1], tx_site[0].filename, 1,
+		// Order flipped for benefit of graph. Makes no difference to data.
+		SeriesData(tx_site[1], tx_site[0], tx_site[0].filename, 1,
 			   normalise);
 	}
 	fflush(stderr);

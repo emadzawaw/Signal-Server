@@ -1534,12 +1534,14 @@ void PathReport(struct site source, struct site destination, char *name,
 				free_space_loss);
 		}
 
-		if((loss*1.1) < free_space_loss){
-			fprintf(stderr,"Model error! Computed loss of %.1fdB is greater than free space loss of %.1fdB. Check your inuts for model %d\n",loss,free_space_loss,propmodel);
-			return;
-		}
-
 		fprintf(fd2, "Computed path loss: %.2f dB\n", loss);
+
+
+                if((loss*1.5) < free_space_loss){
+			fprintf(fd2,"Model error! Computed loss of %.1fdB is greater than free space loss of %.1fdB. Check your inuts for model %d\n",loss,free_space_loss,propmodel);
+                        fprintf(stderr,"Model error! Computed loss of %.1fdB is greater than free space loss of %.1fdB. Check your inuts for model %d\n",loss,free_space_loss,propmodel);
+                        return;
+                }
 
 		if (free_space_loss != 0.0)
 			fprintf(fd2,

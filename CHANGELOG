@@ -1,5 +1,11 @@
 SIGNAL SERVER CHANGELOG 
 
+3.04 - 19 April 2017
+Added Egli VHF/UHF model courtesy of G6DTX
+Adjusted SUI correction factor for height. Most academic papers have /2000 but some are /2. Only out by 1e3 :O 
+New propagation model unit test script at models/test.cc
+Added 10 to ARRAYSIZE again as it was needed :p
+
 3.03 - 19 March 2017
 Path profile bugfix for some models
 Error handling for when prop loss < free space loss
