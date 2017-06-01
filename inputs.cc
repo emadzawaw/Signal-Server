@@ -7,6 +7,7 @@
 #include <limits.h>
 #include "common.h"
 #include "main.hh"
+#include "tiles.hh"
 
 
 int loadClutter(char *filename, double radius, struct site tx)
@@ -215,15 +216,15 @@ int loadLIDAR(char *filenames)
 {
 	char *filename;
 	char *files[100]; // 10x10 tiles
-	int x, y, indx = 0, fc = 0, hoffset = 0, voffset = 0, pos,
-	    dem_alloced = 0;
-	double xll, yll, xur, yur, cellsize, avgCellsize;
+	int indx = 0, fc = 0, hoffset = 0, voffset = 0, pos, success;
+	double xll, yll, xur, yur, cellsize, avgCellsize = 0, smCellsize = 0;
 	char found, free_page = 0, jline[20], lid_file[255],	
-	     path_plus_name[255], *junk = NULL;
+	path_plus_name[255], *junk = NULL;
 	char line[25000];
 	char * pch;
-    	double TO_DEG = (180 / PI);
+    double TO_DEG = (180 / PI);
 	FILE *fd;
+	tile_t *tiles;
 
 	// test for multiple files
 	filename = strtok(filenames, " ,");
@@ -233,110 +234,141 @@ int loadLIDAR(char *filenames)
 		fc++;
 	}
 
-	while (indx < fc) {
-		if( (fd = fopen(files[indx], "rb")) == NULL )
+	/* Allocate the tile array */
+	tiles = (tile_t*)calloc(fc,sizeof(tile_t));
+
+	/* Load each tile in turn */
+	for (indx = 0; indx < fc; indx++) {
+
+		/* Grab the tile metadata */
+		if( (success = tile_load_lidar(&tiles[indx], files[indx])) != 0 ){
+			fprintf(stderr,"Failed to load LIDAR tile %s\n",files[indx]);
+			fflush(stderr);
+			free(tiles);
+			return success;
+		}
+
+		if (debug) {
+			fprintf(stderr, "Loading \"%s\" into page %d with width %d...\n", files[indx], indx, tiles[indx].width);
+			fflush(stderr);
+		}
+
+		// Increase the average cell size
+		avgCellsize += tiles[indx].cellsize;
+		// Update the smallest cell size
+		if (smCellsize == 0 || tiles[indx].cellsize < smCellsize) {
+			smCellsize = tiles[indx].cellsize;
+		}
+
+	}
+
+	/* Iterate through all tiles to find the largest x/y dimension
+	to use as the global IPPD value. We do this here so that we are
+	sure to allocate enough memory for the remainder of the calculations */
+	int dimension_max = -1;
+	for (size_t i = 0; i < fc; i++) {
+		if( tiles[i].width > tiles[i].height && tiles[i].width > dimension_max )
+			dimension_max = tiles[i].width;
+		else if( tiles[i].height > dimension_max )
+			dimension_max = tiles[i].height;
+	}
+
+	MAXPAGES = fc;
+	IPPD = dimension_max;
+	if(debug){
+		fprintf(stderr,"Setting IPPD to %d\n",IPPD);
+		fflush(stderr);
+	}
+	// add fudge as reprojected tiles sometimes vary by a pixel or ten
+	IPPD += 50;
+	ARRAYSIZE = (MAXPAGES * IPPD) + 50;
+	do_allocs();
+	// reset the IPPD after allocations
+	IPPD -= 50;
+
+	/* Load the data into the global dem array */
+	// for (size_t indx = 0; indx < fc; indx++) {
+	// 	dem[indx].max_north = tiles[indx].yur;
+	// 	dem[indx].min_west = tiles[indx].xur;
+	// 	dem[indx].min_north = tiles[indx].yll;
+	// 	dem[indx].max_west = tiles[indx].xll;
+	// 	dem[indx].max_el = tiles[indx].max_el;
+	// 	dem[indx].min_el = tiles[indx].min_el;
+
+	// 	//Not sure why we set these here...
+	// 	if (tiles[indx].max_el > max_elevation)
+	// 		max_elevation = tiles[indx].max_el; 
+	// 	if (tiles[indx].min_el < min_elevation)
+	// 		min_elevation = tiles[indx].min_el;
+
+	// 	if (max_north == -90)
+	// 		max_north = dem[indx].max_north;
+
+	// 	else if (dem[indx].max_north > max_north)
+	// 		max_north = dem[indx].max_north;
+
+	// 	if (min_north == 90)
+	// 		min_north = dem[indx].min_north;
+
+	// 	else if (dem[indx].min_north < min_north)
+	// 		min_north = dem[indx].min_north;
+
+	// 	if (dem[indx].max_west > max_west)
+	// 		max_west = dem[indx].max_west;
+	// 	if (dem[indx].min_west < min_west)
+	// 		min_west = dem[indx].min_west;
+
+	// 	if (max_west == -1) {
+	// 		max_west = dem[indx].max_west;
+	// 	} else {
+	// 		if (abs(dem[indx].max_west - max_west) < 180) {
+	// 			if (dem[indx].max_west > max_west)
+	// 				max_west = dem[indx].max_west;
+	// 		} else {
+	// 			if (dem[indx].max_west < max_west)
+	// 				max_west = dem[indx].max_west;
+	// 		}
+	// 	}
+
+	// 	if (min_west == 360) {
+	// 		min_west = dem[indx].min_west;
+	// 	} else {
+	// 		if (fabs(dem[indx].min_west - min_west) < 180.0) {
+	// 			if (dem[indx].min_west < min_west)
+	// 				min_west = dem[indx].min_west;
+	// 		} else {
+	// 			if (dem[indx].min_west > min_west)
+	// 				min_west = dem[indx].min_west;
+	// 		}
+	// 	}
+
+	// 	// /* Copy the lidar tile data into the dem array */
+	// 	// int x = tiles[indx].width-1;
+	// 	// int y = tiles[indx].height-1;
+	// 	// for (size_t h = 0; h < tiles[indx].height; h++, y--) {
+	// 	// 	for (size_t w = 0; w < tiles[indx].width; w++, x--) {
+	// 	// 		dem[indx].data[y][x] = tiles[indx].data[h*tiles[indx].width + w];
+	// 	// 		dem[indx].signal[h][w] = 0;
+	// 	// 		dem[indx].mask[h][w] = 0;
+	// 	// 	}
+	// 	// }
+
+	// }
+
+	for ( int indx = 0; indx < fc; indx++ ) {
+		if ( (fd = fopen(files[indx],"rb")) == NULL)
 			return errno;
-
-		if (fgets(line, 255, fd) != NULL) {
-			pch = strtok (line," ");
-			pch = strtok (NULL, " ");
-			width = atoi(pch); // ncols
-
-			if (debug) {
-				fprintf(stderr, "Loading \"%s\" into page %d with width %d...\n", files[indx], indx, width);
-				fflush(stderr);
-			}
-
-                    if (fgets(line, 255, fd) != NULL)
-                            height = atoi(pch); // nrows
-
-			if (!dem_alloced) {
-				//Reduce MAXPAGES to increase speed
-				MAXPAGES=fc;
-				if(width>height){
-					IPPD = width;
-				}else{
-					IPPD = height;
-				}
-				// add fudge as reprojected tiles sometimes vary by a pixel or ten
-				IPPD+=50;
-				ARRAYSIZE = (MAXPAGES * IPPD)+50;
-				do_allocs();
-				dem_alloced = 1;
-			}
-
-		}
-		if (fgets(line, 255, fd) != NULL) {
-			sscanf(pch, "%lf", &xll); // xll
-		}
-
-		if (fgets(line, 255, fd) != NULL) {
-			sscanf(pch, "%lf", &yll); // yll
-		}
-
-		if (fgets(line, 255, fd) != NULL)
-			sscanf(pch, "%lf", &cellsize); 
-
-		avgCellsize=avgCellsize+cellsize;
-
-		/*if(cellsize>=0.5){ // 50cm LIDAR?
-			// compute xur and yur with inverse haversine if cellsize in *metres*
-			double roundDistance = (width*cellsize)/6371000;
-			yur = asin(sin(yll*DEG2RAD) * cos(roundDistance) + cos(yll * DEG2RAD) * sin(roundDistance) * cos(0)) * TO_DEG;
-			xur = ((xll*DEG2RAD) + atan2(sin(90*DEG2RAD) * sin(roundDistance) * cos(yll*DEG2RAD), cos(roundDistance) - sin(yll * DEG2RAD) * sin(yur*DEG2RAD))) * TO_DEG;
-		}else{*/
-			// Degrees with GDAL option: -co "FORCE_CELLSIZE=YES"
-			xur = xll+(cellsize*width);
-			yur = yll+(cellsize*height);
-		//}
-
-		if (xur > eastoffset)
-			eastoffset = xur;
-		if (xll < westoffset)
-			westoffset = xll;
-
-		if (debug)
-			fprintf(stderr,"%d, %d, %.7f, %.7f, %.7f, %.7f, %.7f\n",width,height,xll,yll,cellsize,yur,xur);
-
-
-		// Greenwich straddling hack
-		if (xll <= 0 && xur > 0) {
-			xll = (xur - xll); // full width
-			xur = 0.0; // budge it along so it's west of greenwich
-			delta = eastoffset; // add to Tx longitude later
-		} else {
-			// Transform WGS84 longitudes into 'west' values as society finishes east of Greenwich ;)
-			if (xll >= 0)
-				xll = 360-xll;
-			if(xur >= 0)
-				xur = 360-xur;
-			if(xll < 0)
-				xll = xll * -1;
-			if(xur < 0)
-				xur = xur * -1;
-		}
-		if (debug)
-			fprintf(stderr, "POST yll %.7f yur %.7f xur %.7f xll %.7f delta %.6f\n", yll, yur, xur, xll, delta);
-
-
-		fgets(line, 255, fd); // NODATA
-		pos = ftell(fd);
-
-		// tile 0 [x| ]
+		fseek(fd, tiles[indx].datastart, SEEK_SET);
 		if (debug)
 			fprintf(stderr, "readLIDAR(fd,%d,%d,%d,%.4f,%.4f,%.4f,%.4f)\n", height, width, indx, yur, xur, yll, xll);
+		readLIDAR(fd, tiles[indx].height, tiles[indx].width, indx, tiles[indx].yur, tiles[indx].xur, tiles[indx].yll, tiles[indx].xll);
+	}
 
-		readLIDAR(fd, height, width, indx, yur, xur, yll, xll);
-
-		fclose(fd);
-		if (debug)
-			fprintf(stderr, "LIDAR LOADED %d x %d\n", width, height);
-		indx++;
-	} // filename(s)
-	IPPD=width;
 	ippd=IPPD;
-	height = (unsigned)((max_north-min_north) / cellsize);
-	width = (unsigned)((max_west-min_west) / cellsize);
+	height = (unsigned)((max_north-min_north) / smCellsize);
+	width = (unsigned)((max_west-min_west) / smCellsize);
+
+	fprintf(stderr, "LIDAR LOADED %d x %d\n", width, height);
 
 	if (debug)
 		fprintf(stderr, "fc %d WIDTH %d HEIGHT %d ippd %d minN %.5f maxN %.5f minW %.5f maxW %.5f avgCellsize %.5f\n", fc, width, height, ippd,min_north,max_north,min_west,max_west,avgCellsize);
