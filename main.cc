@@ -1884,26 +1884,26 @@ int main(int argc, char *argv[])
 				}
 			}
 
-			if(max_range<=100){
-				// CROPPING. croplat assigned in propPathLoss()
-				max_north=cropLat; // MAX(path.lat[y])
-				// Edge case #1 - EAST/WEST
-				if(cropLon>357 && tx_site[0].lon < 3)
-					cropLon=tx_site[0].lon+3;
-				// Edge case #2 - EAST/EAST
-				if(cropLon>359.5 && tx_site[0].lon > 359.5)
-					cropLon=362;
-				max_west=cropLon; // MAX(path.lon[y])
-				cropLat-=tx_site[0].lat; // angle from tx to edge
-				cropLon-=tx_site[0].lon;
-				width=(int)((cropLon*ppd)*2);
-				height=(int)((cropLat*ppd)*2);
+			// if(max_range<=100){
+			// 	// CROPPING. croplat assigned in propPathLoss()
+			// 	max_north=cropLat; // MAX(path.lat[y])
+			// 	// Edge case #1 - EAST/WEST
+			// 	if(cropLon>357 && tx_site[0].lon < 3)
+			// 		cropLon=tx_site[0].lon+3;
+			// 	// Edge case #2 - EAST/EAST
+			// 	if(cropLon>359.5 && tx_site[0].lon > 359.5)
+			// 		cropLon=362;
+			// 	max_west=cropLon; // MAX(path.lon[y])
+			// 	cropLat-=tx_site[0].lat; // angle from tx to edge
+			// 	cropLon-=tx_site[0].lon;
+			// 	width=(int)((cropLon*ppd)*2);
+			// 	height=(int)((cropLat*ppd)*2);
 
-				if(width>3600*10){
-					fprintf(stderr,"FATAL BOUNDS! max_west: %.4f cropLat: %.4f cropLon: %.4f longitude: %.5f\n",max_west,cropLat,cropLon,tx_site[0].lon);
-					return 0;
-				}
-			}
+			// 	if(width>3600*10){
+			// 		fprintf(stderr,"FATAL BOUNDS! max_west: %.4f cropLat: %.4f cropLon: %.4f longitude: %.5f\n",max_west,cropLat,cropLon,tx_site[0].lon);
+			// 		return 0;
+			// 	}
+			// }
 
 			// Write bitmap
 			if (LR.erp == 0.0)

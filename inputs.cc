@@ -76,6 +76,8 @@ int resample_data(int scaling_factor){
 	fprintf(stderr, "Resampling IPPD %d->%d min/max el %d/%d\n", IPPD, new_ippd, min_elevation, max_elevation);
 
 	/* Finally, set the new IPPD value */
+	height /= scaling_factor;
+	width /= scaling_factor;
 	IPPD = new_ippd;
 	ippd = IPPD;
 	ARRAYSIZE = (MAXPAGES * IPPD) + 50;

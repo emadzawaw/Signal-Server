@@ -8,7 +8,7 @@ LIBS		= -lm -lpthread -ldl
 
 VPATH		= models
 objects 	= main.o cost.o ecc33.o ericsson.o fspl.o hata.o itwom3.0.o \
-		  los.o sui.o pel.o egli.o inputs.o outputs.o image.o image-ppm.o
+		  los.o sui.o pel.o egli.o inputs.o outputs.o image.o image-ppm.o tiles.o
 
 GCC_MAJOR	:= $(shell $(CXX) -dumpversion 2>&1 | cut -d . -f 1)
 GCC_MINOR	:= $(shell $(CXX) -dumpversion 2>&1 | cut -d . -f 2)
@@ -51,6 +51,8 @@ image-ppm.o: image-ppm.cc
 
 los.o: los.cc common.h main.hh cost.hh ecc33.hh ericsson.hh fspl.hh hata.hh \
        itwom3.0.hh sui.hh pel.hh egli.hh
+
+tiles.o: tiles.cc tiles.hh common.h
 
 .PHONY: clean
 clean:
