@@ -53,7 +53,7 @@ double earthradius, max_range = 0.0, forced_erp, dpp, ppd, yppd,
 int ippd, mpi,
     max_elevation = -32768, min_elevation = 32768, bzerror, contour_threshold,
     pred, pblue, pgreen, ter, multiplier = 256, debug = 0, loops = 100, jgets =
-    0, MAXRAD, hottest = 10, height, width;
+    0, MAXRAD, hottest = 10, height, width, resample;
 
 unsigned char got_elevation_pattern, got_azimuth_pattern, metric = 0, dbm = 0;
 
@@ -1145,6 +1145,7 @@ int main(int argc, char *argv[])
 	max_txsites = 30;
 	fzone_clearance = 0.6;
 	contour_threshold = 0;
+	resample = -1;
 
 	ano_filename[0] = 0;
 	earthradius = EARTHRADIUS;
@@ -1320,6 +1321,14 @@ int main(int argc, char *argv[])
 					break;
 				}
 			}
+		}
+
+		if (strcmp(argv[x], "-resample") == 0) {
+			z = x + 1;
+
+			if(!lidar)
+				fprintf(stderr, "[!] Warning, this should only be used with LIDAR tiles. Trying anyway\n");
+			sscanf(argv[z], "%d", &resample);
 		}
 
 		if (strcmp(argv[x], "-lat") == 0) {
@@ -1694,6 +1703,14 @@ int main(int argc, char *argv[])
 			exit(result);
 		}
 
+		/* If we have been asked to resample the input data; do it now. */
+		if (resample != -1 ){
+			if ((result = resample_data(resample)) != 0) {
+				fprintf(stderr, "Error resampling data\n");
+				return result;
+			}
+		}
+
 		if(debug){
 			fprintf(stderr,"%.4f,%.4f,%.4f,%.4f,%d x %d\n",max_north,min_west,min_north,max_west,width,height);
 		}
@@ -1710,9 +1727,9 @@ int main(int argc, char *argv[])
 
 	}else{
 		// DEM first
-                if(debug){
-                        fprintf(stderr,"%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",max_north,min_west,min_north,max_west,max_lon,min_lon);
-                }
+		if(debug){
+			fprintf(stderr,"%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",max_north,min_west,min_north,max_west,max_lon,min_lon);
+		}
 
 		max_lon-=3;
 

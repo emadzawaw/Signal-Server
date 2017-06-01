@@ -3,6 +3,9 @@
 
 #include "common.h"
 
+/* Resample input tiles to new resolution */
+int resample_data(int scaling_factor);
+
 int LoadSDF_SDF(char *name, int winfiles);
 int LoadSDF(char *name, int winfiles);
 int LoadPAT(char *az_filename, char *el_filename);

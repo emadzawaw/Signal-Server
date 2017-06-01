@@ -9,6 +9,78 @@
 #include "main.hh"
 #include "tiles.hh"
 
+/*
+ * resample_data
+ * This is used to resample tile data. It is particularly designed for
+ * use with LIDAR tiles where the resolution can be anything up to 2m.
+ * This function is capable of merging neighbouring pixel values
+ * The scaling factor is the distance to merge pixels.
+ * NOTE: This means that new resolutions can only increment in multiples of the original
+ * (ie 2m LIDAR can be 4/6/8/... and 20m can be 40/60)
+ */
+int resample_data(int scaling_factor){
+	short **new_data;
+	/* Tile width and height is guaranteed to be IPPD.
+	 * We now need to calculate the new width and height */
+	size_t new_ippd = ((IPPD+1) / scaling_factor);
+	max_elevation = -32768;
+	min_elevation = 32768;
+
+	for (int indx = 0; indx < MAXPAGES; indx++) {
+		/* Check if this is a valid tile. Uninitialized tiles have this default value */
+		if (dem[indx].max_el == 32768)
+			continue;
+		
+		/* Now we allocate the replacement data arrays */
+		if ((new_data = new short *[new_ippd]) == NULL) {
+			return ENOMEM;
+		}
+		for (size_t i = 0; i < new_ippd; i++) {
+			if ((new_data[i] = new short[new_ippd]) == NULL) {
+				return ENOMEM;	// If this happens we will leak but thats ok because we must bail anyway
+			}
+		}
+
+		/* Nearest neighbour normalization. For each subsample of the original, simply
+		 * assign the value in the top left to the new pixel */
+		for (size_t x = 0, i = 0; i < new_ippd; x += scaling_factor, i++) {
+			for (size_t y = 0, j = 0; j < new_ippd; y += scaling_factor, j++){
+				// fprintf(stderr,"[%d,%d,%d,%d] => %d\n", dem[indx].data[x][y], dem[indx].data[x][y+1], dem[indx].data[x+1][y], dem[indx].data[x+1][y+1], dem[indx].data[x][y]);
+				new_data[i][j] = dem[indx].data[x][y];
+			}
+		}
+
+		/* We need to fixup the min/max elevations */
+		for (size_t i = 0; i < new_ippd; i++) {
+			for (size_t j = 0; j < new_ippd; j++) {
+				if (new_data[i][j] > dem[indx].max_el)
+					dem[indx].max_el = new_data[i][j];
+				if (new_data[i][j] > max_elevation)
+					max_elevation = new_data[i][j];
+
+				if (new_data[i][j] < dem[indx].min_el)
+					dem[indx].min_el = new_data[i][j];
+				if (new_data[i][j] < min_elevation)
+					min_elevation = new_data[i][j];
+			}
+		}
+
+		/* Resampling complete, delete the original and assign the new values */
+		for (size_t i = 0; i < IPPD; i++)
+			delete [] dem[indx].data[i];
+		delete [] dem[indx].data;
+		dem[indx].data = new_data;
+	}
+
+	/* Report to the user */
+	fprintf(stderr, "Resampling IPPD %d->%d min/max el %d/%d\n", IPPD, new_ippd, min_elevation, max_elevation);
+
+	/* Finally, set the new IPPD value */
+	IPPD = new_ippd;
+	ippd = IPPD;
+	ARRAYSIZE = (MAXPAGES * IPPD) + 50;
+	return 0;
+}
 
 int loadClutter(char *filename, double radius, struct site tx)
 {
@@ -291,7 +363,7 @@ int loadLIDAR(char *filenames)
 			return errno;
 		fseek(fd, tiles[indx].datastart, SEEK_SET);
 		if (debug)
-			fprintf(stderr, "readLIDAR(fd,%d,%d,%d,%.4f,%.4f,%.4f,%.4f)\n", height, width, indx, yur, xur, yll, xll);
+			fprintf(stderr, "readLIDAR(fd,%d,%d,%d,%.4f,%.4f,%.4f,%.4f)\n", tiles[indx].height, tiles[indx].width, indx, tiles[indx].yur, tiles[indx].xur, tiles[indx].yll, tiles[indx].xll);
 		readLIDAR(fd, tiles[indx].height, tiles[indx].width, indx, tiles[indx].yur, tiles[indx].xur, tiles[indx].yll, tiles[indx].xll);
 	}
 

@@ -23,6 +23,6 @@ typedef struct _tile_t{
 	int		*data;
 } tile_t, *ptile_t;
 
-int tile_load_lidar(tile_t*, char *, int);
+int tile_load_lidar(tile_t*, char *);
 
 #endif
