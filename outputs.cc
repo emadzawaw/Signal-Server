@@ -35,7 +35,7 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 	int success;
 
 	if( (success = image_init(&ctx, width, (kml ? height : height + 30), IMAGE_RGB, IMAGE_DEFAULT)) != 0 ){
-		fprintf(stderr,"Error initializing image\n");
+		fprintf(stderr,"Error initializing image: %s\n", strerror(success));
 		exit(success);
 	}
 
@@ -278,7 +278,7 @@ int DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 	int success;
 
 	if((success = image_init(&ctx, width, (kml ? height : height + 30), IMAGE_RGB, IMAGE_DEFAULT)) != 0){
-		fprintf(stderr,"Error initializing image\n");
+		fprintf(stderr,"Error initializing image: %s\n", strerror(success));
 		exit(success);
 	}
 
@@ -529,7 +529,7 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 	int success;
 
 	if( (success = image_init(&ctx, width, (kml ? height : height + 30), IMAGE_RGB, IMAGE_DEFAULT)) != 0 ){
-		fprintf(stderr,"Error initializing image\n");
+		fprintf(stderr,"Error initializing image: %s\n", strerror(success));
 		exit(success);
 	}
 
@@ -775,7 +775,7 @@ void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 	int success;
 
 	if((success = image_init(&ctx, width, (kml ? height : height + 30), IMAGE_RGB, IMAGE_DEFAULT)) != 0){
-		fprintf(stderr,"Error initializing image\n");
+		fprintf(stderr,"Error initializing image: %s\n", strerror(success));
 		exit(success);
 	}
 
