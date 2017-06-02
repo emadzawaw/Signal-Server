@@ -1097,6 +1097,7 @@ int main(int argc, char *argv[])
 		fprintf(stdout,	"     -tercon Terrain conductivity 0.01-0.0001 (optional)\n");
 		fprintf(stdout, "     -cl Climate code 1-6 (optional)\n");
 		fprintf(stdout, "     -rel Reliability for ITM model 50 to 99 (optional)\n");
+		fprintf(stdout, "     -resample Resample Lidar input to specified resolution in meters (optional)\n");
 		fprintf(stdout, "Output:\n");
 		fprintf(stdout,	"     -dbm Plot Rxd signal power instead of field strength\n");
 		fprintf(stdout, "     -rt Rx Threshold (dB / dBm / dBuV/m)\n");
@@ -1705,7 +1706,7 @@ int main(int argc, char *argv[])
 
 		/* If we have been asked to resample the input data; do it now. */
 		if (resample != -1 ){
-			if ((result = resample_data(resample)) != 0) {
+			if ((result = resize_data(resample)) != 0) {
 				fprintf(stderr, "Error resampling data\n");
 				return result;
 			}

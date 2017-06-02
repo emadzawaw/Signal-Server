@@ -5,6 +5,7 @@
 
 /* Resample input tiles to new resolution */
 int resample_data(int scaling_factor);
+int resize_data(int resolution);
 
 int LoadSDF_SDF(char *name, int winfiles);
 int LoadSDF(char *name, int winfiles);

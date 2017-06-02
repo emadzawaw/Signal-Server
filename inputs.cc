@@ -9,6 +9,21 @@
 #include "main.hh"
 #include "tiles.hh"
 
+/* Computes the distance between two long/lat points */
+double haversine_formula(double th1, double ph1, double th2, double ph2)
+{
+	#define TO_RAD (3.1415926536 / 180)
+	int R = 6371;
+	double dx, dy, dz;
+	ph1 -= ph2;
+	ph1 *= TO_RAD, th1 *= TO_RAD, th2 *= TO_RAD;
+ 
+	dz = sin(th1) - sin(th2);
+	dx = cos(ph1) * cos(th1) - cos(th2);
+	dy = sin(ph1) * cos(th1);
+	return asin(sqrt(dx * dx + dy * dy + dz * dz) / 2) * 2 * R;
+}
+
 /*
  * resample_data
  * This is used to resample tile data. It is particularly designed for
@@ -82,6 +97,21 @@ int resample_data(int scaling_factor){
 	ippd = IPPD;
 	ARRAYSIZE = (MAXPAGES * IPPD) + 50;
 	return 0;
+}
+
+/*
+ * resize_data
+ * This function works in conjuntion with resample_data. It takes a
+ * resolution value in meters as its argument. It then calculates the
+ * nearest (via averaging) resample value and calls resample_data
+ */
+int resize_data(int resolution){
+	double current_res_km = haversine_formula(dem[0].max_north, dem[0].max_west, dem[0].max_north, dem[0].min_west);
+	int current_res = (int) ceil((current_res_km/IPPD)*1000);
+	int scaling_factor = resolution / current_res;
+	if (debug)
+		fprintf(stderr, "Resampling: Current %dm Desired %dm Scale %d\n", current_res, resolution, scaling_factor);
+	return resample_data(scaling_factor);
 }
 
 int loadClutter(char *filename, double radius, struct site tx)
