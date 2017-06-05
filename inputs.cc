@@ -88,7 +88,8 @@ int resample_data(int scaling_factor){
 	}
 
 	/* Report to the user */
-	fprintf(stderr, "Resampling IPPD %d->%d min/max el %d/%d\n", IPPD, new_ippd, min_elevation, max_elevation);
+	if (debug)
+		fprintf(stderr, "Resampling IPPD %d->%d min/max el %d/%d\n", IPPD, new_ippd, min_elevation, max_elevation);
 
 	/* Finally, set the new IPPD value */
 	height /= scaling_factor;
@@ -403,7 +404,8 @@ int loadLIDAR(char *filenames)
 	height = (unsigned)((max_north-min_north) / smCellsize);
 	width = (unsigned)((max_west-min_west) / smCellsize);
 
-	fprintf(stderr, "LIDAR LOADED %d x %d\n", width, height);
+	if (debug)
+		fprintf(stderr, "LIDAR LOADED %d x %d\n", width, height);
 
 	if (debug)
 		fprintf(stderr, "fc %d WIDTH %d HEIGHT %d ippd %d minN %.5f maxN %.5f minW %.5f maxW %.5f avgCellsize %.5f\n", fc, width, height, ippd,min_north,max_north,min_west,max_west,avgCellsize);
