@@ -12,7 +12,6 @@ int tile_load_lidar(tile_t *tile, char *filename){
 	char line[MAX_LINE];
 	int nextval;
 	char *pch;
-	int w, x, y;
 
 	/* Clear the tile data */
 	memset(tile,0x00,sizeof(tile_t));
@@ -71,7 +70,6 @@ int tile_load_lidar(tile_t *tile, char *filename){
 	if (debug)
 		fprintf(stderr, "POST yll %.7f yur %.7f xur %.7f xll %.7f delta %.6f\n", tile->yll, tile->yur, tile->xur, tile->xll, delta);
 
-#ifdef _LOAD_TILEDATA
 	/* Read the actual tile data */
 	/* Allocate the array for the lidar data */
 	if ( (tile->data = (int*) calloc(tile->width * tile->height, sizeof(int))) == NULL ) {
@@ -84,7 +82,7 @@ int tile_load_lidar(tile_t *tile, char *filename){
 	for (size_t h = 0; h < tile->height; h++) {
 		if (fgets(line, MAX_LINE, fd) != NULL) {
 			pch = strtok(line, " "); // split line into values
-			for (w = 0; w < tile->width && pch != NULL; w++) {
+			for (size_t w = 0; w < tile->width && pch != NULL; w++) {
 				/* If the data is less than a *magic* minimum, normalize it to zero */
 				nextval = atoi(pch);
 				if (nextval <= -9999)
@@ -98,13 +96,12 @@ int tile_load_lidar(tile_t *tile, char *filename){
 				pch = strtok(NULL, " ");
 			}//while
 		} else {
-			fprintf(stderr, "LIDAR error @ x %d y %d file %s\n", x, y, filename);
+			fprintf(stderr, "LIDAR error @ h %zu file %s\n", h, filename);
 		}//if
 	}
 
 	if (debug)
-		fprintf(stderr,"Pixels loaded: %zu/%zu\n",loaded,tile->width*tile->height);
-#endif
+		fprintf(stderr,"Pixels loaded: %zu/%d\n",loaded,tile->width*tile->height);
 
 	/* All done, close the LIDAR file */
 	fclose(fd);

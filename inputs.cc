@@ -231,92 +231,6 @@ int loadClutter(char *filename, double radius, struct site tx)
 	return 0;
 }
 
-void readLIDAR(FILE *fd, int h, int w, int indx,double n, double e, double s, double west)
-{
-	int x = 0, y = 0, reads = 0, a=0, b=0, avg=0, tWidth = 0, tHeight = 0;
-	char line[25000];
-	char *pch;
-
-	dem[indx].max_north=n;
-	dem[indx].min_west=e;
-	dem[indx].min_north=s;
-	dem[indx].max_west=west;
-
-	if (max_north == -90)
-		max_north = dem[indx].max_north;
-
-	else if (dem[indx].max_north > max_north)
-		max_north = dem[indx].max_north;
-
-	if (min_north == 90)
-		min_north = dem[indx].min_north;
-
-	else if (dem[indx].min_north < min_north)
-		min_north = dem[indx].min_north;
-
-	if (dem[indx].max_west > max_west)
-		max_west = dem[indx].max_west;
-	if (dem[indx].min_west < min_west)
-		min_west = dem[indx].min_west;
-
-	if (max_west == -1) {
-		max_west = dem[indx].max_west;
-	} else {
-		if (abs(dem[indx].max_west - max_west) < 180) {
-			if (dem[indx].max_west > max_west)
-				max_west = dem[indx].max_west;
-		} else {
-			if (dem[indx].max_west < max_west)
-				max_west = dem[indx].max_west;
-		}
-	}
-
-	if (min_west == 360) {
-		min_west = dem[indx].min_west;
-	} else {
-		if (fabs(dem[indx].min_west - min_west) < 180.0) {
-			if (dem[indx].min_west < min_west)
-				min_west = dem[indx].min_west;
-		} else {
-			if (dem[indx].min_west > min_west)
-				min_west = dem[indx].min_west;
-		}
-	}
-
-	for (y = h-1; y > -1; y--) {
-		x = w-1;
-	
-		if (fgets(line, 25000, fd) != NULL) {
-				pch = strtok(line, " "); // split line into values
-
-				while (pch != NULL && x > -1) {
-					if (atoi(pch) <= -9999)
-						pch = "0";
-					dem[indx].data[y][x] = atoi(pch);
-					dem[indx].signal[x][y] = 0;
-					dem[indx].mask[x][y] = 0;
-					if (atoi(pch) > dem[indx].max_el) {
-						dem[indx].max_el = atoi(pch);
-						max_elevation = atoi(pch);
-					}
-					if (atoi(pch) < dem[indx].min_el) {
-						dem[indx].min_el = atoi(pch);
-						min_elevation = dem[indx].min_el;
-					}
-
-   					x--;
-					pch = strtok(NULL, " ");
-				}//while
-
-
-		} else {
-			fprintf(stderr, "LIDAR error @ x %d y %d indx %d\n",
-					x, y, indx);
-		}//if
-	}//for
-
-}
-
 int loadLIDAR(char *filenames)
 {
 	char *filename;
@@ -391,13 +305,75 @@ int loadLIDAR(char *filenames)
 	// reset the IPPD after allocations
 	IPPD -= 50;
 
-	for ( int indx = 0; indx < fc; indx++ ) {
-		if ( (fd = fopen(files[indx],"rb")) == NULL)
-			return errno;
-		fseek(fd, tiles[indx].datastart, SEEK_SET);
-		if (debug)
-			fprintf(stderr, "readLIDAR(fd,%d,%d,%d,%.4f,%.4f,%.4f,%.4f)\n", tiles[indx].height, tiles[indx].width, indx, tiles[indx].yur, tiles[indx].xur, tiles[indx].yll, tiles[indx].xll);
-		readLIDAR(fd, tiles[indx].height, tiles[indx].width, indx, tiles[indx].yur, tiles[indx].xur, tiles[indx].yll, tiles[indx].xll);
+	/* Load the data into the global dem array */
+	for (size_t indx = 0; indx < fc; indx++) {
+		dem[indx].max_north = tiles[indx].yur;
+		dem[indx].min_west = tiles[indx].xur;
+		dem[indx].min_north = tiles[indx].yll;
+		dem[indx].max_west = tiles[indx].xll;
+		dem[indx].max_el = tiles[indx].max_el;
+		dem[indx].min_el = tiles[indx].min_el;
+
+		if (tiles[indx].max_el > max_elevation)
+			max_elevation = tiles[indx].max_el; 
+		if (tiles[indx].min_el < min_elevation)
+			min_elevation = tiles[indx].min_el;
+
+		if (max_north == -90)
+			max_north = dem[indx].max_north;
+
+		else if (dem[indx].max_north > max_north)
+			max_north = dem[indx].max_north;
+
+		if (min_north == 90)
+			min_north = dem[indx].min_north;
+
+		else if (dem[indx].min_north < min_north)
+			min_north = dem[indx].min_north;
+
+		if (dem[indx].max_west > max_west)
+			max_west = dem[indx].max_west;
+		if (dem[indx].min_west < min_west)
+			min_west = dem[indx].min_west;
+
+		if (max_west == -1) {
+			max_west = dem[indx].max_west;
+		} else {
+			if (abs(dem[indx].max_west - max_west) < 180) {
+				if (dem[indx].max_west > max_west)
+					max_west = dem[indx].max_west;
+			} else {
+				if (dem[indx].max_west < max_west)
+					max_west = dem[indx].max_west;
+			}
+		}
+
+		if (min_west == 360) {
+			min_west = dem[indx].min_west;
+		} else {
+			if (fabs(dem[indx].min_west - min_west) < 180.0) {
+				if (dem[indx].min_west < min_west)
+					min_west = dem[indx].min_west;
+			} else {
+				if (dem[indx].min_west > min_west)
+					min_west = dem[indx].min_west;
+			}
+		}
+
+		/* 
+		 * Copy the lidar tile data into the dem array. The dem array is rotated
+		 * 90 degrees (christ knows why...)
+		 */
+		int y = tiles[indx].height-1;
+		for (size_t h = 0; h < tiles[indx].height; h++, y--) {
+			int x = tiles[indx].width-1;
+			for (size_t w = 0; w < tiles[indx].width; w++, x--) {
+				dem[indx].data[y][x] = tiles[indx].data[h*tiles[indx].width + w];
+				dem[indx].signal[y][x] = 0;
+				dem[indx].mask[y][x] = 0;
+			}
+		}
+
 	}
 
 	ippd=IPPD;
