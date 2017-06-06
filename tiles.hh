@@ -11,10 +11,22 @@ typedef struct _tile_t{
 		int	rows;
 		int	height;
 	};
-	double	xll;
-	double	yll;
-	double	xur;
-	double	yur;
+	union{
+		double	xll;
+		double	max_west;
+	};
+	union{
+		double	yll;
+		double	min_north;
+	};
+	union{
+		double	xur;
+		double	min_west;
+	};
+	union{
+		double	yur;
+		double	max_north;
+	};
 	double	cellsize;
 	long long datastart;
 	int		nodata;

@@ -254,7 +254,7 @@ int loadLIDAR(char *filenames)
 	}
 
 	/* Allocate the tile array */
-	tiles = (tile_t*)calloc(fc,sizeof(tile_t));
+	tiles = (tile_t*) calloc(fc, sizeof(tile_t));
 
 	/* Load each tile in turn */
 	for (indx = 0; indx < fc; indx++) {
@@ -277,6 +277,47 @@ int loadLIDAR(char *filenames)
 		// Update the smallest cell size
 		if (smCellsize == 0 || tiles[indx].cellsize < smCellsize) {
 			smCellsize = tiles[indx].cellsize;
+		}
+
+		// Update a bunch of globals
+		if (tiles[indx].max_el > max_elevation)
+			max_elevation = tiles[indx].max_el; 
+		if (tiles[indx].min_el < min_elevation)
+			min_elevation = tiles[indx].min_el;
+
+		if (max_north == -90 || tiles[indx].max_north > max_north)
+			max_north = tiles[indx].max_north;
+
+		if (min_north == 90 || tiles[indx].min_north < min_north)
+			min_north = tiles[indx].min_north;
+
+		if (tiles[indx].max_west > max_west)
+			max_west = tiles[indx].max_west;
+		if (tiles[indx].min_west < min_west)
+			min_west = tiles[indx].min_west;
+
+		if (max_west == -1) {
+			max_west = tiles[indx].max_west;
+		} else {
+			if (abs(tiles[indx].max_west - max_west) < 180) {
+				if (tiles[indx].max_west > max_west)
+					max_west = tiles[indx].max_west;
+			} else {
+				if (tiles[indx].max_west < max_west)
+					max_west = tiles[indx].max_west;
+			}
+		}
+
+		if (min_west == 360) {
+			min_west = tiles[indx].min_west;
+		} else {
+			if (fabs(tiles[indx].min_west - min_west) < 180.0) {
+				if (tiles[indx].min_west < min_west)
+					min_west = tiles[indx].min_west;
+			} else {
+				if (tiles[indx].min_west > min_west)
+					min_west = tiles[indx].min_west;
+			}
 		}
 
 	}
@@ -313,52 +354,6 @@ int loadLIDAR(char *filenames)
 		dem[indx].max_west = tiles[indx].xll;
 		dem[indx].max_el = tiles[indx].max_el;
 		dem[indx].min_el = tiles[indx].min_el;
-
-		if (tiles[indx].max_el > max_elevation)
-			max_elevation = tiles[indx].max_el; 
-		if (tiles[indx].min_el < min_elevation)
-			min_elevation = tiles[indx].min_el;
-
-		if (max_north == -90)
-			max_north = dem[indx].max_north;
-
-		else if (dem[indx].max_north > max_north)
-			max_north = dem[indx].max_north;
-
-		if (min_north == 90)
-			min_north = dem[indx].min_north;
-
-		else if (dem[indx].min_north < min_north)
-			min_north = dem[indx].min_north;
-
-		if (dem[indx].max_west > max_west)
-			max_west = dem[indx].max_west;
-		if (dem[indx].min_west < min_west)
-			min_west = dem[indx].min_west;
-
-		if (max_west == -1) {
-			max_west = dem[indx].max_west;
-		} else {
-			if (abs(dem[indx].max_west - max_west) < 180) {
-				if (dem[indx].max_west > max_west)
-					max_west = dem[indx].max_west;
-			} else {
-				if (dem[indx].max_west < max_west)
-					max_west = dem[indx].max_west;
-			}
-		}
-
-		if (min_west == 360) {
-			min_west = dem[indx].min_west;
-		} else {
-			if (fabs(dem[indx].min_west - min_west) < 180.0) {
-				if (dem[indx].min_west < min_west)
-					min_west = dem[indx].min_west;
-			} else {
-				if (dem[indx].min_west > min_west)
-					min_west = dem[indx].min_west;
-			}
-		}
 
 		/* 
 		 * Copy the lidar tile data into the dem array. The dem array is rotated
