@@ -67,11 +67,11 @@ int tile_load_lidar(tile_t *tile, char *filename){
 	// 	fprintf(stderr,"%d, %d, %.7f, %.7f, %.7f, %.7f, %.7f\n",width,height,xll,yll,cellsize,yur,xur);
 
 	// Greenwich straddling hack
-	if (tile->xll <= 0 && tile->xur > 0) {
-		tile->xll = (tile->xur - tile->xll); // full width
-		tile->xur = 0.0; // budge it along so it's west of greenwich
-		delta = eastoffset; // add to Tx longitude later
-	} else {
+	// if (tile->xll <= 0 && tile->xur > 0) {
+	// 	tile->xll = (tile->xur - tile->xll); // full width
+	// 	tile->xur = 0.0; // budge it along so it's west of greenwich
+	// 	delta = eastoffset; // add to Tx longitude later
+	// } else {
 		// Transform WGS84 longitudes into 'west' values as society finishes east of Greenwich ;)
 		if (tile->xll >= 0)
 			tile->xll = 360-tile->xll;
@@ -81,7 +81,7 @@ int tile_load_lidar(tile_t *tile, char *filename){
 			tile->xll = tile->xll * -1;
 		if(tile->xur < 0)
 			tile->xur = tile->xur * -1;
-	}
+	// }
 
 	if (debug)
 		fprintf(stderr, "POST yll %.7f yur %.7f xur %.7f xll %.7f delta %.6f\n", tile->yll, tile->yur, tile->xur, tile->xll, delta);

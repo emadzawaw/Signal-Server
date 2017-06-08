@@ -329,7 +329,7 @@ int loadLIDAR(char *filenames)
 	for (size_t i = 0; i < fc; i++) {
 		if ( smallest_res == 0 || tiles[i].resolution < smallest_res ){
 			smallest_res = tiles[i].resolution;
-			pix_per_deg = MAX(tiles[i].width,tiles[i].height) / MAX(tiles[i].max_north - tiles[i].min_north, tiles[i].max_west - tiles[i].min_west);
+			pix_per_deg = MAX(tiles[i].width,tiles[i].height) / MAX(tiles[i].max_north - tiles[i].min_north, tiles[i].max_west - tiles[i].min_west >= 0 ? tiles[i].max_west - tiles[i].min_west : tiles[i].max_west + (360 - tiles[i].min_west));
 		}
 	}
 
@@ -342,8 +342,12 @@ int loadLIDAR(char *filenames)
 	}
 
 	/* Now we work out the size of the giant lidar tile. */
-	double total_width = max_west - min_west;
+	double total_width = max_west - min_west >= 0 ? max_west - min_west : max_west + (360 - min_west);
 	double total_height = max_north - min_north;
+	if (debug) {
+		fprintf(stderr, "totalwidth: %.7f - %.7f = %.7f\n", max_west, min_west, total_width);
+		fprintf(stderr,"mw:%lf Mnw:%lf\n", max_west, min_west);
+	}
 	/* This is how we should _theoretically_ work this out, but due to
 	 * the nature of floating point arithmetic and rounding errors, we need to
 	 * crunch the numbers the hard way */
@@ -354,7 +358,7 @@ int loadLIDAR(char *filenames)
 	size_t new_width = 0;
 	for ( size_t i = 0; i < fc; i++ ) {
 		double north_offset = max_north - tiles[i].max_north;
-		double west_offset = max_west - tiles[i].max_west;
+		double west_offset = max_west - tiles[i].max_west >= 0 ? max_west - tiles[i].max_west : max_west + (360 - tiles[i].max_west);
 		size_t north_pixel_offset = north_offset * pix_per_deg;
 		size_t west_pixel_offset = west_offset * pix_per_deg;
 
@@ -366,6 +370,10 @@ int loadLIDAR(char *filenames)
 	size_t new_tile_alloc = new_width * new_height;
 
 	int * new_tile = (int*) calloc( new_tile_alloc, sizeof(int) );
+	if ( new_tile == NULL ){
+		free(tiles);
+		return ENOMEM;
+	}
 	if (debug)
 		fprintf(stderr,"Lidar tile dimensions w:%lf(%zu) h:%lf(%zu)\n", total_width, new_width, total_height, new_height);
 
@@ -374,13 +382,14 @@ int loadLIDAR(char *filenames)
 	/* Fill out the array one tile at a time */
 	for (size_t i = 0; i< fc; i++) {
 		double north_offset = max_north - tiles[i].max_north;
-		double west_offset = max_west - tiles[i].max_west;
+		double west_offset = max_west - tiles[i].max_west >= 0 ? max_west - tiles[i].max_west : max_west + (360 - tiles[i].max_west);
 		size_t north_pixel_offset = north_offset * pix_per_deg;
 		size_t west_pixel_offset = west_offset * pix_per_deg;
 
+
 		if (debug) {
 			fprintf(stderr,"mn: %lf mw:%lf globals: %lf %lf\n", tiles[i].max_north, tiles[i].max_west, max_north, max_west);
-			fprintf(stderr,"Offset n:%zu w:%zu\n", north_pixel_offset, west_pixel_offset);
+			fprintf(stderr,"Offset n:%zu(%lf) w:%zu(%lf)\n", north_pixel_offset, north_offset, west_pixel_offset, west_offset);
 			fprintf(stderr,"Height: %d\n", tiles[i].height);
 		}
 
@@ -389,12 +398,12 @@ int loadLIDAR(char *filenames)
 			register int *dest_addr = &new_tile[ (north_pixel_offset+h)*new_width + west_pixel_offset];
 			register int *src_addr = &tiles[i].data[h*tiles[i].width];
 			// Check if we might overflow
-			if ( dest_addr + tiles[i].width > new_tile + new_tile_alloc ){
+			if ( dest_addr + tiles[i].width > new_tile + new_tile_alloc || dest_addr < new_tile ){
 				if (debug)
 					fprintf(stderr, "Overflow %zu\n",i);
 				continue;
 			}
-			//fprintf(stderr,"dest:%p src:%p\n", dest_addr, src_addr);
+			// fprintf(stderr,"dest:%p src:%p\n", dest_addr, src_addr);
 			memcpy( dest_addr, src_addr, tiles[i].width * sizeof(int) );
 		}
 	}
@@ -437,8 +446,8 @@ int loadLIDAR(char *filenames)
 	ippd=IPPD;
 	// height = (unsigned)((max_north-min_north) / smCellsize);
 	// width = (unsigned)((max_west-min_west) / smCellsize);
-	height = (unsigned)((max_north-min_north) * pix_per_deg);
-	width = (unsigned)((max_west-min_west) * pix_per_deg);
+	height = (unsigned)((total_height) * pix_per_deg);
+	width = (unsigned)((total_width) * pix_per_deg);
 
 	if (debug)
 		fprintf(stderr, "LIDAR LOADED %d x %d\n", width, height);
