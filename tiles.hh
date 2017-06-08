@@ -33,8 +33,10 @@ typedef struct _tile_t{
 	int 	max_el;
 	int		min_el;
 	int		*data;
+	int		resolution;
 } tile_t, *ptile_t;
 
 int tile_load_lidar(tile_t*, char *);
+int tile_rescale(tile_t *, float);
 
 #endif

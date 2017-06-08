@@ -322,58 +322,123 @@ int loadLIDAR(char *filenames)
 
 	}
 
-	/* Iterate through all tiles to find the largest x/y dimension
-	to use as the global IPPD value. We do this here so that we are
-	sure to allocate enough memory for the remainder of the calculations */
-	int dimension_max = -1;
+	/* Iterate through all of the tiles to find the smallest resolution. We will
+	 * need to rescale every tile from here on out to this value */
+	int smallest_res = 0;
+	int pix_per_deg = 0;
 	for (size_t i = 0; i < fc; i++) {
-		if( tiles[i].width > tiles[i].height && tiles[i].width > dimension_max )
-			dimension_max = tiles[i].width;
-		else if( tiles[i].height > dimension_max )
-			dimension_max = tiles[i].height;
+		if ( smallest_res == 0 || tiles[i].resolution < smallest_res ){
+			smallest_res = tiles[i].resolution;
+			pix_per_deg = MAX(tiles[i].width,tiles[i].height) / MAX(tiles[i].max_north - tiles[i].min_north, tiles[i].max_west - tiles[i].min_west);
+		}
 	}
 
-	MAXPAGES = fc;
-	IPPD = dimension_max;
+	/* Now we need to rescale all tiles the the lowest resolution. ie if we have
+	 * one 1m lidar and one 2m lidar, resize the 2m to fake 1m */
+	for (size_t i = 0; i< fc; i++) {
+		float rescale = tiles[i].resolution / smallest_res;
+		if (tiles[i].resolution != smallest_res)
+			tile_rescale(&tiles[i],rescale);
+	}
+
+	/* Now we work out the size of the giant lidar tile. */
+	double total_width = max_west - min_west;
+	double total_height = max_north - min_north;
+	/* This is how we should _theoretically_ work this out, but due to
+	 * the nature of floating point arithmetic and rounding errors, we need to
+	 * crunch the numbers the hard way */
+	// size_t new_width = total_width * pix_per_deg;
+	// size_t new_height = total_height * pix_per_deg;
+
+	size_t new_height = 0;
+	size_t new_width = 0;
+	for ( size_t i = 0; i < fc; i++ ) {
+		double north_offset = max_north - tiles[i].max_north;
+		double west_offset = max_west - tiles[i].max_west;
+		size_t north_pixel_offset = north_offset * pix_per_deg;
+		size_t west_pixel_offset = west_offset * pix_per_deg;
+
+		if ( west_pixel_offset + tiles[i].width > new_width )
+			new_width = west_pixel_offset + tiles[i].width;
+		if ( north_pixel_offset + tiles[i].height > new_height )
+			new_height = north_pixel_offset + tiles[i].height;
+	}
+	size_t new_tile_alloc = new_width * new_height;
+
+	int * new_tile = (int*) calloc( new_tile_alloc, sizeof(int) );
+	if (debug)
+		fprintf(stderr,"Lidar tile dimensions w:%lf(%zu) h:%lf(%zu)\n", total_width, new_width, total_height, new_height);
+
+	/* ...If we wanted a value other than sea level here, we would need to initialize the array... */
+
+	/* Fill out the array one tile at a time */
+	for (size_t i = 0; i< fc; i++) {
+		double north_offset = max_north - tiles[i].max_north;
+		double west_offset = max_west - tiles[i].max_west;
+		size_t north_pixel_offset = north_offset * pix_per_deg;
+		size_t west_pixel_offset = west_offset * pix_per_deg;
+
+		if (debug) {
+			fprintf(stderr,"mn: %lf mw:%lf globals: %lf %lf\n", tiles[i].max_north, tiles[i].max_west, max_north, max_west);
+			fprintf(stderr,"Offset n:%zu w:%zu\n", north_pixel_offset, west_pixel_offset);
+			fprintf(stderr,"Height: %d\n", tiles[i].height);
+		}
+
+		/* Copy it row-by-row from the tile */
+		for (size_t h = 0; h < tiles[i].height; h++) {
+			register int *dest_addr = &new_tile[ (north_pixel_offset+h)*new_width + west_pixel_offset];
+			register int *src_addr = &tiles[i].data[h*tiles[i].width];
+			// Check if we might overflow
+			if ( dest_addr + tiles[i].width > new_tile + new_tile_alloc ){
+				if (debug)
+					fprintf(stderr, "Overflow %zu\n",i);
+				continue;
+			}
+			//fprintf(stderr,"dest:%p src:%p\n", dest_addr, src_addr);
+			memcpy( dest_addr, src_addr, tiles[i].width * sizeof(int) );
+		}
+	}
+
+	MAXPAGES = 1;
+	IPPD = MAX(new_width,new_height);
 	if(debug){
 		fprintf(stderr,"Setting IPPD to %d\n",IPPD);
 		fflush(stderr);
 	}
 	// add fudge as reprojected tiles sometimes vary by a pixel or ten
-	IPPD += 50;
+	// IPPD += 50;
 	ARRAYSIZE = (MAXPAGES * IPPD) + 50;
 	do_allocs();
 	// reset the IPPD after allocations
-	IPPD -= 50;
+	// IPPD -= 50;
 
 	/* Load the data into the global dem array */
-	for (size_t indx = 0; indx < fc; indx++) {
-		dem[indx].max_north = tiles[indx].yur;
-		dem[indx].min_west = tiles[indx].xur;
-		dem[indx].min_north = tiles[indx].yll;
-		dem[indx].max_west = tiles[indx].xll;
-		dem[indx].max_el = tiles[indx].max_el;
-		dem[indx].min_el = tiles[indx].min_el;
+	dem[0].max_north = max_north;
+	dem[0].min_west = min_west;
+	dem[0].min_north = min_north;
+	dem[0].max_west = max_west;
+	dem[0].max_el = max_elevation;
+	dem[0].min_el = min_elevation;
 
-		/* 
-		 * Copy the lidar tile data into the dem array. The dem array is rotated
-		 * 90 degrees (christ knows why...)
-		 */
-		int y = tiles[indx].height-1;
-		for (size_t h = 0; h < tiles[indx].height; h++, y--) {
-			int x = tiles[indx].width-1;
-			for (size_t w = 0; w < tiles[indx].width; w++, x--) {
-				dem[indx].data[y][x] = tiles[indx].data[h*tiles[indx].width + w];
-				dem[indx].signal[y][x] = 0;
-				dem[indx].mask[y][x] = 0;
-			}
+	/* 
+	 * Copy the lidar tile data into the dem array. The dem array is rotated
+	 * 90 degrees (christ knows why...)
+	 */
+	int y = new_height-1;
+	for (size_t h = 0; h < new_height; h++, y--) {
+		int x = new_width-1;
+		for (size_t w = 0; w < new_width; w++, x--) {
+			dem[0].data[y][x] = new_tile[h*new_width + w];
+			dem[0].signal[y][x] = 0;
+			dem[0].mask[y][x] = 0;
 		}
-
 	}
 
 	ippd=IPPD;
-	height = (unsigned)((max_north-min_north) / smCellsize);
-	width = (unsigned)((max_west-min_west) / smCellsize);
+	// height = (unsigned)((max_north-min_north) / smCellsize);
+	// width = (unsigned)((max_west-min_west) / smCellsize);
+	height = (unsigned)((max_north-min_north) * pix_per_deg);
+	width = (unsigned)((max_west-min_west) * pix_per_deg);
 
 	if (debug)
 		fprintf(stderr, "LIDAR LOADED %d x %d\n", width, height);

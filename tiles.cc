@@ -2,10 +2,26 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <math.h>
 #include "tiles.hh"
 #include "common.h"
 
 #define MAX_LINE 25000
+
+/* Computes the distance between two long/lat points */
+double haversine_formulaz(double th1, double ph1, double th2, double ph2)
+{
+	#define TO_RAD (3.1415926536 / 180)
+	int R = 6371;
+	double dx, dy, dz;
+	ph1 -= ph2;
+	ph1 *= TO_RAD, th1 *= TO_RAD, th2 *= TO_RAD;
+ 
+	dz = sin(th1) - sin(th2);
+	dx = cos(ph1) * cos(th1) - cos(th2);
+	dy = sin(ph1) * cos(th1);
+	return asin(sqrt(dx * dx + dy * dy + dz * dz) / 2) * 2 * R;
+}
 
 int tile_load_lidar(tile_t *tile, char *filename){
 	FILE *fd;
@@ -100,11 +116,89 @@ int tile_load_lidar(tile_t *tile, char *filename){
 		}//if
 	}
 
+	double current_res_km = haversine_formulaz(tile->max_north, tile->max_west, tile->max_north, tile->min_west);
+	tile->resolution = (int) ceil((current_res_km/MAX(tile->width,tile->height))*1000);
+
 	if (debug)
 		fprintf(stderr,"Pixels loaded: %zu/%d\n",loaded,tile->width*tile->height);
 
 	/* All done, close the LIDAR file */
 	fclose(fd);
+
+	return 0;
+}
+
+/*
+ *	A positive scale will _increase_ the size of the data
+ */
+int tile_rescale(tile_t *tile, float scale){
+	int *new_data;
+	size_t skip_count = 1;
+	size_t copy_count = 1;
+
+	size_t new_height = tile->height * scale;
+	size_t new_width = tile->width * scale;
+
+	/* Allocate the array for the lidar data */
+	if ( (new_data = (int*) calloc(new_height * new_width, sizeof(int))) == NULL ) {
+		return ENOMEM;
+	}
+
+	tile->max_el = -32768;
+	tile->min_el = 32768;
+
+	/* Making the tile data smaller */
+	if (scale < 0) {
+		skip_count = 1 / scale;
+	} else {
+		copy_count = (size_t) scale;
+	}
+
+	fprintf(stderr,"Skip: %zu Copy: %zu\n", skip_count, copy_count);
+
+	
+
+	/* Nearest neighbour normalization. For each subsample of the original, simply
+	 * assign the value in the top left to the new pixel */
+	if (scale < 0){
+		for (size_t x = 0, i = 0; i < new_width; x += skip_count, i++) {
+			for (size_t y = 0, j = 0; j < new_height; y += skip_count, j++){
+				new_data[i*new_width+j] = tile->data[x*tile->width+y];
+				/* Update local min / max values */
+				if (tile->data[x * tile->width + y] > tile->max_el)
+					tile->max_el = tile->data[x * tile->width + y];
+				if (tile->data[x * tile->width + y] < tile->min_el)
+					tile->min_el = tile->data[x * tile->width + y];
+			}
+		}
+	}else{
+		for (size_t x = 0; x < tile->width; x++) {
+			for (size_t y = 0; y < tile->height; y++){
+				/* These are for scaling up the data */
+				for (size_t copy_x = 0; copy_x < copy_count; copy_x++) {
+					for (size_t copy_y = 0; copy_y < copy_count; copy_y++) {
+						size_t new_x = (x * skip_count) + copy_x;
+						size_t new_y = (y * skip_count) + copy_y;
+						new_data[ new_x * new_width + new_y ] = tile->data[x * tile->width + y];
+						// new_data[(x + copy_x) * new_width + (y + copy_y)] = tile->data[x * tile->width + y];
+					}
+				}
+				/* Update local min / max values */
+				if (tile->data[x * tile->width + y] > tile->max_el)
+					tile->max_el = tile->data[x * tile->width + y];
+				if (tile->data[x * tile->width + y] < tile->min_el)
+					tile->min_el = tile->data[x * tile->width + y];
+			}
+		}
+	}
+
+	/* Update the date in the tile */
+	free(tile->data);
+	tile->data = new_data;
+
+	/* Update the height and width values */
+	tile->height = new_height;
+	tile->width = new_width;
 
 	return 0;
 }
