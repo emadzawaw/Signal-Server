@@ -57,7 +57,7 @@ int ippd, mpi,
 
 unsigned char got_elevation_pattern, got_azimuth_pattern, metric = 0, dbm = 0;
 
-bool to_stdout = false;
+bool to_stdout = false, cropping = false;
 
 __thread double *elev;
 __thread struct path path;
@@ -1885,26 +1885,29 @@ int main(int argc, char *argv[])
 				}
 			}
 
-			// if(max_range<=100){
-			// 	// CROPPING. croplat assigned in propPathLoss()
-			// 	max_north=cropLat; // MAX(path.lat[y])
-			// 	// Edge case #1 - EAST/WEST
-			// 	if(cropLon>357 && tx_site[0].lon < 3)
-			// 		cropLon=tx_site[0].lon+3;
-			// 	// Edge case #2 - EAST/EAST
-			// 	if(cropLon>359.5 && tx_site[0].lon > 359.5)
-			// 		cropLon=362;
-			// 	max_west=cropLon; // MAX(path.lon[y])
-			// 	cropLat-=tx_site[0].lat; // angle from tx to edge
-			// 	cropLon-=tx_site[0].lon;
-			// 	width=(int)((cropLon*ppd)*2);
-			// 	height=(int)((cropLat*ppd)*2);
+#ifdef CROPPING
+			if(max_range<=100){
+				// CROPPING. croplat assigned in propPathLoss()
+				max_north=cropLat; // MAX(path.lat[y])
+				// Edge case #1 - EAST/WEST
+				if(cropLon>357 && tx_site[0].lon < 3)
+					cropLon=tx_site[0].lon+3;
+				// Edge case #2 - EAST/EAST
+				if(cropLon>359.5 && tx_site[0].lon > 359.5)
+					cropLon=362;
+				max_west=cropLon; // MAX(path.lon[y])
+				cropLat-=tx_site[0].lat; // angle from tx to edge
+				cropLon-=tx_site[0].lon;
+				width=(int)((cropLon*ppd)*2);
+				height=(int)((cropLat*ppd)*2);
+				cropping = true;
 
-			// 	if(width>3600*10){
-			// 		fprintf(stderr,"FATAL BOUNDS! max_west: %.4f cropLat: %.4f cropLon: %.4f longitude: %.5f\n",max_west,cropLat,cropLon,tx_site[0].lon);
-			// 		return 0;
-			// 	}
-			// }
+				if(width>3600*10){
+					fprintf(stderr,"FATAL BOUNDS! max_west: %.4f cropLat: %.4f cropLon: %.4f longitude: %.5f\n",max_west,cropLat,cropLon,tx_site[0].lon);
+					return 0;
+				}
+			}
+#endif
 
 			// Write bitmap
 			if (LR.erp == 0.0)
@@ -1926,21 +1929,19 @@ int main(int argc, char *argv[])
 					tx_site[0].lon *= -1;
 		}
 		if (tx_site[0].lon < -180.0){
-					tx_site[0].lon += 360;
+			tx_site[0].lon += 360;
 		}
 
-		if (propmodel == 2 || max_range > 100) {
-			// No croppping because this is LOS
-			fprintf(stderr, "|%.6f", max_north);
-			fprintf(stderr, "|%.6f", east);
-			fprintf(stderr, "|%.6f", min_north);
-			fprintf(stderr, "|%.6f|",west);
-		}else{
-			// Cropped EPSG4326 coordinates
+		if (cropping) {
 			fprintf(stderr, "|%.6f", tx_site[0].lat+cropLat);
 			fprintf(stderr, "|%.6f", tx_site[0].lon+cropLon);
 			fprintf(stderr, "|%.6f", tx_site[0].lat-cropLat);
 			fprintf(stderr, "|%.6f|",tx_site[0].lon-cropLon);
+		}else{
+			fprintf(stderr, "|%.6f", max_north);
+			fprintf(stderr, "|%.6f", east);
+			fprintf(stderr, "|%.6f", min_north);
+			fprintf(stderr, "|%.6f|",west);
 		}
 		fprintf(stderr, "\n");
 
