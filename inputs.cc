@@ -167,7 +167,7 @@ int loadLIDAR(char *filenames, int resample)
 			fflush(stderr);
 		}
 
-		// Increase the average cell size
+		// Increase the "average" cell size
 		avgCellsize += tiles[indx].cellsize;
 		// Update the smallest cell size
 		if (smCellsize == 0 || tiles[indx].cellsize < smCellsize) {
@@ -270,7 +270,7 @@ int loadLIDAR(char *filenames, int resample)
 	}
 	size_t new_tile_alloc = new_width * new_height;
 
-	short * new_tile = (short*) calloc( new_tile_alloc, sizeof(int) );
+	short * new_tile = (short*) calloc( new_tile_alloc, sizeof(short) );
 	if ( new_tile == NULL ){
 		free(tiles);
 		return ENOMEM;
