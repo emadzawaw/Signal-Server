@@ -233,3 +233,13 @@ int tile_resize(tile_t* tile, int resolution){
 		fprintf(stderr, "Resampling: Current %dm Desired %dm Scale %d\n", current_res, resolution, scaling_factor);
 	return tile_rescale(tile, scaling_factor);
 }
+
+/*
+ * tile_destroy
+ * This function simply destroys any data associated with a tile
+ */
+void tile_destroy(tile_t* tile){
+	if (tile->data != NULL)
+		free(tile->data);
+}
+

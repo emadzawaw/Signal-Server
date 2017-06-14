@@ -304,7 +304,6 @@ int loadLIDAR(char *filenames, int resample)
 					fprintf(stderr, "Overflow %zu\n",i);
 				continue;
 			}
-			// fprintf(stderr,"dest:%p src:%p\n", dest_addr, src_addr);
 			memcpy( dest_addr, src_addr, tiles[i].width * sizeof(short) );
 		}
 	}
@@ -349,6 +348,16 @@ int loadLIDAR(char *filenames, int resample)
 
 	if (debug)
 		fprintf(stderr, "fc %d WIDTH %d HEIGHT %d ippd %d minN %.5f maxN %.5f minW %.5f maxW %.5f avgCellsize %.5f\n", fc, width, height, ippd,min_north,max_north,min_west,max_west,avgCellsize);
+
+cleanup:
+
+	if ( tiles != NULL ) {
+		for (size_t i = 0; i < fc; i++) {
+			tile_destroy(&tiles[i]);
+		}
+	}
+	free(tiles);
+
 	return 0;
 }
 
