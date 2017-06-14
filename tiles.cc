@@ -9,7 +9,7 @@
 #define MAX_LINE 25000
 
 /* Computes the distance between two long/lat points */
-double haversine_formulaz(double th1, double ph1, double th2, double ph2)
+double haversine_formula(double th1, double ph1, double th2, double ph2)
 {
 	#define TO_RAD (3.1415926536 / 180)
 	int R = 6371;
@@ -116,11 +116,17 @@ int tile_load_lidar(tile_t *tile, char *filename){
 		}//if
 	}
 
-	double current_res_km = haversine_formulaz(tile->max_north, tile->max_west, tile->max_north, tile->min_west);
+	double current_res_km = haversine_formula(tile->max_north, tile->max_west, tile->max_north, tile->min_west);
 	tile->resolution = (int) ceil((current_res_km/MAX(tile->width,tile->height))*1000);
 
+	tile->width_deg = tile->max_west - tile->min_west >= 0 ? tile->max_west - tile->min_west : tile->max_west + (360 - tile->min_west);
+	tile->height_deg = tile->max_north - tile->min_north;
+
+	tile->ppdx = tile->width / tile->width_deg;
+	tile->ppdy = tile->height / tile->height_deg;
+
 	if (debug)
-		fprintf(stderr,"Pixels loaded: %zu/%d\n",loaded,tile->width*tile->height);
+		fprintf(stderr,"Pixels loaded: %zu/%d (PPD %dx%d)\n", loaded, tile->width*tile->height, tile->ppdx, tile->ppdy);
 
 	/* All done, close the LIDAR file */
 	fclose(fd);
@@ -129,12 +135,22 @@ int tile_load_lidar(tile_t *tile, char *filename){
 }
 
 /*
- *	A positive scale will _increase_ the size of the data
+ * tile_rescale
+ * This is used to resample tile data. It is particularly designed for
+ * use with LIDAR tiles where the resolution can be anything up to 2m.
+ * This function is capable of merging neighbouring pixel values
+ * The scaling factor is the distance to merge pixels.
+ * NOTE: This means that new resolutions can only increment in multiples of the original
+ * (ie 2m LIDAR can be 4/6/8/... and 20m can be 40/60)
  */
 int tile_rescale(tile_t *tile, float scale){
 	int *new_data;
 	size_t skip_count = 1;
 	size_t copy_count = 1;
+
+	if (scale == 1) {
+		return 0;	
+	}
 
 	size_t new_height = tile->height * scale;
 	size_t new_width = tile->width * scale;
@@ -148,47 +164,42 @@ int tile_rescale(tile_t *tile, float scale){
 	tile->min_el = 32768;
 
 	/* Making the tile data smaller */
-	if (scale < 0) {
+	if (scale < 1) {
 		skip_count = 1 / scale;
 	} else {
 		copy_count = (size_t) scale;
 	}
 
-	fprintf(stderr,"Skip: %zu Copy: %zu\n", skip_count, copy_count);
-
-	
+	if (debug)
+		fprintf(stderr,"Resampling tile:\n\tOld %zux%zu. New %zux%zu\n\tScale %f Skip %zu Copy %zu\n", tile->width, tile->height, new_width, new_height, scale, skip_count, copy_count);
 
 	/* Nearest neighbour normalization. For each subsample of the original, simply
-	 * assign the value in the top left to the new pixel */
-	if (scale < 0){
-		for (size_t x = 0, i = 0; i < new_width; x += skip_count, i++) {
-			for (size_t y = 0, j = 0; j < new_height; y += skip_count, j++){
-				new_data[i*new_width+j] = tile->data[x*tile->width+y];
-				/* Update local min / max values */
-				if (tile->data[x * tile->width + y] > tile->max_el)
-					tile->max_el = tile->data[x * tile->width + y];
-				if (tile->data[x * tile->width + y] < tile->min_el)
-					tile->min_el = tile->data[x * tile->width + y];
-			}
-		}
-	}else{
-		for (size_t x = 0; x < tile->width; x++) {
-			for (size_t y = 0; y < tile->height; y++){
-				/* These are for scaling up the data */
+	 * assign the value in the top left to the new pixel 
+	 * SOURCE: X / Y
+	 * DEST:   I / J */
+
+	for (size_t y = 0, j = 0;
+			y < tile->height && j < new_height;
+			y += skip_count, j += copy_count){
+
+		for (size_t x = 0, i = 0;
+				x < tile->width && i < new_width;
+				x += skip_count, i += copy_count) {
+		
+			/* These are for scaling up the data */
+			for (size_t copy_y = 0; copy_y < copy_count; copy_y++) {
 				for (size_t copy_x = 0; copy_x < copy_count; copy_x++) {
-					for (size_t copy_y = 0; copy_y < copy_count; copy_y++) {
-						size_t new_x = (x * skip_count) + copy_x;
-						size_t new_y = (y * skip_count) + copy_y;
-						new_data[ new_x * new_width + new_y ] = tile->data[x * tile->width + y];
-						// new_data[(x + copy_x) * new_width + (y + copy_y)] = tile->data[x * tile->width + y];
-					}
+					size_t new_j = j + copy_y;
+					size_t new_i = i + copy_x;
+					/* Do the copy */
+					new_data[ new_j * new_width + new_i ] = tile->data[y * tile->width + x];
 				}
-				/* Update local min / max values */
-				if (tile->data[x * tile->width + y] > tile->max_el)
-					tile->max_el = tile->data[x * tile->width + y];
-				if (tile->data[x * tile->width + y] < tile->min_el)
-					tile->min_el = tile->data[x * tile->width + y];
 			}
+			/* Update local min / max values */
+			if (tile->data[y * tile->width + x] > tile->max_el)
+				tile->max_el = tile->data[y * tile->width + x];
+			if (tile->data[y * tile->width + x] < tile->min_el)
+				tile->min_el = tile->data[y * tile->width + x];
 		}
 	}
 
@@ -199,6 +210,26 @@ int tile_rescale(tile_t *tile, float scale){
 	/* Update the height and width values */
 	tile->height = new_height;
 	tile->width = new_width;
+	tile->resolution *= scale;
+	tile->ppdy *= scale;
+	tile->ppdx *= scale;
+	tile->width_deg *= scale;
+	tile->height_deg *= scale;
 
 	return 0;
+}
+
+/*
+ * tile_resize
+ * This function works in conjuntion with resample_data. It takes a
+ * resolution value in meters as its argument. It then calculates the
+ * nearest (via averaging) resample value and calls resample_data
+ */
+int tile_resize(tile_t* tile, int resolution){
+	double current_res_km = haversine_formula(tile->max_north, tile->max_west, tile->max_north, tile->min_west);
+	int current_res = (int) ceil((current_res_km/IPPD)*1000);
+	float scaling_factor = resolution / current_res;
+	if (debug)
+		fprintf(stderr, "Resampling: Current %dm Desired %dm Scale %d\n", current_res, resolution, scaling_factor);
+	return tile_rescale(tile, scaling_factor);
 }

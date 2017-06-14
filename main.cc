@@ -53,7 +53,7 @@ double earthradius, max_range = 0.0, forced_erp, dpp, ppd, yppd,
 int ippd, mpi,
     max_elevation = -32768, min_elevation = 32768, bzerror, contour_threshold,
     pred, pblue, pgreen, ter, multiplier = 256, debug = 0, loops = 100, jgets =
-    0, MAXRAD, hottest = 10, height, width, resample;
+    0, MAXRAD, hottest = 10, height, width, resample = 0;
 
 unsigned char got_elevation_pattern, got_azimuth_pattern, metric = 0, dbm = 0;
 
@@ -1327,8 +1327,11 @@ int main(int argc, char *argv[])
 		if (strcmp(argv[x], "-resample") == 0) {
 			z = x + 1;
 
-			if(!lidar)
-				fprintf(stderr, "[!] Warning, this should only be used with LIDAR tiles. Trying anyway\n");
+			if(!lidar){
+				fprintf(stderr, "Error, this should only be used with LIDAR tiles.\n");
+				return -1;
+			}
+
 			sscanf(argv[z], "%d", &resample);
 		}
 
@@ -1697,19 +1700,12 @@ int main(int argc, char *argv[])
 
 	/* Load the required tiles */
 	if(lidar){
-		if( (result = loadLIDAR(lidar_tiles)) != 0 ){
+		if( (result = loadLIDAR(lidar_tiles, resample)) != 0 ){
 			fprintf(stderr, "Couldn't find one or more of the "
 				"lidar files. Please ensure their paths are "
 				"correct and try again.\n");
+			fprintf(stderr, "Error %d: %s\n", result, strerror(result));
 			exit(result);
-		}
-
-		/* If we have been asked to resample the input data; do it now. */
-		if (resample != -1 ){
-			if ((result = resize_data(resample)) != 0) {
-				fprintf(stderr, "Error resampling data\n");
-				return result;
-			}
 		}
 
 		if(debug){

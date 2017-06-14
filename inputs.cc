@@ -9,112 +9,6 @@
 #include "main.hh"
 #include "tiles.hh"
 
-/* Computes the distance between two long/lat points */
-double haversine_formula(double th1, double ph1, double th2, double ph2)
-{
-	#define TO_RAD (3.1415926536 / 180)
-	int R = 6371;
-	double dx, dy, dz;
-	ph1 -= ph2;
-	ph1 *= TO_RAD, th1 *= TO_RAD, th2 *= TO_RAD;
- 
-	dz = sin(th1) - sin(th2);
-	dx = cos(ph1) * cos(th1) - cos(th2);
-	dy = sin(ph1) * cos(th1);
-	return asin(sqrt(dx * dx + dy * dy + dz * dz) / 2) * 2 * R;
-}
-
-/*
- * resample_data
- * This is used to resample tile data. It is particularly designed for
- * use with LIDAR tiles where the resolution can be anything up to 2m.
- * This function is capable of merging neighbouring pixel values
- * The scaling factor is the distance to merge pixels.
- * NOTE: This means that new resolutions can only increment in multiples of the original
- * (ie 2m LIDAR can be 4/6/8/... and 20m can be 40/60)
- */
-int resample_data(int scaling_factor){
-	short **new_data;
-	/* Tile width and height is guaranteed to be IPPD.
-	 * We now need to calculate the new width and height */
-	size_t new_ippd = ((IPPD+1) / scaling_factor);
-	max_elevation = -32768;
-	min_elevation = 32768;
-
-	for (int indx = 0; indx < MAXPAGES; indx++) {
-		/* Check if this is a valid tile. Uninitialized tiles have this default value */
-		if (dem[indx].max_el == 32768)
-			continue;
-		
-		/* Now we allocate the replacement data arrays */
-		if ((new_data = new short *[new_ippd]) == NULL) {
-			return ENOMEM;
-		}
-		for (size_t i = 0; i < new_ippd; i++) {
-			if ((new_data[i] = new short[new_ippd]) == NULL) {
-				return ENOMEM;	// If this happens we will leak but thats ok because we must bail anyway
-			}
-		}
-
-		/* Nearest neighbour normalization. For each subsample of the original, simply
-		 * assign the value in the top left to the new pixel */
-		for (size_t x = 0, i = 0; i < new_ippd; x += scaling_factor, i++) {
-			for (size_t y = 0, j = 0; j < new_ippd; y += scaling_factor, j++){
-				// fprintf(stderr,"[%d,%d,%d,%d] => %d\n", dem[indx].data[x][y], dem[indx].data[x][y+1], dem[indx].data[x+1][y], dem[indx].data[x+1][y+1], dem[indx].data[x][y]);
-				new_data[i][j] = dem[indx].data[x][y];
-			}
-		}
-
-		/* We need to fixup the min/max elevations */
-		for (size_t i = 0; i < new_ippd; i++) {
-			for (size_t j = 0; j < new_ippd; j++) {
-				if (new_data[i][j] > dem[indx].max_el)
-					dem[indx].max_el = new_data[i][j];
-				if (new_data[i][j] > max_elevation)
-					max_elevation = new_data[i][j];
-
-				if (new_data[i][j] < dem[indx].min_el)
-					dem[indx].min_el = new_data[i][j];
-				if (new_data[i][j] < min_elevation)
-					min_elevation = new_data[i][j];
-			}
-		}
-
-		/* Resampling complete, delete the original and assign the new values */
-		for (size_t i = 0; i < IPPD; i++)
-			delete [] dem[indx].data[i];
-		delete [] dem[indx].data;
-		dem[indx].data = new_data;
-	}
-
-	/* Report to the user */
-	if (debug)
-		fprintf(stderr, "Resampling IPPD %d->%d min/max el %d/%d\n", IPPD, new_ippd, min_elevation, max_elevation);
-
-	/* Finally, set the new IPPD value */
-	height /= scaling_factor;
-	width /= scaling_factor;
-	IPPD = new_ippd;
-	ippd = IPPD;
-	ARRAYSIZE = (MAXPAGES * IPPD) + 50;
-	return 0;
-}
-
-/*
- * resize_data
- * This function works in conjuntion with resample_data. It takes a
- * resolution value in meters as its argument. It then calculates the
- * nearest (via averaging) resample value and calls resample_data
- */
-int resize_data(int resolution){
-	double current_res_km = haversine_formula(dem[0].max_north, dem[0].max_west, dem[0].max_north, dem[0].min_west);
-	int current_res = (int) ceil((current_res_km/IPPD)*1000);
-	int scaling_factor = resolution / current_res;
-	if (debug)
-		fprintf(stderr, "Resampling: Current %dm Desired %dm Scale %d\n", current_res, resolution, scaling_factor);
-	return resample_data(scaling_factor);
-}
-
 int loadClutter(char *filename, double radius, struct site tx)
 {
 	/* This function reads a MODIS 17-class clutter file in ASCII Grid format.
@@ -231,7 +125,7 @@ int loadClutter(char *filename, double radius, struct site tx)
 	return 0;
 }
 
-int loadLIDAR(char *filenames)
+int loadLIDAR(char *filenames, int resample)
 {
 	char *filename;
 	char *files[100]; // 10x10 tiles
@@ -254,7 +148,8 @@ int loadLIDAR(char *filenames)
 	}
 
 	/* Allocate the tile array */
-	tiles = (tile_t*) calloc(fc, sizeof(tile_t));
+	if( (tiles = (tile_t*) calloc(fc, sizeof(tile_t))) == NULL )
+		return ENOMEM;
 
 	/* Load each tile in turn */
 	for (indx = 0; indx < fc; indx++) {
@@ -325,20 +220,26 @@ int loadLIDAR(char *filenames)
 	/* Iterate through all of the tiles to find the smallest resolution. We will
 	 * need to rescale every tile from here on out to this value */
 	int smallest_res = 0;
-	int pix_per_deg = 0;
 	for (size_t i = 0; i < fc; i++) {
 		if ( smallest_res == 0 || tiles[i].resolution < smallest_res ){
 			smallest_res = tiles[i].resolution;
-			pix_per_deg = MAX(tiles[i].width,tiles[i].height) / MAX(tiles[i].max_north - tiles[i].min_north, tiles[i].max_west - tiles[i].min_west >= 0 ? tiles[i].max_west - tiles[i].min_west : tiles[i].max_west + (360 - tiles[i].min_west));
 		}
 	}
 
-	/* Now we need to rescale all tiles the the lowest resolution. ie if we have
+	/* Now we need to rescale all tiles the the lowest resolution or the requested resolution. ie if we have
 	 * one 1m lidar and one 2m lidar, resize the 2m to fake 1m */
+	int desired_resolution = smallest_res < resample ? resample : smallest_res;
+	if (desired_resolution > resample && debug )
+		fprintf(stderr, "Warning: Unable to rescale to requested resolution\n");
 	for (size_t i = 0; i< fc; i++) {
-		float rescale = tiles[i].resolution / smallest_res;
-		if (tiles[i].resolution != smallest_res)
-			tile_rescale(&tiles[i],rescale);
+		float rescale = tiles[i].resolution / (float)desired_resolution;
+		if (rescale != 1){
+			if( (success = tile_rescale(&tiles[i], rescale) != 0 ) ){
+				fprintf(stderr, "Error resampling tiles\n");
+				return success;
+			}
+
+		}
 	}
 
 	/* Now we work out the size of the giant lidar tile. */
@@ -359,8 +260,8 @@ int loadLIDAR(char *filenames)
 	for ( size_t i = 0; i < fc; i++ ) {
 		double north_offset = max_north - tiles[i].max_north;
 		double west_offset = max_west - tiles[i].max_west >= 0 ? max_west - tiles[i].max_west : max_west + (360 - tiles[i].max_west);
-		size_t north_pixel_offset = north_offset * pix_per_deg;
-		size_t west_pixel_offset = west_offset * pix_per_deg;
+		size_t north_pixel_offset = north_offset * tiles[i].ppdy;
+		size_t west_pixel_offset = west_offset * tiles[i].ppdx;
 
 		if ( west_pixel_offset + tiles[i].width > new_width )
 			new_width = west_pixel_offset + tiles[i].width;
@@ -383,8 +284,8 @@ int loadLIDAR(char *filenames)
 	for (size_t i = 0; i< fc; i++) {
 		double north_offset = max_north - tiles[i].max_north;
 		double west_offset = max_west - tiles[i].max_west >= 0 ? max_west - tiles[i].max_west : max_west + (360 - tiles[i].max_west);
-		size_t north_pixel_offset = north_offset * pix_per_deg;
-		size_t west_pixel_offset = west_offset * pix_per_deg;
+		size_t north_pixel_offset = north_offset * tiles[i].ppdy;
+		size_t west_pixel_offset = west_offset * tiles[i].ppdx;
 
 
 		if (debug) {
@@ -414,12 +315,8 @@ int loadLIDAR(char *filenames)
 		fprintf(stderr,"Setting IPPD to %d\n",IPPD);
 		fflush(stderr);
 	}
-	// add fudge as reprojected tiles sometimes vary by a pixel or ten
-	// IPPD += 50;
 	ARRAYSIZE = (MAXPAGES * IPPD) + 50;
 	do_allocs();
-	// reset the IPPD after allocations
-	// IPPD -= 50;
 
 	/* Load the data into the global dem array */
 	dem[0].max_north = max_north;
@@ -444,10 +341,8 @@ int loadLIDAR(char *filenames)
 	}
 
 	ippd=IPPD;
-	// height = (unsigned)((max_north-min_north) / smCellsize);
-	// width = (unsigned)((max_west-min_west) / smCellsize);
-	height = (unsigned)((total_height) * pix_per_deg);
-	width = (unsigned)((total_width) * pix_per_deg);
+	height = new_height;
+	width = new_width;
 
 	if (debug)
 		fprintf(stderr, "LIDAR LOADED %d x %d\n", width, height);

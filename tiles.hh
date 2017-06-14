@@ -34,6 +34,10 @@ typedef struct _tile_t{
 	int		min_el;
 	int		*data;
 	int		resolution;
+	double	width_deg;
+	double	height_deg;
+	int		ppdx;
+	int		ppdy;
 } tile_t, *ptile_t;
 
 int tile_load_lidar(tile_t*, char *);
