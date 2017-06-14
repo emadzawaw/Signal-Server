@@ -26,11 +26,11 @@ double haversine_formula(double th1, double ph1, double th2, double ph2)
 int tile_load_lidar(tile_t *tile, char *filename){
 	FILE *fd;
 	char line[MAX_LINE];
-	int nextval;
+	short nextval;
 	char *pch;
 
 	/* Clear the tile data */
-	memset(tile,0x00,sizeof(tile_t));
+	memset(tile, 0x00, sizeof(tile_t));
 
 	/* Open the file handle and return on error */
 	if ( (fd = fopen(filename,"r")) == NULL )
@@ -88,7 +88,7 @@ int tile_load_lidar(tile_t *tile, char *filename){
 
 	/* Read the actual tile data */
 	/* Allocate the array for the lidar data */
-	if ( (tile->data = (int*) calloc(tile->width * tile->height, sizeof(int))) == NULL ) {
+	if ( (tile->data = (short*) calloc(tile->width * tile->height, sizeof(short))) == NULL ) {
 		fclose(fd);
 		free(tile->filename);
 		return ENOMEM;
@@ -144,7 +144,7 @@ int tile_load_lidar(tile_t *tile, char *filename){
  * (ie 2m LIDAR can be 4/6/8/... and 20m can be 40/60)
  */
 int tile_rescale(tile_t *tile, float scale){
-	int *new_data;
+	short *new_data;
 	size_t skip_count = 1;
 	size_t copy_count = 1;
 
@@ -156,7 +156,7 @@ int tile_rescale(tile_t *tile, float scale){
 	size_t new_width = tile->width * scale;
 
 	/* Allocate the array for the lidar data */
-	if ( (new_data = (int*) calloc(new_height * new_width, sizeof(int))) == NULL ) {
+	if ( (new_data = (short*) calloc(new_height * new_width, sizeof(short))) == NULL ) {
 		return ENOMEM;
 	}
 

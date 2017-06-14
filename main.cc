@@ -1146,7 +1146,7 @@ int main(int argc, char *argv[])
 	max_txsites = 30;
 	fzone_clearance = 0.6;
 	contour_threshold = 0;
-	resample = -1;
+	resample = 0;
 
 	ano_filename[0] = 0;
 	earthradius = EARTHRADIUS;

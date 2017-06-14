@@ -228,7 +228,7 @@ int loadLIDAR(char *filenames, int resample)
 
 	/* Now we need to rescale all tiles the the lowest resolution or the requested resolution. ie if we have
 	 * one 1m lidar and one 2m lidar, resize the 2m to fake 1m */
-	int desired_resolution = smallest_res < resample ? resample : smallest_res;
+	int desired_resolution = resample != 0 && smallest_res < resample ? resample : smallest_res;
 	if (desired_resolution > resample && debug )
 		fprintf(stderr, "Warning: Unable to rescale to requested resolution\n");
 	for (size_t i = 0; i< fc; i++) {
@@ -270,7 +270,7 @@ int loadLIDAR(char *filenames, int resample)
 	}
 	size_t new_tile_alloc = new_width * new_height;
 
-	int * new_tile = (int*) calloc( new_tile_alloc, sizeof(int) );
+	short * new_tile = (short*) calloc( new_tile_alloc, sizeof(int) );
 	if ( new_tile == NULL ){
 		free(tiles);
 		return ENOMEM;
@@ -296,8 +296,8 @@ int loadLIDAR(char *filenames, int resample)
 
 		/* Copy it row-by-row from the tile */
 		for (size_t h = 0; h < tiles[i].height; h++) {
-			register int *dest_addr = &new_tile[ (north_pixel_offset+h)*new_width + west_pixel_offset];
-			register int *src_addr = &tiles[i].data[h*tiles[i].width];
+			register short *dest_addr = &new_tile[ (north_pixel_offset+h)*new_width + west_pixel_offset];
+			register short *src_addr = &tiles[i].data[h*tiles[i].width];
 			// Check if we might overflow
 			if ( dest_addr + tiles[i].width > new_tile + new_tile_alloc || dest_addr < new_tile ){
 				if (debug)
@@ -305,7 +305,7 @@ int loadLIDAR(char *filenames, int resample)
 				continue;
 			}
 			// fprintf(stderr,"dest:%p src:%p\n", dest_addr, src_addr);
-			memcpy( dest_addr, src_addr, tiles[i].width * sizeof(int) );
+			memcpy( dest_addr, src_addr, tiles[i].width * sizeof(short) );
 		}
 	}
 

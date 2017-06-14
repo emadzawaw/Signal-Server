@@ -29,10 +29,10 @@ typedef struct _tile_t{
 	};
 	double	cellsize;
 	long long datastart;
-	int		nodata;
-	int 	max_el;
-	int		min_el;
-	int		*data;
+	short	nodata;
+	short 	max_el;
+	short	min_el;
+	short	*data;
 	int		resolution;
 	double	width_deg;
 	double	height_deg;
