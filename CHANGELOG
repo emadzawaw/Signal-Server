@@ -1,5 +1,9 @@
 SIGNAL SERVER CHANGELOG 
 
+3.05 - 18 June 2017
+LIDAR overhaul for mismatched tiles and different resolutions. No longer expects x/y grid of tiles of equal size.
+Dynamic resampling so user can specify *any* resolution less than maximum resolution of data. 
+
 3.04 - 19 April 2017
 Added Egli VHF/UHF model courtesy of G6DTX
 Adjusted SUI correction factor for height. Most academic papers have /2000 but some are /2. Only out by 1e3 :O 

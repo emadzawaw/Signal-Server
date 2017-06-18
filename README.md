@@ -32,7 +32,7 @@ make
 
 ## Parameters
 ```
-Version: Signal Server 3.03 (Built for 100 DEM tiles at 1200 pixels)
+Version: Signal Server 3.05 (Built for 100 DEM tiles at 1200 pixels)
 License: GNU General Public License (GPL) version 2
 
 Radio propagation simulator by Alex Farrant QCVS, 2E0TDW
@@ -62,6 +62,8 @@ Input:
      -terdic Terrain dielectric value 2-80 (optional)
      -tercon Terrain conductivity 0.01-0.0001 (optional)
      -cl Climate code 1-6 (optional)
+     -rel Reliability for ITM model 50 to 99 (optional)
+     -resample Resample Lidar input to specified resolution in meters (optional)
 Output:
      -dbm Plot Rxd signal power instead of field strength
      -rt Rx Threshold (dB / dBm / dBuV/m)
@@ -69,7 +71,7 @@ Output:
      -R Radius (miles/kilometers)
      -res Pixels per tile. 300/600/1200/3600 (Optional. LIDAR res is within the tile)
      -pm Propagation model. 1: ITM, 2: LOS, 3: Hata, 4: ECC33,
-     	  5: SUI, 6: COST-Hata, 7: FSPL, 8: ITWOM, 9: Ericsson, 10: Plane earth
+     	  5: SUI, 6: COST-Hata, 7: FSPL, 8: ITWOM, 9: Ericsson, 10: Plane earth, 11: Egli VHF/UHF
      -pe Propagation model mode: 1=Urban,2=Suburban,3=Rural
      -ked Knife edge diffraction (Already on for ITM)
 Debugging:
@@ -78,7 +80,6 @@ Debugging:
      -ng Normalise Path Profile graph
      -haf Halve 1 or 2 (optional)
      -nothreads Turn off threaded processing
-
 ```
 
 ### REFERENCE DATA
@@ -93,7 +94,7 @@ SDF formatted tiles can be created by converting SRTM tiles (30m or 90m) in HGT 
 #### -lid 
 ##### WGS84 ASCII grid tile (LIDAR) with dimensions and resolution defined in header
 LIDAR data can be used providing it is in ASCII grid format with WGS84 projection. Resolutions up to 25cm have been tested. 2m is recommended for a good trade off. Cellsize should be in degrees and co-ordinates must be in WGS84 decimal degrees.
-To load multiple tiles use commas eg. -lid tile1.asc,tile2.asc. When working large areas, multiple smaller tiles are much more efficient than a single super-tile.
+To load multiple tiles use commas eg. -lid tile1.asc,tile2.asc. You can load in different resolution tiles and use -resample to set the desired resolution (limited by data limit).
 ```
 ncols        2454
 nrows        1467
