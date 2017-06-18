@@ -7,7 +7,7 @@
 #include <limits.h>
 #include "common.h"
 #include "main.hh"
-
+#include "tiles.hh"
 
 int loadClutter(char *filename, double radius, struct site tx)
 {
@@ -125,105 +125,19 @@ int loadClutter(char *filename, double radius, struct site tx)
 	return 0;
 }
 
-void readLIDAR(FILE *fd, int h, int w, int indx,double n, double e, double s, double west)
-{
-	int x = 0, y = 0, reads = 0, a=0, b=0, avg=0, tWidth = 0, tHeight = 0;
-	char line[25000];
-	char *pch;
-
-	dem[indx].max_north=n;
-	dem[indx].min_west=e;
-	dem[indx].min_north=s;
-	dem[indx].max_west=west;
-
-	if (max_north == -90)
-		max_north = dem[indx].max_north;
-
-	else if (dem[indx].max_north > max_north)
-		max_north = dem[indx].max_north;
-
-	if (min_north == 90)
-		min_north = dem[indx].min_north;
-
-	else if (dem[indx].min_north < min_north)
-		min_north = dem[indx].min_north;
-
-	if (dem[indx].max_west > max_west)
-		max_west = dem[indx].max_west;
-	if (dem[indx].min_west < min_west)
-		min_west = dem[indx].min_west;
-
-	if (max_west == -1) {
-		max_west = dem[indx].max_west;
-	} else {
-		if (abs(dem[indx].max_west - max_west) < 180) {
-			if (dem[indx].max_west > max_west)
-				max_west = dem[indx].max_west;
-		} else {
-			if (dem[indx].max_west < max_west)
-				max_west = dem[indx].max_west;
-		}
-	}
-
-	if (min_west == 360) {
-		min_west = dem[indx].min_west;
-	} else {
-		if (fabs(dem[indx].min_west - min_west) < 180.0) {
-			if (dem[indx].min_west < min_west)
-				min_west = dem[indx].min_west;
-		} else {
-			if (dem[indx].min_west > min_west)
-				min_west = dem[indx].min_west;
-		}
-	}
-
-	for (y = h-1; y > -1; y--) {
-		x = w-1;
-	
-		if (fgets(line, 25000, fd) != NULL) {
-				pch = strtok(line, " "); // split line into values
-
-				while (pch != NULL && x > -1) {
-					if (atoi(pch) <= -9999)
-						pch = "0";
-					dem[indx].data[y][x] = atoi(pch);
-					dem[indx].signal[x][y] = 0;
-					dem[indx].mask[x][y] = 0;
-					if (atoi(pch) > dem[indx].max_el) {
-						dem[indx].max_el = atoi(pch);
-						max_elevation = atoi(pch);
-					}
-					if (atoi(pch) < dem[indx].min_el) {
-						dem[indx].min_el = atoi(pch);
-						min_elevation = dem[indx].min_el;
-					}
-
-   					x--;
-					pch = strtok(NULL, " ");
-				}//while
-
-
-		} else {
-			fprintf(stderr, "LIDAR error @ x %d y %d indx %d\n",
-					x, y, indx);
-		}//if
-	}//for
-
-}
-
-int loadLIDAR(char *filenames)
+int loadLIDAR(char *filenames, int resample)
 {
 	char *filename;
 	char *files[100]; // 10x10 tiles
-	int x, y, indx = 0, fc = 0, hoffset = 0, voffset = 0, pos,
-	    dem_alloced = 0;
-	double xll, yll, xur, yur, cellsize, avgCellsize;
+	int indx = 0, fc = 0, hoffset = 0, voffset = 0, pos, success;
+	double xll, yll, xur, yur, cellsize, avgCellsize = 0, smCellsize = 0;
 	char found, free_page = 0, jline[20], lid_file[255],	
-	     path_plus_name[255], *junk = NULL;
+	path_plus_name[255], *junk = NULL;
 	char line[25000];
 	char * pch;
-    	double TO_DEG = (180 / PI);
+    double TO_DEG = (180 / PI);
 	FILE *fd;
+	tile_t *tiles;
 
 	// test for multiple files
 	filename = strtok(filenames, " ,");
@@ -233,113 +147,217 @@ int loadLIDAR(char *filenames)
 		fc++;
 	}
 
-	while (indx < fc) {
-		if( (fd = fopen(files[indx], "rb")) == NULL )
-			return errno;
+	/* Allocate the tile array */
+	if( (tiles = (tile_t*) calloc(fc, sizeof(tile_t))) == NULL )
+		return ENOMEM;
 
-		if (fgets(line, 255, fd) != NULL) {
-			pch = strtok (line," ");
-			pch = strtok (NULL, " ");
-			width = atoi(pch); // ncols
+	/* Load each tile in turn */
+	for (indx = 0; indx < fc; indx++) {
 
-			if (debug) {
-				fprintf(stderr, "Loading \"%s\" into page %d with width %d...\n", files[indx], indx, width);
-				fflush(stderr);
-			}
-
-                    if (fgets(line, 255, fd) != NULL)
-                            height = atoi(pch); // nrows
-
-			if (!dem_alloced) {
-				//Reduce MAXPAGES to increase speed
-				MAXPAGES=fc;
-				if(width>height){
-					IPPD = width;
-				}else{
-					IPPD = height;
-				}
-				// add fudge as reprojected tiles sometimes vary by a pixel or ten
-				IPPD+=50;
-				ARRAYSIZE = (MAXPAGES * IPPD)+50;
-				do_allocs();
-				dem_alloced = 1;
-			}
-
-		}
-		if (fgets(line, 255, fd) != NULL) {
-			sscanf(pch, "%lf", &xll); // xll
+		/* Grab the tile metadata */
+		if( (success = tile_load_lidar(&tiles[indx], files[indx])) != 0 ){
+			fprintf(stderr,"Failed to load LIDAR tile %s\n",files[indx]);
+			fflush(stderr);
+			free(tiles);
+			return success;
 		}
 
-		if (fgets(line, 255, fd) != NULL) {
-			sscanf(pch, "%lf", &yll); // yll
+		if (debug) {
+			fprintf(stderr, "Loading \"%s\" into page %d with width %d...\n", files[indx], indx, tiles[indx].width);
+			fflush(stderr);
 		}
 
-		if (fgets(line, 255, fd) != NULL)
-			sscanf(pch, "%lf", &cellsize); 
+		// Increase the "average" cell size
+		avgCellsize += tiles[indx].cellsize;
+		// Update the smallest cell size
+		if (smCellsize == 0 || tiles[indx].cellsize < smCellsize) {
+			smCellsize = tiles[indx].cellsize;
+		}
 
-		avgCellsize=avgCellsize+cellsize;
+		// Update a bunch of globals
+		if (tiles[indx].max_el > max_elevation)
+			max_elevation = tiles[indx].max_el; 
+		if (tiles[indx].min_el < min_elevation)
+			min_elevation = tiles[indx].min_el;
 
-		/*if(cellsize>=0.5){ // 50cm LIDAR?
-			// compute xur and yur with inverse haversine if cellsize in *metres*
-			double roundDistance = (width*cellsize)/6371000;
-			yur = asin(sin(yll*DEG2RAD) * cos(roundDistance) + cos(yll * DEG2RAD) * sin(roundDistance) * cos(0)) * TO_DEG;
-			xur = ((xll*DEG2RAD) + atan2(sin(90*DEG2RAD) * sin(roundDistance) * cos(yll*DEG2RAD), cos(roundDistance) - sin(yll * DEG2RAD) * sin(yur*DEG2RAD))) * TO_DEG;
-		}else{*/
-			// Degrees with GDAL option: -co "FORCE_CELLSIZE=YES"
-			xur = xll+(cellsize*width);
-			yur = yll+(cellsize*height);
-		//}
+		if (max_north == -90 || tiles[indx].max_north > max_north)
+			max_north = tiles[indx].max_north;
 
-		if (xur > eastoffset)
-			eastoffset = xur;
-		if (xll < westoffset)
-			westoffset = xll;
+		if (min_north == 90 || tiles[indx].min_north < min_north)
+			min_north = tiles[indx].min_north;
 
-		if (debug)
-			fprintf(stderr,"%d, %d, %.7f, %.7f, %.7f, %.7f, %.7f\n",width,height,xll,yll,cellsize,yur,xur);
+		if (tiles[indx].max_west > max_west)
+			max_west = tiles[indx].max_west;
+		if (tiles[indx].min_west < min_west)
+			min_west = tiles[indx].min_west;
 
-
-		// Greenwich straddling hack
-		if (xll <= 0 && xur > 0) {
-			xll = (xur - xll); // full width
-			xur = 0.0; // budge it along so it's west of greenwich
-			delta = eastoffset; // add to Tx longitude later
+		if (max_west == -1) {
+			max_west = tiles[indx].max_west;
 		} else {
-			// Transform WGS84 longitudes into 'west' values as society finishes east of Greenwich ;)
-			if (xll >= 0)
-				xll = 360-xll;
-			if(xur >= 0)
-				xur = 360-xur;
-			if(xll < 0)
-				xll = xll * -1;
-			if(xur < 0)
-				xur = xur * -1;
+			if (abs(tiles[indx].max_west - max_west) < 180) {
+				if (tiles[indx].max_west > max_west)
+					max_west = tiles[indx].max_west;
+			} else {
+				if (tiles[indx].max_west < max_west)
+					max_west = tiles[indx].max_west;
+			}
 		}
-		if (debug)
-			fprintf(stderr, "POST yll %.7f yur %.7f xur %.7f xll %.7f delta %.6f\n", yll, yur, xur, xll, delta);
+
+		if (min_west == 360) {
+			min_west = tiles[indx].min_west;
+		} else {
+			if (fabs(tiles[indx].min_west - min_west) < 180.0) {
+				if (tiles[indx].min_west < min_west)
+					min_west = tiles[indx].min_west;
+			} else {
+				if (tiles[indx].min_west > min_west)
+					min_west = tiles[indx].min_west;
+			}
+		}
+
+	}
+
+	/* Iterate through all of the tiles to find the smallest resolution. We will
+	 * need to rescale every tile from here on out to this value */
+	int smallest_res = 0;
+	for (size_t i = 0; i < fc; i++) {
+		if ( smallest_res == 0 || tiles[i].resolution < smallest_res ){
+			smallest_res = tiles[i].resolution;
+		}
+	}
+
+	/* Now we need to rescale all tiles the the lowest resolution or the requested resolution. ie if we have
+	 * one 1m lidar and one 2m lidar, resize the 2m to fake 1m */
+	int desired_resolution = resample != 0 && smallest_res < resample ? resample : smallest_res;
+	if (desired_resolution > resample && debug )
+		fprintf(stderr, "Warning: Unable to rescale to requested resolution\n");
+	for (size_t i = 0; i< fc; i++) {
+		float rescale = tiles[i].resolution / (float)desired_resolution;
+		if (rescale != 1){
+			if( (success = tile_rescale(&tiles[i], rescale) != 0 ) ){
+				fprintf(stderr, "Error resampling tiles\n");
+				return success;
+			}
+
+		}
+	}
+
+	/* Now we work out the size of the giant lidar tile. */
+	double total_width = max_west - min_west >= 0 ? max_west - min_west : max_west + (360 - min_west);
+	double total_height = max_north - min_north;
+	if (debug) {
+		fprintf(stderr, "totalwidth: %.7f - %.7f = %.7f\n", max_west, min_west, total_width);
+		fprintf(stderr,"mw:%lf Mnw:%lf\n", max_west, min_west);
+	}
+	/* This is how we should _theoretically_ work this out, but due to
+	 * the nature of floating point arithmetic and rounding errors, we need to
+	 * crunch the numbers the hard way */
+	// size_t new_width = total_width * pix_per_deg;
+	// size_t new_height = total_height * pix_per_deg;
+
+	size_t new_height = 0;
+	size_t new_width = 0;
+	for ( size_t i = 0; i < fc; i++ ) {
+		double north_offset = max_north - tiles[i].max_north;
+		double west_offset = max_west - tiles[i].max_west >= 0 ? max_west - tiles[i].max_west : max_west + (360 - tiles[i].max_west);
+		size_t north_pixel_offset = north_offset * tiles[i].ppdy;
+		size_t west_pixel_offset = west_offset * tiles[i].ppdx;
+
+		if ( west_pixel_offset + tiles[i].width > new_width )
+			new_width = west_pixel_offset + tiles[i].width;
+		if ( north_pixel_offset + tiles[i].height > new_height )
+			new_height = north_pixel_offset + tiles[i].height;
+	}
+	size_t new_tile_alloc = new_width * new_height;
+
+	short * new_tile = (short*) calloc( new_tile_alloc, sizeof(short) );
+	if ( new_tile == NULL ){
+		free(tiles);
+		return ENOMEM;
+	}
+	if (debug)
+		fprintf(stderr,"Lidar tile dimensions w:%lf(%zu) h:%lf(%zu)\n", total_width, new_width, total_height, new_height);
+
+	/* ...If we wanted a value other than sea level here, we would need to initialize the array... */
+
+	/* Fill out the array one tile at a time */
+	for (size_t i = 0; i< fc; i++) {
+		double north_offset = max_north - tiles[i].max_north;
+		double west_offset = max_west - tiles[i].max_west >= 0 ? max_west - tiles[i].max_west : max_west + (360 - tiles[i].max_west);
+		size_t north_pixel_offset = north_offset * tiles[i].ppdy;
+		size_t west_pixel_offset = west_offset * tiles[i].ppdx;
 
 
-		fgets(line, 255, fd); // NODATA
-		pos = ftell(fd);
+		if (debug) {
+			fprintf(stderr,"mn: %lf mw:%lf globals: %lf %lf\n", tiles[i].max_north, tiles[i].max_west, max_north, max_west);
+			fprintf(stderr,"Offset n:%zu(%lf) w:%zu(%lf)\n", north_pixel_offset, north_offset, west_pixel_offset, west_offset);
+			fprintf(stderr,"Height: %d\n", tiles[i].height);
+		}
 
-		// tile 0 [x| ]
-		if (debug)
-			fprintf(stderr, "readLIDAR(fd,%d,%d,%d,%.4f,%.4f,%.4f,%.4f)\n", height, width, indx, yur, xur, yll, xll);
+		/* Copy it row-by-row from the tile */
+		for (size_t h = 0; h < tiles[i].height; h++) {
+			register short *dest_addr = &new_tile[ (north_pixel_offset+h)*new_width + west_pixel_offset];
+			register short *src_addr = &tiles[i].data[h*tiles[i].width];
+			// Check if we might overflow
+			if ( dest_addr + tiles[i].width > new_tile + new_tile_alloc || dest_addr < new_tile ){
+				if (debug)
+					fprintf(stderr, "Overflow %zu\n",i);
+				continue;
+			}
+			memcpy( dest_addr, src_addr, tiles[i].width * sizeof(short) );
+		}
+	}
 
-		readLIDAR(fd, height, width, indx, yur, xur, yll, xll);
+	MAXPAGES = 1;
+	IPPD = MAX(new_width,new_height);
+	if(debug){
+		fprintf(stderr,"Setting IPPD to %d\n",IPPD);
+		fflush(stderr);
+	}
+	ARRAYSIZE = (MAXPAGES * IPPD) + 50;
+	do_allocs();
 
-		fclose(fd);
-		if (debug)
-			fprintf(stderr, "LIDAR LOADED %d x %d\n", width, height);
-		indx++;
-	} // filename(s)
-	IPPD=width;
+	/* Load the data into the global dem array */
+	dem[0].max_north = max_north;
+	dem[0].min_west = min_west;
+	dem[0].min_north = min_north;
+	dem[0].max_west = max_west;
+	dem[0].max_el = max_elevation;
+	dem[0].min_el = min_elevation;
+
+	/* 
+	 * Copy the lidar tile data into the dem array. The dem array is rotated
+	 * 90 degrees (christ knows why...)
+	 */
+	int y = new_height-1;
+	for (size_t h = 0; h < new_height; h++, y--) {
+		int x = new_width-1;
+		for (size_t w = 0; w < new_width; w++, x--) {
+			dem[0].data[y][x] = new_tile[h*new_width + w];
+			dem[0].signal[y][x] = 0;
+			dem[0].mask[y][x] = 0;
+		}
+	}
+
 	ippd=IPPD;
-	height = (unsigned)((max_north-min_north) / cellsize);
-	width = (unsigned)((max_west-min_west) / cellsize);
+	height = new_height;
+	width = new_width;
+
+	if (debug)
+		fprintf(stderr, "LIDAR LOADED %d x %d\n", width, height);
 
 	if (debug)
 		fprintf(stderr, "fc %d WIDTH %d HEIGHT %d ippd %d minN %.5f maxN %.5f minW %.5f maxW %.5f avgCellsize %.5f\n", fc, width, height, ippd,min_north,max_north,min_west,max_west,avgCellsize);
+
+cleanup:
+
+	if ( tiles != NULL ) {
+		for (size_t i = 0; i < fc; i++) {
+			tile_destroy(&tiles[i]);
+		}
+	}
+	free(tiles);
+
 	return 0;
 }
 

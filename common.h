@@ -22,6 +22,8 @@
 #define	KM_PER_MILE	1.609344
 #define FOUR_THIRDS	1.3333333333333
 
+#define MAX(x,y)((x)>(y)?(x):(y))
+
 struct dem {
 	float min_north;
 	float max_north;

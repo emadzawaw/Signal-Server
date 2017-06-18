@@ -3,6 +3,10 @@
 
 #include "common.h"
 
+/* Resample input tiles to new resolution */
+int resample_data(int scaling_factor);
+int resize_data(int resolution);
+
 int LoadSDF_SDF(char *name, int winfiles);
 int LoadSDF(char *name, int winfiles);
 int LoadPAT(char *az_filename, char *el_filename);
@@ -11,7 +15,7 @@ int LoadLossColors(struct site xmtr);
 int LoadDBMColors(struct site xmtr);
 int LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat);
 int LoadUDT(char *filename);
-int loadLIDAR(char *filename);
+int loadLIDAR(char *filename, int resample);
 int loadClutter(char *filename, double radius, struct site tx);
 
 static const char AZ_FILE_SUFFIX[] = ".az";

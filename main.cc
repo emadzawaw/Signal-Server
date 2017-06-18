@@ -53,11 +53,11 @@ double earthradius, max_range = 0.0, forced_erp, dpp, ppd, yppd,
 int ippd, mpi,
     max_elevation = -32768, min_elevation = 32768, bzerror, contour_threshold,
     pred, pblue, pgreen, ter, multiplier = 256, debug = 0, loops = 100, jgets =
-    0, MAXRAD, hottest = 10, height, width;
+    0, MAXRAD, hottest = 10, height, width, resample = 0;
 
 unsigned char got_elevation_pattern, got_azimuth_pattern, metric = 0, dbm = 0;
 
-bool to_stdout = false;
+bool to_stdout = false, cropping = false;
 
 __thread double *elev;
 __thread struct path path;
@@ -1097,6 +1097,7 @@ int main(int argc, char *argv[])
 		fprintf(stdout,	"     -tercon Terrain conductivity 0.01-0.0001 (optional)\n");
 		fprintf(stdout, "     -cl Climate code 1-6 (optional)\n");
 		fprintf(stdout, "     -rel Reliability for ITM model 50 to 99 (optional)\n");
+		fprintf(stdout, "     -resample Resample Lidar input to specified resolution in meters (optional)\n");
 		fprintf(stdout, "Output:\n");
 		fprintf(stdout,	"     -dbm Plot Rxd signal power instead of field strength\n");
 		fprintf(stdout, "     -rt Rx Threshold (dB / dBm / dBuV/m)\n");
@@ -1145,6 +1146,7 @@ int main(int argc, char *argv[])
 	max_txsites = 30;
 	fzone_clearance = 0.6;
 	contour_threshold = 0;
+	resample = 0;
 
 	ano_filename[0] = 0;
 	earthradius = EARTHRADIUS;
@@ -1320,6 +1322,17 @@ int main(int argc, char *argv[])
 					break;
 				}
 			}
+		}
+
+		if (strcmp(argv[x], "-resample") == 0) {
+			z = x + 1;
+
+			if(!lidar){
+				fprintf(stderr, "Error, this should only be used with LIDAR tiles.\n");
+				return -1;
+			}
+
+			sscanf(argv[z], "%d", &resample);
 		}
 
 		if (strcmp(argv[x], "-lat") == 0) {
@@ -1687,10 +1700,11 @@ int main(int argc, char *argv[])
 
 	/* Load the required tiles */
 	if(lidar){
-		if( (result = loadLIDAR(lidar_tiles)) != 0 ){
+		if( (result = loadLIDAR(lidar_tiles, resample)) != 0 ){
 			fprintf(stderr, "Couldn't find one or more of the "
 				"lidar files. Please ensure their paths are "
 				"correct and try again.\n");
+			fprintf(stderr, "Error %d: %s\n", result, strerror(result));
 			exit(result);
 		}
 
@@ -1710,9 +1724,9 @@ int main(int argc, char *argv[])
 
 	}else{
 		// DEM first
-                if(debug){
-                        fprintf(stderr,"%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",max_north,min_west,min_north,max_west,max_lon,min_lon);
-                }
+		if(debug){
+			fprintf(stderr,"%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",max_north,min_west,min_north,max_west,max_lon,min_lon);
+		}
 
 		max_lon-=3;
 
@@ -1867,6 +1881,7 @@ int main(int argc, char *argv[])
 				}
 			}
 
+#ifdef CROPPING
 			if(max_range<=100){
 				// CROPPING. croplat assigned in propPathLoss()
 				max_north=cropLat; // MAX(path.lat[y])
@@ -1881,12 +1896,14 @@ int main(int argc, char *argv[])
 				cropLon-=tx_site[0].lon;
 				width=(int)((cropLon*ppd)*2);
 				height=(int)((cropLat*ppd)*2);
+				cropping = true;
 
 				if(width>3600*10){
 					fprintf(stderr,"FATAL BOUNDS! max_west: %.4f cropLat: %.4f cropLon: %.4f longitude: %.5f\n",max_west,cropLat,cropLon,tx_site[0].lon);
 					return 0;
 				}
 			}
+#endif
 
 			// Write bitmap
 			if (LR.erp == 0.0)
@@ -1908,21 +1925,19 @@ int main(int argc, char *argv[])
 					tx_site[0].lon *= -1;
 		}
 		if (tx_site[0].lon < -180.0){
-					tx_site[0].lon += 360;
+			tx_site[0].lon += 360;
 		}
 
-		if (propmodel == 2 || max_range > 100) {
-			// No croppping because this is LOS
-			fprintf(stderr, "|%.6f", max_north);
-			fprintf(stderr, "|%.6f", east);
-			fprintf(stderr, "|%.6f", min_north);
-			fprintf(stderr, "|%.6f|",west);
-		}else{
-			// Cropped EPSG4326 coordinates
+		if (cropping) {
 			fprintf(stderr, "|%.6f", tx_site[0].lat+cropLat);
 			fprintf(stderr, "|%.6f", tx_site[0].lon+cropLon);
 			fprintf(stderr, "|%.6f", tx_site[0].lat-cropLat);
 			fprintf(stderr, "|%.6f|",tx_site[0].lon-cropLon);
+		}else{
+			fprintf(stderr, "|%.6f", max_north);
+			fprintf(stderr, "|%.6f", east);
+			fprintf(stderr, "|%.6f", min_north);
+			fprintf(stderr, "|%.6f|",west);
 		}
 		fprintf(stderr, "\n");
 
