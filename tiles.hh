@@ -33,7 +33,8 @@ typedef struct _tile_t{
 	short 	max_el;
 	short	min_el;
 	short	*data;
-	int		resolution;
+	float 	precise_resolution;
+	float	resolution;
 	double	width_deg;
 	double	height_deg;
 	int		ppdx;

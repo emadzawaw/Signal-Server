@@ -117,7 +117,10 @@ int tile_load_lidar(tile_t *tile, char *filename){
 	}
 
 	double current_res_km = haversine_formula(tile->max_north, tile->max_west, tile->max_north, tile->min_west);
-	tile->resolution = (int) ceil((current_res_km/MAX(tile->width,tile->height))*1000);
+	tile->precise_resolution = (current_res_km/MAX(tile->width,tile->height)*1000);
+
+	// Round to nearest 0.5
+	tile->resolution = tile->precise_resolution < 0.5f ? 0.5f : floor((tile->precise_resolution * 2)+0.5) / 2;
 
 	tile->width_deg = tile->max_west - tile->min_west >= 0 ? tile->max_west - tile->min_west : tile->max_west + (360 - tile->min_west);
 	tile->height_deg = tile->max_north - tile->min_north;
@@ -126,7 +129,7 @@ int tile_load_lidar(tile_t *tile, char *filename){
 	tile->ppdy = tile->height / tile->height_deg;
 
 	if (debug)
-		fprintf(stderr,"Pixels loaded: %zu/%d (PPD %dx%d)\n", loaded, tile->width*tile->height, tile->ppdx, tile->ppdy);
+		fprintf(stderr,"Pixels loaded: %zu/%d (PPD %dx%d, Res %f (%.2f))\n", loaded, tile->width*tile->height, tile->ppdx, tile->ppdy, tile->precise_resolution, tile->resolution);
 
 	/* All done, close the LIDAR file */
 	fclose(fd);
@@ -171,7 +174,7 @@ int tile_rescale(tile_t *tile, float scale){
 	}
 
 	if (debug)
-		fprintf(stderr,"Resampling tile:\n\tOld %zux%zu. New %zux%zu\n\tScale %f Skip %zu Copy %zu\n", tile->width, tile->height, new_width, new_height, scale, skip_count, copy_count);
+		fprintf(stderr,"Resampling tile %s [%.1f]:\n\tOld %zux%zu. New %zux%zu\n\tScale %f Skip %zu Copy %zu\n", tile->resolution, tile->filename, tile->width, tile->height, new_width, new_height, scale, skip_count, copy_count);
 
 	/* Nearest neighbour normalization. For each subsample of the original, simply
 	 * assign the value in the top left to the new pixel 
@@ -210,11 +213,13 @@ int tile_rescale(tile_t *tile, float scale){
 	/* Update the height and width values */
 	tile->height = new_height;
 	tile->width = new_width;
-	tile->resolution *= scale;
-	tile->ppdy *= scale;
-	tile->ppdx *= scale;
-	tile->width_deg *= scale;
-	tile->height_deg *= scale;
+	tile->resolution *= 1/scale;	// A scale of 2 is HALF the resolution
+	tile->ppdx = tile->width / tile->width_deg;
+	tile->ppdy = tile->height / tile->height_deg;
+	// tile->width_deg *= scale;
+	// tile->height_deg *= scale;
+	if (debug)
+		fprintf(stderr, "Resampling complete. New resolution: %.1f\n", tile->resolution);
 
 	return 0;
 }
