@@ -219,7 +219,7 @@ int loadLIDAR(char *filenames, int resample)
 
 	/* Iterate through all of the tiles to find the smallest resolution. We will
 	 * need to rescale every tile from here on out to this value */
-	int smallest_res = 0;
+	float smallest_res = 0;
 	for (size_t i = 0; i < fc; i++) {
 		if ( smallest_res == 0 || tiles[i].resolution < smallest_res ){
 			smallest_res = tiles[i].resolution;
@@ -228,8 +228,8 @@ int loadLIDAR(char *filenames, int resample)
 
 	/* Now we need to rescale all tiles the the lowest resolution or the requested resolution. ie if we have
 	 * one 1m lidar and one 2m lidar, resize the 2m to fake 1m */
-	int desired_resolution = resample != 0 && smallest_res < resample ? resample : smallest_res;
-	if (desired_resolution > resample && debug )
+	float desired_resolution = resample != 0 && smallest_res < resample ? resample : smallest_res;
+	if (desired_resolution > resample && resample != 0 && debug )
 		fprintf(stderr, "Warning: Unable to rescale to requested resolution\n");
 	for (size_t i = 0; i< fc; i++) {
 		float rescale = tiles[i].resolution / (float)desired_resolution;
@@ -246,7 +246,7 @@ int loadLIDAR(char *filenames, int resample)
 	double total_width = max_west - min_west >= 0 ? max_west - min_west : max_west + (360 - min_west);
 	double total_height = max_north - min_north;
 	if (debug) {
-		fprintf(stderr, "totalwidth: %.7f - %.7f = %.7f\n", max_west, min_west, total_width);
+		fprintf(stderr,"totalw: %.7f - %.7f = %.7f\n", max_west, min_west, total_width);
 		fprintf(stderr,"mw:%lf Mnw:%lf\n", max_west, min_west);
 	}
 	/* This is how we should _theoretically_ work this out, but due to
