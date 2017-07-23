@@ -1,5 +1,8 @@
 SIGNAL SERVER CHANGELOG 
 
+3.06 - 23 June 2017
+Cropping edge cases with > 100km and LOS
+
 3.05 - 18 June 2017
 LIDAR overhaul for mismatched tiles and different resolutions. No longer expects x/y grid of tiles of equal size.
 Dynamic resampling so user can specify *any* resolution less than maximum resolution of data. 

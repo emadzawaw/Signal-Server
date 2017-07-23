@@ -57,7 +57,7 @@ int ippd, mpi,
 
 unsigned char got_elevation_pattern, got_azimuth_pattern, metric = 0, dbm = 0;
 
-bool to_stdout = false, cropping = false;
+bool to_stdout = false, cropping = true;
 
 __thread double *elev;
 __thread struct path path;
@@ -1853,8 +1853,12 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	if(max_range>100){
+		cropping=false;
+	}
 	if (ppa == 0) {
 		if (propmodel == 2) {
+			cropping = false;
 			PlotLOSMap(tx_site[0], altitudeLR, ano_filename, use_threads);
 			DoLOS(mapfile, geo, kml, ngs, tx_site, txsites);
 		} else {
@@ -1881,8 +1885,7 @@ int main(int argc, char *argv[])
 				}
 			}
 
-#ifdef CROPPING
-			if(max_range<=100){
+			if(cropping){
 				// CROPPING. croplat assigned in propPathLoss()
 				max_north=cropLat; // MAX(path.lat[y])
 				// Edge case #1 - EAST/WEST
@@ -1903,7 +1906,6 @@ int main(int argc, char *argv[])
 					return 0;
 				}
 			}
-#endif
 
 			// Write bitmap
 			if (LR.erp == 0.0)

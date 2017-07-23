@@ -242,8 +242,9 @@ void PlotLOSPath(struct site source, struct site destination, char mask_value,
 	double distance, rx_alt, tx_alt;
 
 	ReadPath(source, destination);
-
-	for (y = 0; y < path.length; y++) {
+        for (y = 0; (y < (path.length - 1) && path.distance[y] <= max_range);
+             y++) {
+	//for (y = 0; y < path.length; y++) {
 		/* Test this point only if it hasn't been already
 		   tested and found to be free of obstructions. */
 
@@ -338,13 +339,13 @@ void PlotPropPath(struct site source, struct site destination,
 	   Longley-Rice.  This information is required for properly
 	   integrating the antenna's elevation pattern into the
 	   calculation for overall path loss. */
-	if(debug)
-		fprintf(stderr,"four_thirds_earth %.1f source.alt %.1f path.elevation[0] %.1f\n",four_thirds_earth,source.alt,path.elevation[0]);
+	//if(debug)
+	//	fprintf(stderr,"four_thirds_earth %.1f source.alt %.1f path.elevation[0] %.1f\n",four_thirds_earth,source.alt,path.elevation[0]);
 	for (y = 2; (y < (path.length - 1) && path.distance[y] <= max_range);
 	     y++) {
 		/* Process this point only if it
 		   has not already been processed. */
-	
+
 		if ( (GetMask(path.lat[y], path.lon[y]) & 248) !=
 			(mask_value << 3) && can_process(path.lat[y], path.lon[y])) {
 
