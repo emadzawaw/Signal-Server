@@ -20,6 +20,7 @@
 #define	METERS_PER_MILE 1609.344
 #define	METERS_PER_FOOT 0.3048
 #define	KM_PER_MILE	1.609344
+#define	FEET_PER_MILE	5280.0
 #define FOUR_THIRDS	1.3333333333333
 
 #define MAX(x,y)((x)>(y)?(x):(y))
