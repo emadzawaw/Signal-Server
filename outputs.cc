@@ -1335,7 +1335,7 @@ void PathReport(struct site source, struct site destination, char *name,
 		azimuth = rint(Azimuth(source, destination));
 
 		for (y = 2; y < (path.length - 1); y++) {	/* path.length-1 avoids LR error */
-			distance = 5280.0 * path.distance[y];
+			distance = FEET_PER_MILE * path.distance[y];
 
 			source_alt = four_thirds_earth + source.alt + path.elevation[0];
 			dest_alt = four_thirds_earth + destination.alt +
@@ -1357,7 +1357,7 @@ void PathReport(struct site source, struct site destination, char *name,
 
 				for (x = 2, block = 0; x < y && block == 0; x++) {
 					distance =
-					    5280.0 * (path.distance[y] -
+					    FEET_PER_MILE * (path.distance[y] -
 						      path.distance[x]);
 					test_alt =
 					    four_thirds_earth +
@@ -1769,7 +1769,7 @@ void SeriesData(struct site source, struct site destination, char *name,
 
 	if (fresnel_plot) {
 		lambda = 9.8425e8 / (LR.frq_mhz * 1e6);
-		d = 5280.0 * path.distance[path.length - 1];
+		d = FEET_PER_MILE * path.distance[path.length - 1];
 	}
 
 	if (normalised) {
@@ -1812,7 +1812,7 @@ void SeriesData(struct site source, struct site destination, char *name,
 			terrain += destination.alt;	/* RX antenna spike */
 
 		a = terrain + earthradius;
-		cangle = 5280.0 * Distance(destination, remote) / earthradius;
+		cangle = FEET_PER_MILE * Distance(destination, remote) / earthradius;
 		c = b * sin(refangle * DEG2RAD + HALFPI) / sin(HALFPI -
 							       refangle *
 							       DEG2RAD -
@@ -1830,7 +1830,7 @@ void SeriesData(struct site source, struct site destination, char *name,
 
 		if ((LR.frq_mhz >= 20.0) && (LR.frq_mhz <= 100000.0)
 		    && fresnel_plot) {
-			d1 = 5280.0 * path.distance[x];
+			d1 = FEET_PER_MILE * path.distance[x];
 			f_zone = -1.0 * sqrt(lambda * d1 * (d - d1) / d);
 			fpt6_zone = f_zone * fzone_clearance;
 		}
