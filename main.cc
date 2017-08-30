@@ -1,4 +1,4 @@
-double version = 3.05;
+double version = 3.06;
 /****************************************************************************\
 *  Signal Server: Radio propagation simulator by Alex Farrant QCVS, 2E0TDW   *
 ******************************************************************************
@@ -1047,7 +1047,7 @@ int main(int argc, char *argv[])
 	unsigned char LRmap = 0, txsites = 0, topomap = 0, geo = 0, kml =
 	    0, area_mode = 0, max_txsites, ngs = 0;
 
-	char mapfile[255], ano_filename[255], lidar_tiles[4096], clutter_file[255];
+	char mapfile[255], ano_filename[255], lidar_tiles[16384], clutter_file[255];
 	char *az_filename, *el_filename, *udt_file = NULL;
 
 	double altitude = 0.0, altitudeLR = 0.0, tx_range = 0.0,
@@ -1287,7 +1287,7 @@ int main(int argc, char *argv[])
 			z = x + 1;
 			lidar=1;
 			if (z <= y && argv[z][0] && argv[z][0] != '-')
-				strncpy(lidar_tiles, argv[z], 4094);
+				strncpy(lidar_tiles, argv[z], 16382);
 		}
 
 		if (strcmp(argv[x], "-res") == 0) {

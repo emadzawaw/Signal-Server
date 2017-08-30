@@ -128,14 +128,14 @@ int loadClutter(char *filename, double radius, struct site tx)
 int loadLIDAR(char *filenames, int resample)
 {
 	char *filename;
-	char *files[100]; // 10x10 tiles
+	char *files[256]; // 20x20=400, 16x16=256 tiles
 	int indx = 0, fc = 0, hoffset = 0, voffset = 0, pos, success;
 	double xll, yll, xur, yur, cellsize, avgCellsize = 0, smCellsize = 0;
 	char found, free_page = 0, jline[20], lid_file[255],	
 	path_plus_name[255], *junk = NULL;
 	char line[25000];
 	char * pch;
-    double TO_DEG = (180 / PI);
+    	double TO_DEG = (180 / PI);
 	FILE *fd;
 	tile_t *tiles;
 
