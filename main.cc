@@ -454,7 +454,7 @@ double ElevationAngle(struct site source, struct site destination)
 	a = GetElevation(destination) + destination.alt + earthradius;
 	b = GetElevation(source) + source.alt + earthradius;
 
-	dx = 5280.0 * Distance(source, destination);
+	dx = FEET_PER_MILE * Distance(source, destination);
 
 	/* Apply the Law of Cosines */
 
@@ -591,7 +591,7 @@ double ElevationAngle2(struct site source, struct site destination, double er)
 
 	ReadPath(source, destination);
 
-	distance = 5280.0 * Distance(source, destination);
+	distance = FEET_PER_MILE * Distance(source, destination);
 	source_alt = er + source.alt + GetElevation(source);
 	destination_alt = er + destination.alt + GetElevation(destination);
 	source_alt2 = source_alt * source_alt;
@@ -611,7 +611,7 @@ double ElevationAngle2(struct site source, struct site destination, double er)
 	   obstruction along the path between source and destination. */
 
 	for (x = 2, block = 0; x < path.length && block == 0; x++) {
-		distance = 5280.0 * path.distance[x];
+		distance = FEET_PER_MILE * path.distance[x];
 
 		test_alt =
 		    earthradius + (path.elevation[x] ==
@@ -729,7 +729,7 @@ void ObstructionAnalysis(struct site xmtr, struct site rcvr, double f,
 	h_r_fpt6 = h_r;
 	h_r_orig = h_r;
 	h_t = GetElevation(xmtr) + xmtr.alt + earthradius;
-	d_tx = 5280.0 * Distance(rcvr, xmtr);
+	d_tx = FEET_PER_MILE * Distance(rcvr, xmtr);
 	cos_tx_angle =
 	    ((h_r * h_r) + (d_tx * d_tx) - (h_t * h_t)) / (2.0 * h_r * d_tx);
 	cos_tx_angle_f1 = cos_tx_angle;
@@ -770,7 +770,7 @@ void ObstructionAnalysis(struct site xmtr, struct site rcvr, double f,
 		site_x.alt = 0.0;
 
 		h_x = GetElevation(site_x) + earthradius + clutter;
-		d_x = 5280.0 * Distance(rcvr, site_x);
+		d_x = FEET_PER_MILE * Distance(rcvr, site_x);
 
 		/* Deal with the LOS path first. */
 
@@ -789,14 +789,14 @@ void ObstructionAnalysis(struct site xmtr, struct site rcvr, double f,
 					fprintf(outfile,
 						"   %8.4f N,%9.4f W, %5.2f kilometers, %6.2f meters AMSL\n",
 						site_x.lat, site_x.lon,
-						KM_PER_MILE * (d_x / 5280.0),
+						KM_PER_MILE * (d_x / FEET_PER_MILE),
 						METERS_PER_FOOT * (h_x -
 								   earthradius));
 				else
 					fprintf(outfile,
 						"   %8.4f N,%9.4f W, %5.2f miles, %6.2f feet AMSL\n",
 						site_x.lat, site_x.lon,
-						d_x / 5280.0,
+						d_x / FEET_PER_MILE,
 						h_x - earthradius);
 			}
 
@@ -805,14 +805,14 @@ void ObstructionAnalysis(struct site xmtr, struct site rcvr, double f,
 					fprintf(outfile,
 						"   %8.4f S,%9.4f W, %5.2f kilometers, %6.2f meters AMSL\n",
 						-site_x.lat, site_x.lon,
-						KM_PER_MILE * (d_x / 5280.0),
+						KM_PER_MILE * (d_x / FEET_PER_MILE),
 						METERS_PER_FOOT * (h_x -
 								   earthradius));
 				else
 					fprintf(outfile,
 						"   %8.4f S,%9.4f W, %5.2f miles, %6.2f feet AMSL\n",
 						-site_x.lat, site_x.lon,
-						d_x / 5280.0,
+						d_x / FEET_PER_MILE,
 						h_x - earthradius);
 			}
 		}

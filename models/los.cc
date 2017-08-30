@@ -251,7 +251,7 @@ void PlotLOSPath(struct site source, struct site destination, char mask_value,
 		if ((GetMask(path.lat[y], path.lon[y]) & mask_value) == 0
 			&& can_process(path.lat[y], path.lon[y])) {
 
-			distance = 5280.0 * path.distance[y];
+			distance = FEET_PER_MILE * path.distance[y];
 			tx_alt = earthradius + source.alt + path.elevation[0];
 			rx_alt =
 			    earthradius + destination.alt + path.elevation[y];
@@ -265,7 +265,7 @@ void PlotLOSPath(struct site source, struct site destination, char mask_value,
 
 			for (x = y, block = 0; x >= 0 && block == 0; x--) {
 				distance =
-				    5280.0 * (path.distance[y] -
+				    FEET_PER_MILE * (path.distance[y] -
 					      path.distance[x]);
 				test_alt =
 				    earthradius + (path.elevation[x] ==
@@ -352,7 +352,7 @@ void PlotPropPath(struct site source, struct site destination,
 			char fd_buffer[64];
 			int buffer_offset = 0;
 
-			distance = 5280.0 * path.distance[y];
+			distance = FEET_PER_MILE * path.distance[y];
 			xmtr_alt =
 			    four_thirds_earth + source.alt + path.elevation[0];
 			dest_alt =
@@ -381,7 +381,7 @@ void PlotPropPath(struct site source, struct site destination,
 
 				for (x = 2, block = 0; (x < y && block == 0);
 				     x++) {
-					distance = 5280.0 * path.distance[x];
+					distance = FEET_PER_MILE * path.distance[x];
 
 					test_alt =
 					    four_thirds_earth +
@@ -892,7 +892,7 @@ void PlotPath(struct site source, struct site destination, char mask_value)
 		   tested and found to be free of obstructions. */
 
 		if ((GetMask(path.lat[y], path.lon[y]) & mask_value) == 0) {
-			distance = 5280.0 * path.distance[y];
+			distance = FEET_PER_MILE * path.distance[y];
 			tx_alt = earthradius + source.alt + path.elevation[0];
 			rx_alt =
 			    earthradius + destination.alt + path.elevation[y];
@@ -906,7 +906,7 @@ void PlotPath(struct site source, struct site destination, char mask_value)
 
 			for (x = y, block = 0; x >= 0 && block == 0; x--) {
 				distance =
-				    5280.0 * (path.distance[y] -
+				    FEET_PER_MILE * (path.distance[y] -
 					      path.distance[x]);
 				test_alt =
 				    earthradius + (path.elevation[x] ==
