@@ -128,7 +128,7 @@ int loadClutter(char *filename, double radius, struct site tx)
 int loadLIDAR(char *filenames, int resample)
 {
 	char *filename;
-	char *files[256]; // 20x20=400, 16x16=256 tiles
+	char *files[900]; // 20x20=400, 16x16=256 tiles
 	int indx = 0, fc = 0, hoffset = 0, voffset = 0, pos, success;
 	double xll, yll, xur, yur, cellsize, avgCellsize = 0, smCellsize = 0;
 	char found, free_page = 0, jline[20], lid_file[255],	
@@ -148,7 +148,7 @@ int loadLIDAR(char *filenames, int resample)
 	}
 
 	/* Allocate the tile array */
-	if( (tiles = (tile_t*) calloc(fc, sizeof(tile_t))) == NULL )
+	if( (tiles = (tile_t*) calloc(fc+1, sizeof(tile_t))) == NULL )
 		return ENOMEM;
 
 	/* Load each tile in turn */
@@ -233,6 +233,8 @@ int loadLIDAR(char *filenames, int resample)
 		fprintf(stderr, "Warning: Unable to rescale to requested resolution\n");
 	for (size_t i = 0; i< fc; i++) {
 		float rescale = tiles[i].resolution / (float)desired_resolution;
+		if(debug)
+			fprintf(stderr,"res %.2f desired_res %.2f\n",tiles[i].resolution,(float)desired_resolution);
 		if (rescale != 1){
 			if( (success = tile_rescale(&tiles[i], rescale) != 0 ) ){
 				fprintf(stderr, "Error resampling tiles\n");
@@ -246,11 +248,28 @@ int loadLIDAR(char *filenames, int resample)
 	double total_width = max_west - min_west >= 0 ? max_west - min_west : max_west + (360 - min_west);
 	double total_height = max_north - min_north;
 	if (debug) {
-		fprintf(stderr,"totalw: %.7f - %.7f = %.7f\n", max_west, min_west, total_width);
+		fprintf(stderr,"totalh: %.7f - %.7f = %.7f totalw: %.7f - %.7f = %.7f\n", max_north, min_north, total_height, max_west, min_west, total_width);
 		fprintf(stderr,"mw:%lf Mnw:%lf\n", max_west, min_west);
 	}
+	//detect problematic layouts eg. vertical rectangles
+	//create a synthetic empty tile on the fly with dimensions to make a square
+	/*if(total_height > total_width*1.5){
+		tiles[fc].max_north=max_north;
+		tiles[fc].min_north=min_north;
+		westoffset=westoffset-total_width; // WGS84 for stdout only
+		max_west=max_west+total_width; // Positive westing
+		tiles[fc].max_west=max_west; // Positive westing
+		tiles[fc].min_west=max_west;
+		tiles[fc].ppdy=tiles[fc-1].ppdy;
+		tiles[fc].ppdy=tiles[fc-1].ppdx;
+		tiles[fc].width=tiles[fc-1].width;
+		tiles[fc].height=total_height;
+		tiles[fc].data=tiles[fc-1].data;
+		fc++;
+	}*/
+
 	/* This is how we should _theoretically_ work this out, but due to
-	 * the nature of floating point arithmetic and rounding errors, we need to
+	 * the nature of floating point arithmetic and rounding errors, 499 usd to gbpwe need to
 	 * crunch the numbers the hard way */
 	// size_t new_width = total_width * pix_per_deg;
 	// size_t new_height = total_height * pix_per_deg;
@@ -267,7 +286,10 @@ int loadLIDAR(char *filenames, int resample)
 			new_width = west_pixel_offset + tiles[i].width;
 		if ( north_pixel_offset + tiles[i].height > new_height )
 			new_height = north_pixel_offset + tiles[i].height;
+		if (debug)
+			fprintf(stderr,"north_pixel_offset %d west_pixel_offset %d\n", north_pixel_offset, west_pixel_offset);
 	}
+	
 	size_t new_tile_alloc = new_width * new_height;
 
 	short * new_tile = (short*) calloc( new_tile_alloc, sizeof(short) );
@@ -279,14 +301,22 @@ int loadLIDAR(char *filenames, int resample)
 		fprintf(stderr,"Lidar tile dimensions w:%lf(%zu) h:%lf(%zu)\n", total_width, new_width, total_height, new_height);
 
 	/* ...If we wanted a value other than sea level here, we would need to initialize the array... */
-
+	size_t prevPixelOffsetW=0;
+	size_t prevPixelOffsetN=0;
 	/* Fill out the array one tile at a time */
 	for (size_t i = 0; i< fc; i++) {
 		double north_offset = max_north - tiles[i].max_north;
 		double west_offset = max_west - tiles[i].max_west >= 0 ? max_west - tiles[i].max_west : max_west + (360 - tiles[i].max_west);
 		size_t north_pixel_offset = north_offset * tiles[i].ppdy;
-		size_t west_pixel_offset = west_offset * tiles[i].ppdx;
-
+		size_t west_pixel_offset = west_offset * tiles[i].ppdx; 
+		/*if(i>0){
+			if(tiles[i].ppdx>tiles[i-1].ppdx+10 || tiles[i].ppdx<tiles[i-1].ppdx-10)
+				west_pixel_offset=prevPixelOffsetW; //PROBLEM WITH DIFF SIZED TILES eg. 4096, 4069..
+			if(tiles[i].ppdy>tiles[i-1].ppdy+10 || tiles[i].ppdy<tiles[i-1].ppdy-10)
+				north_pixel_offset=prevPixelOffsetW; //PROBLEM WITH DIFF SIZED TILES eg. 4096, 4069..
+		}*/
+		prevPixelOffsetW=west_pixel_offset;
+		prevPixelOffsetN=north_pixel_offset;
 
 		if (debug) {
 			fprintf(stderr,"mn: %lf mw:%lf globals: %lf %lf\n", tiles[i].max_north, tiles[i].max_west, max_north, max_west);
@@ -308,8 +338,10 @@ int loadLIDAR(char *filenames, int resample)
 		}
 	}
 
+	// SUPER tile
 	MAXPAGES = 1;
 	IPPD = MAX(new_width,new_height);
+
 	if(debug){
 		fprintf(stderr,"Setting IPPD to %d\n",IPPD);
 		fflush(stderr);
@@ -352,7 +384,7 @@ int loadLIDAR(char *filenames, int resample)
 cleanup:
 
 	if ( tiles != NULL ) {
-		for (size_t i = 0; i < fc; i++) {
+		for (size_t i = 0; i < fc-1; i++) {
 			tile_destroy(&tiles[i]);
 		}
 	}
@@ -1116,7 +1148,8 @@ int LoadSignalColors(struct site xmtr)
 	region.levels = 13;
 
 	/* Don't save if we don't have an output file */
-	if ( xmtr.filename[0] == '\0' && (fd = fopen(filename, "r")) == NULL )
+	if ( (fd = fopen(filename, "r")) == NULL && xmtr.filename[0] == '\0' )
+	//if ( xmtr.filename[0] == '\0' && (fd = fopen(filename, "r")) == NULL )
 		return 0;
 
 	if (fd == NULL) {
@@ -1145,6 +1178,11 @@ int LoadSignalColors(struct site xmtr)
 				    &val[2], &val[3]);
 
 			if (ok == 4) {
+			         if (debug) {
+                        	fprintf(stderr, "\nLoadSignalColors() %d: %d, %d, %d\n", val[0],val[1],val[2],val[3]);
+                        	fflush(stderr);
+			         }
+
 				for (y = 0; y < 4; y++) {
 					if (val[y] > 255)
 						val[y] = 255;
@@ -1269,7 +1307,8 @@ int LoadLossColors(struct site xmtr)
 
 	region.levels = 16;
 
-	if ( xmtr.filename[0] == '\0' && (fd = fopen(filename, "r")) == NULL )
+	if ( (fd = fopen(filename, "r")) == NULL && xmtr.filename[0] == '\0' )
+	//if ( xmtr.filename[0] == '\0' && (fd = fopen(filename, "r")) == NULL )
 		/* Don't save if we don't have an output file */
 		return 0;
 
@@ -1283,6 +1322,12 @@ int LoadLossColors(struct site xmtr)
 				region.color[x][2]);
 
 		fclose(fd);
+
+                if (debug) {
+                fprintf(stderr, "loadLossColors: fopen fail: %s\n", filename);
+                fflush(stderr);
+                }
+
 	}
 
 	else {
@@ -1299,6 +1344,11 @@ int LoadLossColors(struct site xmtr)
 				    &val[2], &val[3]);
 
 			if (ok == 4) {
+                                 if (debug) {
+                                fprintf(stderr, "\nLoadLossColors() %d: %d, %d, %d\n", val[0],val[1],val[2],val[3]);
+                                fflush(stderr);
+                                 }
+
 				for (y = 0; y < 4; y++) {
 					if (val[y] > 255)
 						val[y] = 255;
@@ -1453,6 +1503,11 @@ int LoadDBMColors(struct site xmtr)
 				    &val[2], &val[3]);
 
 			if (ok == 4) {
+                                 if (debug) {
+                                fprintf(stderr, "\nLoadDBMColors() %d: %d, %d, %d\n", val[0],val[1],val[2],val[3]);
+                                fflush(stderr);
+                                 }
+
 				if (val[0] < -200)
 					val[0] = -200;
 

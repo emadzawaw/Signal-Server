@@ -101,7 +101,7 @@ int tile_load_lidar(tile_t *tile, char *filename){
 			for (size_t w = 0; w < tile->width && pch != NULL; w++) {
 				/* If the data is less than a *magic* minimum, normalize it to zero */
 				nextval = atoi(pch);
-				if (nextval <= -9999)
+				if (nextval <= 0)
 					nextval = 0;
 				tile->data[h*tile->width + w] = nextval;
 				loaded++;

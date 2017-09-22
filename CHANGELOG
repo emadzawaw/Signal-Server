@@ -1,5 +1,8 @@
 SIGNAL SERVER CHANGELOG 
 
+3.07 - 2 Sep 2017
+Bugfixes for LIDAR edge cases with mismatched tiles, missing tiles etc.
+
 3.06 - 23 June 2017
 Cropping edge cases with > 100km and LOS
 
