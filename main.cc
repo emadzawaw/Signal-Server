@@ -289,23 +289,31 @@ double GetElevation(struct site location)
 	   Function returns -5000.0 for locations not found in memory. */
 
 	char found;
-	int x = 0, y = 0, indx;
+	int indx;
+	long x = 0, y = 0;
 	double elevation;
 
+	// pre-calculate global x/y
+	x = rint(ippd * location.lat);
+	y = rint(ippd * location.lon);
 	for (indx = 0, found = 0; indx < MAXPAGES && found == 0;) {
-		x = (int)rint(ppd * (location.lat - dem[indx].min_north));
-		y = mpi -
-		    (int)rint(yppd *
-			      (LonDiff(dem[indx].max_west, location.lon)));
-
-		if (x >= 0 && x <= mpi && y >= 0 && y <= mpi)
+		if (x >= dem[indx].min_x &&
+		    x < dem[indx].max_x &&
+		    y >= dem[indx].min_y &&
+		    y < dem[indx].max_y)
 			found = 1;
 		else
 			indx++;
 	}
 
-	if (found)
+	if (found) {
+		// convert to per-tile x/y
+		x = rint(ppd * (location.lat - dem[indx].min_north));
+		y = mpi -
+		    rint(yppd *
+			      (LonDiff(dem[indx].max_west, location.lon)));
 		elevation = 3.28084 * dem[indx].data[x][y];
+	}
 	else
 		elevation = -5000.0;
 
