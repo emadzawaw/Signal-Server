@@ -27,7 +27,7 @@ int loadClutter(char *filename, double radius, struct site tx)
 	if( (fd = fopen(filename, "rb")) == NULL)
 		return errno;
 
-	if (fgets(line, 19, fd) != NULL) {
+	if ((fgets(line, 19, fd)) != NULL) {
 		pch = strtok (line," ");
 		pch = strtok (NULL, " ");
 		w = atoi(pch);
@@ -738,11 +738,17 @@ int LoadPAT(char *az_filename, char *el_filename)
 	got_elevation_pattern = 0;
 
 	/* Load .az antenna pattern file */
-
+	if (debug) {
+		fprintf(stderr, "\nLoading antenna file \"%s\" ...", az_filename);
+		fflush(stderr);
+	}
 	if( az_filename != NULL && (fd = fopen(az_filename, "r")) == NULL && errno != ENOENT )
+	{
 		/* Any error other than file not existing is an error */
+		fprintf(stderr, "Error loading antena file %s, error number %d\n", az_filename, errno);
 		return errno;
-
+	}
+	
 	if( fd != NULL ){
 		/* Clear azimuth pattern array */
 
@@ -756,7 +762,9 @@ int LoadPAT(char *az_filename, char *el_filename)
 		   from true North. */
 
 		if (fgets(string, 254, fd) == NULL) {
-			//fprintf(stderr,"Azimuth read error\n");
+			if (debug) {
+				fprintf(stderr,"Azimuth read error \n");
+			}
 			//exit(0);
 		}
 		pointer = strchr(string, ';');
@@ -1373,7 +1381,7 @@ int LoadLossColors(struct site xmtr)
 	return 0;
 }
 
-int LoadDBMColors(struct site xmtr)
+int LoadDBMColors(struct site xmtr, double rxGain)
 {
 	int x, y, ok, val[4];
 	char filename[255], string[80], *pointer = NULL, *s = NULL;
@@ -1503,10 +1511,14 @@ int LoadDBMColors(struct site xmtr)
 				    &val[2], &val[3]);
 
 			if (ok == 4) {
-                                 if (debug) {
-                                fprintf(stderr, "\nLoadDBMColors() %d: %d, %d, %d\n", val[0],val[1],val[2],val[3]);
-                                fflush(stderr);
+
+				val[0] = val[0] - rxGain;
+
+				if (debug) {
+                                	fprintf(stderr, "\nLoadDBMColors() %d: %d, %d, %d\n", val[0],val[1],val[2],val[3]);
+                                	fflush(stderr);
                                  }
+
 
 				if (val[0] < -200)
 					val[0] = -200;

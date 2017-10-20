@@ -6,7 +6,7 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 int DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 	      unsigned char ngs, struct site *xmtr, unsigned char txsites);
 void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
-	      unsigned char ngs, struct site *xmtr, unsigned char txsites);
+	      unsigned char ngs, struct site *xmtr, unsigned char txsites, double rxGain);
 void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 	   unsigned char ngs, struct site *xmtr, unsigned char txsites);
 void PathReport(struct site source, struct site destination, char *name,

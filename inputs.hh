@@ -12,7 +12,7 @@ int LoadSDF(char *name, int winfiles);
 int LoadPAT(char *az_filename, char *el_filename);
 int LoadSignalColors(struct site xmtr);
 int LoadLossColors(struct site xmtr);
-int LoadDBMColors(struct site xmtr);
+int LoadDBMColors(struct site xmtr, double rxGain);
 int LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat);
 int LoadUDT(char *filename);
 int loadLIDAR(char *filename, int resample);

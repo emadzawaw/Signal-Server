@@ -511,7 +511,7 @@ int DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 }
 
 void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
-	      unsigned char ngs, struct site *xmtr, unsigned char txsites)
+	      unsigned char ngs, struct site *xmtr, unsigned char txsites, double rxGain)
 {
 	/* This function generates a topographic map in Portable Pix Map
 	   (PPM) format based on the signal power level values held in the
@@ -538,7 +538,7 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 	    255.0 / pow((double)(max_elevation - min_elevation),
 			one_over_gamma);
 
-	if( (success = LoadDBMColors(xmtr[0])) != 0 ){
+	if( (success = LoadDBMColors(xmtr[0], rxGain)) != 0 ){
 		fprintf(stderr,"Error loading DBM colors\n");
 		exit(success);
 	}

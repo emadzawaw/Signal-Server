@@ -1913,7 +1913,7 @@ int main(int argc, char *argv[])
 					   txsites);
 			else if (dbm)
 				DoRxdPwr((to_stdout == true ? NULL : mapfile), geo, kml, ngs, tx_site,
-					 txsites);
+					 txsites, rxGain);
 			else
 				if( (result = DoSigStr(mapfile, geo, kml, ngs, tx_site,txsites)) != 0 )
 					return result;
@@ -1948,7 +1948,7 @@ int main(int argc, char *argv[])
 		strncpy(tx_site[0].name, "Tx", 3);
 		strncpy(tx_site[1].name, "Rx", 3);
 		PlotPath(tx_site[0], tx_site[1], 1);
-		PathReport(tx_site[0], tx_site[1], tx_site[0].filename, 0,
+		PathReport(tx_site[0], tx_site[1], tx_site[0].filename, 1,
 			   propmodel, pmenv, rxGain);
 		// Order flipped for benefit of graph. Makes no difference to data.
 		SeriesData(tx_site[1], tx_site[0], tx_site[0].filename, 1,
