@@ -540,6 +540,11 @@ int LoadSDF_SDF(char *name)
 
 		fclose(fd);
 
+		dem[indx].min_x = rint(ippd * dem[indx].min_north);
+		dem[indx].max_x = rint(ippd * dem[indx].max_north);
+		dem[indx].min_y = rint(ippd * dem[indx].min_west);
+		dem[indx].max_y = rint(ippd * dem[indx].max_west);
+
 		if (dem[indx].min_el < min_elevation)
 			min_elevation = dem[indx].min_el;
 

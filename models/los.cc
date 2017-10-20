@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
+#include <sys/queue.h>
 #include <unistd.h>
 #include "../main.hh"
 #include "los.hh"
@@ -14,12 +16,20 @@
 #include "egli.hh"
 #include <pthread.h>
 
-#define NUM_SECTIONS sysconf(_SC_NPROCESSORS_ONLN)
+#define CORES sysconf(_SC_NPROCESSORS_ONLN)
+#define NUM_SECTIONS 4
+
+TAILQ_HEAD(tailhead, entry) head;
+
+struct entry {
+  int x, y;
+  TAILQ_ENTRY(entry) entries;
+};
 
 namespace {
-	pthread_t threads[64];
+	pthread_t threads[64];	// must increase if system has more than 64 cores
 	unsigned int thread_count = 0;
-	pthread_mutex_t maskMutex;
+	pthread_mutex_t maskMutex, queueMutex;
 	bool ***processed;
 	bool has_init_processed = false;
 
@@ -32,6 +42,47 @@ namespace {
 		FILE *fd;
 		int propmodel, knifeedge, pmenv;
 	};
+
+	void addToQueue(int x, int y)
+	{
+		struct entry *elem;
+		elem = (entry*)malloc(sizeof(struct entry));
+		if (elem) {
+			elem->x = x;
+			elem->y = y;
+		}
+		TAILQ_INSERT_HEAD(&head, elem, entries);
+	}
+
+	void* processQueue(void *parameters)
+	{
+		propagationRange *v = (propagationRange*)parameters;
+		struct entry *elem;
+
+		alloc_elev();
+		alloc_path();
+
+		while (!TAILQ_EMPTY(&head)) {
+			site edge;
+
+			pthread_mutex_lock(&queueMutex);
+			elem = head.tqh_first;
+			TAILQ_REMOVE(&head, head.tqh_first, entries);
+			pthread_mutex_unlock(&queueMutex);
+
+			edge.lat = dpp * elem->x + v->min_north;
+			edge.lon = dpp * elem->y + v->min_west;
+			edge.alt = v->altitude;
+
+			free(elem);
+
+			PlotPropPath(v->source, edge, v->mask_value, v->fd, v->propmodel,
+				v->knifeedge, v->pmenv);
+		}
+		free_elev();
+		free_path();
+		return NULL;
+	}
 
 	void* rangePropagation(void *parameters)
 	{
@@ -151,6 +202,18 @@ namespace {
 			init_processed();
 
 		int rc = pthread_create(&threads[thread_count], NULL, rangePropagation, arg);
+		if (rc)
+			fprintf(stderr,"ERROR; return code from pthread_create() is %d\n", rc);
+		else
+			++thread_count;
+	}
+
+	void beginQueueThread(void *arg)
+	{
+		if(!has_init_processed)
+			init_processed();
+
+		int rc = pthread_create(&threads[thread_count], NULL, processQueue, arg);
 		if (rc)
 			fprintf(stderr,"ERROR; return code from pthread_create() is %d\n", rc);
 		else
@@ -813,42 +876,25 @@ void PlotPropagation(struct site source, double altitude, char *plo_filename,
 	}
 
 	
-	// Four sections start here
-	// Process north edge east/west, east edge north/south,
-	// south edge east/west, west edge north/south
-	double range_min_west[] = {min_west, min_west, min_west, max_west};
-	double range_min_north[] = {max_north, min_north, min_north, min_north};
-	double range_max_west[] = {max_west, min_west, max_west, max_west};
-	double range_max_north[] = {max_north, max_north, min_north, max_north};
-	propagationRange* r[NUM_SECTIONS];
+	// Add coordinates to the queue for each edge pixel
+	// Throughout this program, x is used for lat, y for lon, contrary to cartesian standards
+	for (int x = 0; x < height; x++) {
+		addToQueue(x, 0);       // right edge
+		addToQueue(x, width);   // left edge
+	}
+	for (int y = 0; y < width; y++) {
+		addToQueue(0, y);       // bottom edge
+		addToQueue(height, y);  // top edge
+	}
 
-	for(int i = 0; i < NUM_SECTIONS; ++i) {
-		int edge = i %4;
-		double lon_width = (range_max_west[edge] - range_min_west[edge]) / NUM_SECTIONS * 4;
-		double lat_height = (range_max_north[edge] - range_min_north[edge]) / NUM_SECTIONS * 4;
+	propagationRange* r[CORES];
+
+	for(int i = 0; i < CORES; ++i) {
 		propagationRange *range = new propagationRange;
 		r[i] = range;
 		range->los = false;
-
-		// Only process correct half
-		if((NUM_SECTIONS - i) <= (NUM_SECTIONS / 2) && haf == 1)
-			continue;
-		if((NUM_SECTIONS - i) > (NUM_SECTIONS / 2) && haf == 2)
-			continue;
-
-
-		range->eastwest = (range_min_west[edge] == range_max_west[edge] ? false : true);
-		range->min_west = range_min_west[edge];
-		range->max_west = range_max_west[edge];
-		range->min_north = range_min_north[edge];
-		range->max_north = range_max_north[edge];
-
-		if (debug) {
-                        fprintf(stderr,"Thread %d (%d, %d, %f, %f, %f, %f)\n", i, edge,
-                                range->eastwest, range->min_north, range->max_north,
-                                range->min_west, range->max_west);
-                }
-
+		range->min_west = min_west;
+		range->min_north = min_north;
 		range->use_threads = use_threads;
 		range->altitude = altitude;
 		range->source = source;
@@ -859,7 +905,7 @@ void PlotPropagation(struct site source, double altitude, char *plo_filename,
 		range->pmenv = pmenv;
 
 		if(use_threads)
-			beginThread(range);
+			beginQueueThread(range);
 		else
 			rangePropagation(range);
 
@@ -868,7 +914,7 @@ void PlotPropagation(struct site source, double altitude, char *plo_filename,
 	if(use_threads)
 		finishThreads();
 
-	for(int i = 0; i < NUM_SECTIONS; ++i){
+	for(int i = 0; i < CORES; ++i){
 		delete r[i];
 	}
 
