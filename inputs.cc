@@ -18,8 +18,12 @@ int loadClutter(char *filename, double radius, struct site tx)
 	   AddElevation(lat, lon, height);
  	   If tiles are standard 2880 x 3840 then cellsize is constant at 0.004166
 	 */
-	int x, y, z, result, h, w;
-	double clh, xll, yll, xur, yur, cellsize, cellsize2, xOffset, yOffset, lat, lon, i, j;
+	int x, y, z, h, w;
+//int  result;
+
+	double clh, xll, yll, cellsize, cellsize2, xOffset, yOffset, lat, lon;
+// double xur, yur, i, j;
+
 	char line[50000];
 	char * pch;
 	FILE *fd;

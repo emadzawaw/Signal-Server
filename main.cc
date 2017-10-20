@@ -956,6 +956,7 @@ void ObstructionAnalysis(struct site xmtr, struct site rcvr, double f,
 
 }
 
+/* 
 static void free_dem(void)
 {
 	int i;
@@ -973,6 +974,7 @@ static void free_dem(void)
 	}
 	delete [] dem;
 }
+*/
 
 void free_elev(void) {
   delete [] elev;
@@ -1040,7 +1042,9 @@ int main(int argc, char *argv[])
 	int x, y, z = 0, min_lat, min_lon, max_lat, max_lon,
 	    rxlat, rxlon, txlat, txlon, west_min, west_max,
 	    nortRxHin, nortRxHax, propmodel, knifeedge = 0, ppa =
-	    0, normalise = 0, haf = 0, pmenv = 1, lidar=0, cropped, result;
+	    0, normalise = 0, haf = 0, pmenv = 1, lidar=0, result;
+
+//	int cropped;
 
 	bool use_threads = true;
 
@@ -1709,7 +1713,8 @@ int main(int argc, char *argv[])
 		}
 
 		if(debug){
-			fprintf(stderr,"%.4f,%.4f,%.4f,%.4f,%d x %d\n",max_north,min_west,min_north,max_west,width,height);
+			fprintf(stderr,"%.4f,%.4f,%.4f,%.4f,%d x %d\n",
+			max_north,min_west,min_north,max_west,width,height);
 		}
 		ppd=rint(height / (max_north-min_north));
 		yppd=rint(width / (max_west-min_west));
@@ -1725,7 +1730,8 @@ int main(int argc, char *argv[])
 	}else{
 		// DEM first
 		if(debug){
-			fprintf(stderr,"%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",max_north,min_west,min_north,max_west,max_lon,min_lon);
+			fprintf(stderr,"%.4f,%.4f,%.4f,%.4f,%d,%d\n",
+			max_north,min_west,min_north,max_west,max_lon,min_lon);
 		}
 
 		max_lon-=3;

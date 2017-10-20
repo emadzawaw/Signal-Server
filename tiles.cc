@@ -235,7 +235,7 @@ int tile_resize(tile_t* tile, int resolution){
 	int current_res = (int) ceil((current_res_km/IPPD)*1000);
 	float scaling_factor = resolution / current_res;
 	if (debug)
-		fprintf(stderr, "Resampling: Current %dm Desired %dm Scale %d\n", current_res, resolution, scaling_factor);
+		fprintf(stderr, "Resampling: Current %dm Desired %dm Scale %f\n", current_res, resolution, scaling_factor);
 	return tile_rescale(tile, scaling_factor);
 }
 
