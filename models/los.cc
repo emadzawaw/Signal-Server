@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include <unistd.h>
 #include "../main.hh"
 #include "los.hh"
 #include "cost.hh"
@@ -13,10 +14,10 @@
 #include "egli.hh"
 #include <pthread.h>
 
-#define NUM_SECTIONS 4
+#define NUM_SECTIONS sysconf(_SC_NPROCESSORS_ONLN)
 
 namespace {
-	pthread_t threads[NUM_SECTIONS];
+	pthread_t threads[64];
 	unsigned int thread_count = 0;
 	pthread_mutex_t maskMutex;
 	bool ***processed;
@@ -822,6 +823,9 @@ void PlotPropagation(struct site source, double altitude, char *plo_filename,
 	propagationRange* r[NUM_SECTIONS];
 
 	for(int i = 0; i < NUM_SECTIONS; ++i) {
+		int edge = i %4;
+		double lon_width = (range_max_west[edge] - range_min_west[edge]) / NUM_SECTIONS * 4;
+		double lat_height = (range_max_north[edge] - range_min_north[edge]) / NUM_SECTIONS * 4;
 		propagationRange *range = new propagationRange;
 		r[i] = range;
 		range->los = false;
@@ -833,11 +837,17 @@ void PlotPropagation(struct site source, double altitude, char *plo_filename,
 			continue;
 
 
-		range->eastwest = (range_min_west[i] == range_max_west[i] ? false : true);
-		range->min_west = range_min_west[i];
-		range->max_west = range_max_west[i];
-		range->min_north = range_min_north[i];
-		range->max_north = range_max_north[i];
+		range->eastwest = (range_min_west[edge] == range_max_west[edge] ? false : true);
+		range->min_west = range_min_west[edge];
+		range->max_west = range_max_west[edge];
+		range->min_north = range_min_north[edge];
+		range->max_north = range_max_north[edge];
+
+		if (debug) {
+                        fprintf(stderr,"Thread %d (%d, %d, %f, %f, %f, %f)\n", i, edge,
+                                range->eastwest, range->min_north, range->max_north,
+                                range->min_west, range->max_west);
+                }
 
 		range->use_threads = use_threads;
 		range->altitude = altitude;
