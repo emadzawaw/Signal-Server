@@ -1,4 +1,4 @@
-Format used by Signal for LIDAR is as follows:
+Format used by Signal-Server for LIDAR is as follows:
 
 GDAL Driver AAIGrid
 Type Int32
@@ -18,6 +18,4 @@ gdal_translate -of AAIGrid  -ot Int32 srcfile.xyz destfile.asc
 
 [user@host ~]$ gdal_translate -of AAIGrid  -ot Int32 ~/q47122a71.xyz ~/q47122a71.asc
 
-
-
-
+The above could be pipelined to reduce intermedaty files.

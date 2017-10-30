@@ -1636,6 +1636,10 @@ int main(int argc, char *argv[])
 			"ERROR: Receiver threshold out of range (-200 / +200)");
 		exit(EINVAL);
 	}
+	if (rxGain!=0)
+	{
+		contour_threshold = contour_threshold - rxGain;
+	}
 	if (propmodel > 2 && propmodel < 7 && LR.frq_mhz < 150) {
 		fprintf(stderr,
 			"ERROR: Frequency too low for Propagation model");

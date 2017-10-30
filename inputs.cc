@@ -1408,7 +1408,7 @@ int LoadDBMColors(struct site xmtr, double rxGain)
 
 	/* Default values */
 
-	region.level[0] = 0;
+	region.level[0] = 0 ;
 	region.color[0][0] = 255;
 	region.color[0][1] = 0;
 	region.color[0][2] = 0;
