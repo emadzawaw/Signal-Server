@@ -1,4 +1,4 @@
-double version = 3.07;
+double version = 3.08;
 /****************************************************************************\
 *  Signal Server: Radio propagation simulator by Alex Farrant QCVS, 2E0TDW   *
 ******************************************************************************
@@ -50,10 +50,10 @@ double earthradius, max_range = 0.0, forced_erp, dpp, ppd, yppd,
     min_north = 90, max_north = -90, min_west = 360, max_west = -1, westoffset=180, eastoffset=-180, delta=0, rxGain=0,
     cropLat=-70, cropLon=0;
 
-int ippd, mpi,
+int ippd, mpi, 
     max_elevation = -32768, min_elevation = 32768, bzerror, contour_threshold,
     pred, pblue, pgreen, ter, multiplier = 256, debug = 0, loops = 100, jgets =
-    0, MAXRAD, hottest = 10, height, width, resample = 0;
+    0, MAXRAD, hottest = 0, height, width, resample = 0;
 
 unsigned char got_elevation_pattern, got_azimuth_pattern, metric = 0, dbm = 0;
 
@@ -1097,7 +1097,7 @@ int main(int argc, char *argv[])
 		fprintf(stdout,	"     -tercon Terrain conductivity 0.01-0.0001 (optional)\n");
 		fprintf(stdout, "     -cl Climate code 1-6 (optional)\n");
 		fprintf(stdout, "     -rel Reliability for ITM model 50 to 99 (optional)\n");
-		fprintf(stdout, "     -resample Resample Lidar input to specified resolution in meters (optional)\n");
+		fprintf(stdout, "     -resample Reduce Lidar resolution by specified factor (2 = 50%)\n");
 		fprintf(stdout, "Output:\n");
 		fprintf(stdout,	"     -dbm Plot Rxd signal power instead of field strength\n");
 		fprintf(stdout, "     -rt Rx Threshold (dB / dBm / dBuV/m)\n");
@@ -1619,9 +1619,9 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (contour_threshold < -200 || contour_threshold > 200) {
+	if (contour_threshold < -200 || contour_threshold > 240) {
 		fprintf(stderr,
-			"ERROR: Receiver threshold out of range (-200 / +200)");
+			"ERROR: Receiver threshold out of range (-200 / +240)");
 		exit(EINVAL);
 	}
 	if (propmodel > 2 && propmodel < 7 && LR.frq_mhz < 150) {
@@ -1636,6 +1636,11 @@ int main(int argc, char *argv[])
 		exit(EINVAL);
 	}
 
+	if(resample > 10){
+		fprintf(stderr,
+			"ERROR: Cannot resample higher than a factor of 10");
+		exit(EINVAL);	
+	}
 	if (metric) {
 		altitudeLR /= METERS_PER_FOOT;	/* 10ft * 0.3 = 3.3m */
 		max_range /= KM_PER_MILE;	/* 10 / 1.6 = 7.5 */
@@ -1708,14 +1713,14 @@ int main(int argc, char *argv[])
 			exit(result);
 		}
 
-		if(debug){
-			fprintf(stderr,"%.4f,%.4f,%.4f,%.4f,%d x %d\n",max_north,min_west,min_north,max_west,width,height);
-		}
-		ppd=rint(height / (max_north-min_north));
-		yppd=rint(width / (max_west-min_west));
+		ppd=(double) (height / (max_north-min_north));
+		yppd=(double) (width / (max_west-min_west));
 
-		//ppd=(double)ippd;
-		//yppd=ppd; 
+		if(debug){
+			fprintf(stderr,"ppd %lf, yppd %lf, %.4f,%.4f,%.4f,%.4f,%d x %d\n",ppd,yppd,max_north,min_west,min_north,max_west,width,height);
+		}
+
+
 
 
 		if(delta>0){
@@ -1853,7 +1858,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if(max_range>100){
+	if(max_range>100 || LR.frq_mhz==446.446){
 		cropping=false;
 	}
 	if (ppa == 0) {
@@ -1869,21 +1874,16 @@ int main(int argc, char *argv[])
                         if(debug)
                         	fprintf(stderr,"Finished PlotPropagation()\n");
 
-			if(!lidar){
-				if (LR.erp == 0.0)
-					hottest=9; // 9dB nearfield
 
-				// nearfield bugfix
-				for (lat = tx_site[0].lat - 0.0005;
-					 lat <= tx_site[0].lat + 0.0005;
-					 lat = lat + 0.0005) {
-					for (lon = tx_site[0].lon - 0.0005;
-						 lon <= tx_site[0].lon + 0.0005;
-						 lon = lon + 0.0005) {
-						PutSignal(lat, lon, hottest);
+				// nearfield void
+
+				for (float x=-0.001; x<0.001;x=x+0.0001){
+					for (float y=-0.001; y<0.001;y=y+0.0001){
+						if(GetSignal(tx_site[0].lat+y, tx_site[0].lon+x)<=0){
+							PutSignal(tx_site[0].lat+y, tx_site[0].lon+x, hottest);
+						}
 					}
 				}
-			}
 
 			if(cropping){
 				// CROPPING. croplat assigned in propPathLoss()

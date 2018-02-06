@@ -17,7 +17,7 @@ int LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat);
 int LoadUDT(char *filename);
 int loadLIDAR(char *filename, int resample);
 int loadClutter(char *filename, double radius, struct site tx);
-
+int averageHeight(int h, int w, int x, int y);
 static const char AZ_FILE_SUFFIX[] = ".az";
 static const char EL_FILE_SUFFIX[] = ".el"; 
 

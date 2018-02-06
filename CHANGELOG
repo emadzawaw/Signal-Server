@@ -1,5 +1,12 @@
 SIGNAL SERVER CHANGELOG 
 
+3.08 - 17 Dec 2017
+Proper fix for nearfield void
+More LIDAR edge cases: 1x2, 2x1...
+Removed exit() if no colour file
+Polyfilla for gaps at tile edges  
+SUI model clutter factor
+
 3.07 - 2 Sep 2017
 Bugfixes for LIDAR edge cases with mismatched tiles, missing tiles etc.
 

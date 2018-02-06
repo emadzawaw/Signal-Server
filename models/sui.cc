@@ -15,13 +15,12 @@ double SUIpathLoss(double f, double TxH, double RxH, double d, int mode)
 	   http://www.cl.cam.ac.uk/research/dtg/lce-pub/public/vsa23/VTC05_Empirical.pdf
 	 */
 	d = d * 1000.0;		// km to m
-	RxH = RxH * 1000.0; // Correction factor for CPE units.
 
 	// Urban (A1) is default
 	double a = 4.6;
 	double b = 0.0075;
 	double c = 12.6;
-	double s = 0.0; // Optional fading value. Max 10.6dB
+	double s = 10.6; // Optional fading value. Max 10.6dB
 	double XhCF = -10.8;
 
 	if (mode == 2) { // Suburban
