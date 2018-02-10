@@ -166,6 +166,7 @@ int loadLIDAR(char *filenames, int resample)
     	double TO_DEG = (180 / PI);
 	FILE *fd;
 	tile_t *tiles;
+	int eastF=0,westF=0; //flags for meridian fix
 
 	// test for multiple files
 	filename = strtok(filenames, " ,");
@@ -216,8 +217,14 @@ int loadLIDAR(char *filenames, int resample)
 
 		if (tiles[indx].max_west > max_west)
 			max_west = tiles[indx].max_west;
+	
 		if (tiles[indx].min_west < min_west)
 			min_west = tiles[indx].min_west;
+
+		if (tiles[indx].max_west > 358.0)
+			eastF=1;
+		if (tiles[indx].max_west < 2.0)
+			westF=1;
 
 		if (max_west == -1) {
 			max_west = tiles[indx].max_west;
@@ -245,6 +252,16 @@ int loadLIDAR(char *filenames, int resample)
 
 	}
 
+	// Meridian fix
+	if(eastF && westF){
+		max_west=0; //reset
+		for (indx = 0; indx < fc; indx++) {
+			if(tiles[indx].max_west<2.0 && tiles[indx].max_west > max_west)
+				max_west=tiles[indx].max_west;
+		}
+		max_west*=1.0;  // WGS84 to westing. -1.5 = 1.5
+		
+	}
 	/* Iterate through all of the tiles to find the smallest resolution. We will
 	 * need to rescale every tile from here on out to this value */
 	float smallest_res = 0;
@@ -278,16 +295,21 @@ int loadLIDAR(char *filenames, int resample)
 		}
 
 	}
+
+
+
 	/* Now we work out the size of the giant lidar tile. */
 	double total_width = max_west - min_west >= 0 ? max_west - min_west : max_west + (360 - min_west);
 	double total_height = max_north - min_north;
 	if (debug) {
 		fprintf(stderr,"totalh: %.7f - %.7f = %.7f totalw: %.7f - %.7f = %.7f fc: %d\n", max_north, min_north, total_height, max_west, min_west, total_width,fc);
 		fprintf(stderr,"mw:%lf Mnw:%lf\n", max_west, min_west);
+		//exit(0);
 	}
+
 	//detect problematic layouts eg. vertical rectangles
 	// 1x2
-	if(fc == 2 && desired_resolution < 28 && total_height > total_width){
+	if(fc >= 2 && desired_resolution < 28 && total_height > total_width*1.2){
 		tiles[fc].max_north=max_north;
 		tiles[fc].min_north=min_north;
 		westoffset=westoffset-(total_height-total_width); // WGS84 for stdout only
@@ -304,11 +326,11 @@ int loadLIDAR(char *filenames, int resample)
 		//calculate deficit
 
 		if (debug) {
-			fprintf(stderr,"deficit: %.4f cellsize: %.9f tiles needed to square: %.1f\n", total_width-total_height,avgCellsize,(total_width-total_height)/avgCellsize);
+			fprintf(stderr,"deficit: %.4f cellsize: %.9f tiles needed to square: %.1f, desired_resolution %d\n", total_width-total_height,avgCellsize,(total_width-total_height)/avgCellsize,desired_resolution);
 		}	
 	}
 	// 2x1
-	if(fc == 2 && desired_resolution < 28 && total_width > total_height){
+	if(fc >= 2 && desired_resolution < 28 && total_width > total_height*1.2){
 		tiles[fc].max_north=max_north+(total_width-total_height);
 		tiles[fc].min_north=max_north;
 		tiles[fc].max_west=max_west; // Positive westing

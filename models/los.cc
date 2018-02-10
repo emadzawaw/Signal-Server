@@ -687,8 +687,12 @@ void PlotPropPath(struct site source, struct site destination,
 	if(path.lat[y]>cropLat)
 		cropLat=path.lat[y];
 
-	if(path.lon[y]>cropLon)
-		cropLon=path.lon[y];
+	
+	if(y>cropLon)
+		cropLon=y;
+
+	//if(cropLon>180)
+	//	cropLon-=360;
 }
 
 void PlotLOSMap(struct site source, double altitude, char *plo_filename,

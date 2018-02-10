@@ -1,5 +1,8 @@
 SIGNAL SERVER CHANGELOG 
 
+3.09 - 7 Feb 2018
+Meridian LIDAR cropping fix
+
 3.08 - 17 Dec 2017
 Proper fix for nearfield void
 More LIDAR edge cases: 1x2, 2x1...

@@ -1,4 +1,4 @@
-double version = 3.08;
+double version = 3.09;
 /****************************************************************************\
 *  Signal Server: Radio propagation simulator by Alex Farrant QCVS, 2E0TDW   *
 ******************************************************************************
@@ -48,7 +48,7 @@ double earthradius, max_range = 0.0, forced_erp, dpp, ppd, yppd,
     fzone_clearance = 0.6, forced_freq, clutter, lat, lon, txh, tercon, terdic,
     north, east, south, west, dBm, loss, field_strength,
     min_north = 90, max_north = -90, min_west = 360, max_west = -1, westoffset=180, eastoffset=-180, delta=0, rxGain=0,
-    cropLat=-70, cropLon=0;
+    cropLat=-70, cropLon=0,cropLonNeg=0;
 
 int ippd, mpi, 
     max_elevation = -32768, min_elevation = 32768, bzerror, contour_threshold,
@@ -1714,12 +1714,25 @@ int main(int argc, char *argv[])
 		}
 
 		ppd=(double) (height / (max_north-min_north));
-		yppd=(double) (width / (max_west-min_west));
 
+		//Meridian hack
+		if(max_west < 2 && min_west > 358){
+			//yppd=(double) (width / (max_west+(360.0-min_west)));
+			yppd=ppd;
+		}else{
+			yppd=(double) (width / (max_west-min_west));
+		}
+		
 		if(debug){
 			fprintf(stderr,"ppd %lf, yppd %lf, %.4f,%.4f,%.4f,%.4f,%d x %d\n",ppd,yppd,max_north,min_west,min_north,max_west,width,height);
 		}
 
+
+		if(yppd<ppd/4){
+			fprintf(stderr,"yppd is bad! Check longitudes\n");
+			exit(1);
+		}
+			
 
 
 
@@ -1831,7 +1844,7 @@ int main(int argc, char *argv[])
 			}
 		}
 		ppd=(double)ippd;
-		yppd=ppd; 
+		//yppd=ppd; 
 
 		width = (unsigned)(ippd * ReduceAngle(max_west - min_west));
 		height = (unsigned)(ippd * ReduceAngle(max_north - min_north));
@@ -1886,25 +1899,26 @@ int main(int argc, char *argv[])
 				}
 
 			if(cropping){
-				// CROPPING. croplat assigned in propPathLoss()
-				max_north=cropLat; // MAX(path.lat[y])
-				// Edge case #1 - EAST/WEST
-				if(cropLon>357 && tx_site[0].lon < 3)
-					cropLon=tx_site[0].lon+3;
-				// Edge case #2 - EAST/EAST
-				if(cropLon>359.5 && tx_site[0].lon > 359.5)
-					cropLon=362;
-				max_west=cropLon; // MAX(path.lon[y])
+				// CROPPING. Factor is determined in propPathLoss().
+				// cropLon is the circle radius in pixels at it's widest (east/west) 
+				cropLon*=dpp; // pixels to degrees
+				max_north=cropLat; // degrees
+				max_west=cropLon+tx_site[0].lon; // degrees west (positive)
 				cropLat-=tx_site[0].lat; // angle from tx to edge
-				cropLon-=tx_site[0].lon;
-				width=(int)((cropLon*ppd)*2);
-				height=(int)((cropLat*ppd)*2);
-				cropping = true;
 
-				if(width>3600*10){
-					fprintf(stderr,"FATAL BOUNDS! max_west: %.4f cropLat: %.4f cropLon: %.4f longitude: %.5f\n",max_west,cropLat,cropLon,tx_site[0].lon);
-					return 0;
-				}
+			
+				if(debug)
+					fprintf(stderr,"Cropping 1: max_west: %.4f cropLat: %.4f cropLon: %.4f longitude: %.5f dpp %.7f\n",max_west,cropLat,cropLon,tx_site[0].lon,dpp);
+					width=(int)((cropLon*ppd)*2);
+					height=(int)((cropLat*ppd)*2);
+
+					if(debug)
+						fprintf(stderr,"Cropping 2: max_west: %.4f cropLat: %.4f cropLon: %.7f longitude: %.5f width %d\n",max_west,cropLat,cropLon,tx_site[0].lon,width);
+
+					if(width>3600*10 || cropLon < 0){
+						fprintf(stderr,"FATAL BOUNDS! max_west: %.4f cropLat: %.4f cropLon: %.7f longitude: %.5f\n",max_west,cropLat,cropLon,tx_site[0].lon);
+						return 0;
+					}
 			}
 
 			// Write bitmap
@@ -1918,10 +1932,10 @@ int main(int argc, char *argv[])
 				if( (result = DoSigStr(mapfile, geo, kml, ngs, tx_site,txsites)) != 0 )
 					return result;
 		}
-		if(lidar){
+		/*if(lidar){
 			east=eastoffset;
 			west=westoffset;
-		}
+		}*/
 
 		if (tx_site[0].lon > 0.0){
 					tx_site[0].lon *= -1;
