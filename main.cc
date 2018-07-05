@@ -1,4 +1,4 @@
-double version = 3.09;
+double version = 3.10;
 /****************************************************************************\
 *  Signal Server: Radio propagation simulator by Alex Farrant QCVS, 2E0TDW   *
 ******************************************************************************
@@ -1105,7 +1105,8 @@ int main(int argc, char *argv[])
 		fprintf(stdout, "     -R Radius (miles/kilometers)\n");
 		fprintf(stdout,	"     -res Pixels per tile. 300/600/1200/3600 (Optional. LIDAR res is within the tile)\n");
 		fprintf(stdout,	"     -pm Propagation model. 1: ITM, 2: LOS, 3: Hata, 4: ECC33,\n");
-		fprintf(stdout,	"     	  5: SUI, 6: COST-Hata, 7: FSPL, 8: ITWOM, 9: Ericsson, 10: Plane earth, 11: Egli VHF/UHF\n");
+		fprintf(stdout,	"     	  5: SUI, 6: COST-Hata, 7: FSPL, 8: ITWOM, 9: Ericsson,\n");
+		fprintf(stdout, "	  10: Plane earth, 11: Egli VHF/UHF, 12: Soil\n");
 		fprintf(stdout,	"     -pe Propagation model mode: 1=Urban,2=Suburban,3=Rural\n");
 		fprintf(stdout,	"     -ked Knife edge diffraction (Already on for ITM)\n");
 		fprintf(stdout, "Debugging:\n");
@@ -1746,7 +1747,7 @@ int main(int argc, char *argv[])
 			fprintf(stderr,"%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",max_north,min_west,min_north,max_west,max_lon,min_lon);
 		}
 
-		max_lon-=3;
+		//max_lon-=3;
 
 		if( (result = LoadTopoData(max_lon, min_lon, max_lat, min_lat)) != 0 ){
 			// This only fails on errors loading SDF tiles
@@ -1844,7 +1845,7 @@ int main(int argc, char *argv[])
 			}
 		}
 		ppd=(double)ippd;
-		//yppd=ppd; 
+		yppd=ppd; 
 
 		width = (unsigned)(ippd * ReduceAngle(max_west - min_west));
 		height = (unsigned)(ippd * ReduceAngle(max_north - min_north));

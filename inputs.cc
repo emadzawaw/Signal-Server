@@ -217,7 +217,7 @@ int loadLIDAR(char *filenames, int resample)
 
 		if (tiles[indx].max_west > max_west)
 			max_west = tiles[indx].max_west;
-	
+
 		if (tiles[indx].min_west < min_west)
 			min_west = tiles[indx].min_west;
 
@@ -225,10 +225,6 @@ int loadLIDAR(char *filenames, int resample)
 			eastF=1;
 		if (tiles[indx].max_west < 2.0)
 			westF=1;
-		if (tiles[indx].min_west > 359){
-			westF=0;
-			eastF=1;
-		}
 
 		if (max_west == -1) {
 			max_west = tiles[indx].max_west;
@@ -242,16 +238,21 @@ int loadLIDAR(char *filenames, int resample)
 			}
 		}
 
-		
 
-		if (fabs(tiles[indx].min_west - min_west) < 180.0) {
-			if (tiles[indx].min_west < min_west)
-				min_west = tiles[indx].min_west;
+		if (tiles[indx].min_west > 359.9) {
+			min_west = tiles[indx].min_west;
+			eastF=1;
+			if(debug)
+				fprintf(stderr,"min_west set to 360\n");
 		} else {
-			if (tiles[indx].min_west > min_west)
-				min_west = tiles[indx].min_west;
+			if (fabs(tiles[indx].min_west - min_west) < 180.0) {
+				if (tiles[indx].min_west < min_west)
+					min_west = tiles[indx].min_west;
+			} else {
+				if (tiles[indx].min_west > min_west)
+					min_west = tiles[indx].min_west;
+			}
 		}
-
 
 	}
 
@@ -259,16 +260,18 @@ int loadLIDAR(char *filenames, int resample)
 	if(eastF && westF){
 		max_west=0; //reset
 		for (indx = 0; indx < fc; indx++) {
-			if(tiles[indx].max_west<2.0 && tiles[indx].max_west > max_west)
+			if(tiles[indx].max_west<=2.0 && tiles[indx].max_west > max_west)
 				max_west=tiles[indx].max_west;
 		}
 		max_west*=1.0;  // WGS84 to westing. -1.5 = 1.5
-		
+
 	}
 	// -1 fix
-	if(eastF && fc>1 && min_west<=1.0)
-		min_west=0;
-	
+	if(eastF && fc>1 && min_west<=1.0001){
+		min_west=0.0;
+		if(debug)
+			fprintf(stderr,"min_west=0\n");
+	}
 	/* Iterate through all of the tiles to find the smallest resolution. We will
 	 * need to rescale every tile from here on out to this value */
 	float smallest_res = 0;
@@ -288,7 +291,7 @@ int loadLIDAR(char *filenames, int resample)
 
 	// Don't resize large 1 deg tiles in large multi-degree plots as it gets messy
 	if(tiles[0].width != 3600){
-	
+
 		for (size_t i = 0; i< fc; i++) {
 			float rescale = tiles[i].resolution / (float)desired_resolution;
 			if(debug)
@@ -306,7 +309,9 @@ int loadLIDAR(char *filenames, int resample)
 
 
 	/* Now we work out the size of the giant lidar tile. */
-	fprintf(stderr,"mw:%lf Mnw:%lf\n", max_west, min_west);
+	if(debug){
+		fprintf(stderr,"mw:%lf Mnw:%lf\n", max_west, min_west);
+	}
 	double total_width = max_west - min_west >= 0 ? max_west - min_west : max_west + (360 - min_west);
 	double total_height = max_north - min_north;
 	if (debug) {
@@ -317,7 +322,7 @@ int loadLIDAR(char *filenames, int resample)
 
 	//detect problematic layouts eg. vertical rectangles
 	// 1x2
-	if(fc >= 2 && desired_resolution < 15 && total_height > total_width*1.2){
+	if(fc >= 2 && desired_resolution < 28 && total_height > total_width*1.2){
 		tiles[fc].max_north=max_north;
 		tiles[fc].min_north=min_north;
 		westoffset=westoffset-(total_height-total_width); // WGS84 for stdout only
@@ -338,7 +343,7 @@ int loadLIDAR(char *filenames, int resample)
 		}	
 	}
 	// 2x1
-	if(fc >= 2 && desired_resolution < 15 && total_width > total_height*1.2){
+	if(fc >= 2 && desired_resolution < 28 && total_width > total_height*1.2){
 		tiles[fc].max_north=max_north+(total_width-total_height);
 		tiles[fc].min_north=max_north;
 		tiles[fc].max_west=max_west; // Positive westing
@@ -385,6 +390,11 @@ int loadLIDAR(char *filenames, int resample)
 	if (debug)
 		fprintf(stderr,"Lidar tile dimensions w:%lf(%zu) h:%lf(%zu)\n", total_width, new_width, total_height, new_height);
 
+	//sanity check!
+	if(new_width > 50e3 || new_height > 50e3){
+		fprintf(stdout,"Not processing a tile with these dimensions: %zu x %zu\n",new_width,new_height);
+		exit(1);
+	}
 	/* ...If we wanted a value other than sea level here, we would need to initialize the array... */
 	size_t prevPixelOffsetW=0;
 	size_t prevPixelOffsetN=0;
