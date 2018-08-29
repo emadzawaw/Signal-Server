@@ -1086,9 +1086,9 @@ int main(int argc, char *argv[])
 		fprintf(stdout,	"     -rla (Optional) Rx Latitude for PPA (decimal degrees) -70/+70\n");
 		fprintf(stdout, "     -rlo (Optional) Rx Longitude for PPA (decimal degrees) -180/+180\n");
 		fprintf(stdout,	"     -f Tx Frequency (MHz) 20MHz to 100GHz (LOS after 20GHz)\n");
-		fprintf(stdout,	"     -erp Tx Effective Radiated Power (Watts) including Tx+Rx gain\n");
+		fprintf(stdout,	"     -erp Tx Total Effective Radiated Power in Watts (dBd) inc Tx+Rx gain. 2.14dBi = 0dBd\n");
 		fprintf(stdout,	"     -rxh Rx Height(s) (optional. Default=0.1)\n");
-		fprintf(stdout,	"     -rxg Rx gain dBi (optional for text report)\n");
+		fprintf(stdout,	"     -rxg Rx gain dBd (optional for PPA text report)\n");
 		fprintf(stdout,	"     -hp Horizontal Polarisation (default=vertical)\n");
 		fprintf(stdout, "     -gc Random ground clutter (feet/meters)\n");
 		fprintf(stdout, "     -m Metric units of measurement\n");
