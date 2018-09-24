@@ -72,7 +72,6 @@ int loadClutter(char *filename, double radius, struct site tx)
 			pch = strtok(line, " ");
 			while (pch != NULL && x < w) {
 				z = atoi(pch);
-				
 				// Apply ITU-R P.452-11
 				// Treat classes 0, 9, 10, 11, 15, 16 as water, (Water, savanna, grassland, wetland, snow, barren)
 				clh = 0.0;
@@ -104,7 +103,6 @@ int loadClutter(char *filename, double radius, struct site tx)
 
 					// bounding box
 					if(lat > tx.lat - radius && lat < tx.lat + radius && lon > tx.lon - radius && lon < tx.lon + radius){
-						
 						// not in near field
 						if((lat > tx.lat+cellsize2 || lat < tx.lat-cellsize2) || (lon > tx.lon + cellsize2 || lon < tx.lon - cellsize2)){
 							AddElevation(lat,lon,clh,2);
@@ -126,7 +124,6 @@ int loadClutter(char *filename, double radius, struct site tx)
 }
 
 int averageHeight(int height, int width, int x, int y){
-	
 	int total = 0;
 	int c=0;
 	if(dem[0].data[y-1][x-1]>0){
@@ -168,6 +165,12 @@ int loadLIDAR(char *filenames, int resample)
 	tile_t *tiles;
 	int eastF=0,westF=0; //flags for meridian fix
 
+#ifndef USE_OLD_CODE
+	// Initialize global variables before processing files
+	min_west = 360; // any value will be lower than this
+	max_west = 0;   // any value will be higher than this
+#endif
+
 	// test for multiple files
 	filename = strtok(filenames, " ,");
 	while (filename != NULL) {
@@ -177,8 +180,16 @@ int loadLIDAR(char *filenames, int resample)
 	}
 
 	/* Allocate the tile array */
+#ifdef USE_OLD_CODE
 	if( (tiles = (tile_t*) calloc(fc+1, sizeof(tile_t))) == NULL )
 		return ENOMEM;
+#else
+	if( (tiles = (tile_t*) calloc(fc+1, sizeof(tile_t))) == NULL ) {
+		if (debug)
+			fprintf(stderr,"Could not allocate %d\n tiles",fc+1);
+		return ENOMEM;
+	}
+#endif
 
 	/* Load each tile in turn */
 	for (indx = 0; indx < fc; indx++) {
@@ -215,6 +226,7 @@ int loadLIDAR(char *filenames, int resample)
 		if (min_north == 90 || tiles[indx].min_north < min_north)
 			min_north = tiles[indx].min_north;
 
+#ifdef USE_OLD_CODE
 		if (tiles[indx].max_west > max_west)
 			max_west = tiles[indx].max_west;
 
@@ -225,10 +237,13 @@ int loadLIDAR(char *filenames, int resample)
 			eastF=1;
 		if (tiles[indx].max_west < 2.0)
 			westF=1;
+#endif
 
+#ifdef USE_OLD_CODE
 		if (max_west == -1) {
 			max_west = tiles[indx].max_west;
 		} else {
+#endif
 			if (abs(tiles[indx].max_west - max_west) < 180) {
 				if (tiles[indx].max_west > max_west)
 					max_west = tiles[indx].max_west;
@@ -236,9 +251,11 @@ int loadLIDAR(char *filenames, int resample)
 				if (tiles[indx].max_west < max_west)
 					max_west = tiles[indx].max_west;
 			}
+#ifdef USE_OLD_CODE
 		}
+#endif
 
-
+#ifdef USE_OLD_CODE
 		if (tiles[indx].min_west > 359.9) {
 			min_west = tiles[indx].min_west;
 			eastF=1;
@@ -253,10 +270,19 @@ int loadLIDAR(char *filenames, int resample)
 					min_west = tiles[indx].min_west;
 			}
 		}
-
+#else
+		if (fabs(tiles[indx].min_west - min_west) < 180.0) {
+			if (tiles[indx].min_west < min_west)
+				min_west = tiles[indx].min_west;
+		} else {
+			if (tiles[indx].min_west > min_west)
+				min_west = tiles[indx].min_west;
+		}
+#endif
 	}
 
-	// Meridian fix
+#ifdef USE_OLD_CODE
+	// Meridian fix?
 	if(eastF && westF){
 		max_west=0; //reset
 		for (indx = 0; indx < fc; indx++) {
@@ -272,6 +298,8 @@ int loadLIDAR(char *filenames, int resample)
 		if(debug)
 			fprintf(stderr,"min_west=0\n");
 	}
+#endif
+
 	/* Iterate through all of the tiles to find the smallest resolution. We will
 	 * need to rescale every tile from here on out to this value */
 	float smallest_res = 0;
@@ -305,8 +333,6 @@ int loadLIDAR(char *filenames, int resample)
 		}
 
 	}
-
-
 
 	/* Now we work out the size of the giant lidar tile. */
 	if(debug){
@@ -360,8 +386,8 @@ int loadLIDAR(char *filenames, int resample)
 
 		if (debug) {
 			fprintf(stderr,"deficit: %.4f cellsize: %.9f tiles needed to square: %.1f\n", total_width-total_height,avgCellsize,(total_width-total_height)/avgCellsize);
-		}	
-	
+		}
+
 	}
 
 	size_t new_height = 0;
@@ -384,6 +410,10 @@ int loadLIDAR(char *filenames, int resample)
 	short * new_tile = (short*) calloc( new_tile_alloc, sizeof(short) );
 
 	if ( new_tile == NULL ){
+#ifndef USE_OLD_CODE
+		if (debug)
+			fprintf(stderr,"Could not allocate %d bytes\n", new_tile_alloc);
+#endif
 		free(tiles);
 		return ENOMEM;
 	}
@@ -475,7 +505,7 @@ int loadLIDAR(char *filenames, int resample)
 				dem[0].data[y][x] = averageHeight(new_height,new_width,x,y);
 			}
 		}
-	}	
+	}
 
 	if (debug)
 		fprintf(stderr, "LIDAR LOADED %d x %d\n", width, height);
