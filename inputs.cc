@@ -226,7 +226,7 @@ int loadLIDAR(char *filenames, int resample)
 				if (tiles[indx].max_west < max_west)
 					max_west = tiles[indx].max_west;
 			}
-		if (fabs(tiles[indx].min_west - min_west) < 180.0) {
+		if (fabs(tiles[indx].min_west - min_west) < 180.0 || tiles[indx].min_west < 360) {
 			if (tiles[indx].min_west < min_west)
 				min_west = tiles[indx].min_west;
 		} else {
@@ -278,6 +278,52 @@ int loadLIDAR(char *filenames, int resample)
 	if (debug) {
 		fprintf(stderr,"totalh: %.7f - %.7f = %.7f totalw: %.7f - %.7f = %.7f fc: %d\n", max_north, min_north, total_height, max_west, min_west, total_width,fc);
 	}
+
+	//detect problematic layouts eg. vertical rectangles
+	// 1x2
+	if(fc >= 2 && desired_resolution < 28 && total_height > total_width*1.5){
+		tiles[fc].max_north=max_north;
+		tiles[fc].min_north=min_north;
+		westoffset=westoffset-(total_height-total_width); // WGS84 for stdout only
+		max_west=max_west+(total_height-total_width); // Positive westing
+		tiles[fc].max_west=max_west; // Positive westing
+		tiles[fc].min_west=max_west;
+		tiles[fc].ppdy=tiles[fc-1].ppdy;
+		tiles[fc].ppdy=tiles[fc-1].ppdx;
+		tiles[fc].width=(total_height-total_width);
+		tiles[fc].height=total_height;
+		tiles[fc].data=tiles[fc-1].data;
+		fc++;
+
+		//calculate deficit
+
+		if (debug) {
+			fprintf(stderr,"deficit: %.4f cellsize: %.9f tiles needed to square: %.1f, desired_resolution %d\n", total_width-total_height,avgCellsize,(total_width-total_height)/avgCellsize,desired_resolution);
+		}
+	}
+	// 2x1
+	if(fc >= 2 && desired_resolution < 28 && total_width > total_height*1.5){
+		tiles[fc].max_north=max_north+(total_width-total_height);
+		tiles[fc].min_north=max_north;
+		tiles[fc].max_west=max_west; // Positive westing
+		max_north=max_north+(total_width-total_height); // Positive westing
+		tiles[fc].min_west=min_west;
+		tiles[fc].ppdy=tiles[fc-1].ppdy;
+		tiles[fc].ppdy=tiles[fc-1].ppdx;
+		tiles[fc].width=total_width; 
+		tiles[fc].height=(total_width-total_height);
+		tiles[fc].data=tiles[fc-1].data;
+		fc++;
+
+		//calculate deficit
+
+		if (debug) {
+			fprintf(stderr,"deficit: %.4f cellsize: %.9f tiles needed to square: %.1f\n", total_width-total_height,avgCellsize,(total_width-total_height)/avgCellsize);
+		}
+
+}
+
+
 
 	size_t new_height = 0;
 	size_t new_width = 0;
