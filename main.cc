@@ -1715,14 +1715,7 @@ int main(int argc, char *argv[])
 		}
 
 		ppd=(double) (height / (max_north-min_north));
-
-		//Meridian hack
-		if(max_west < 2 && min_west > 358){
-			//yppd=(double) (width / (max_west+(360.0-min_west)));
-			yppd=ppd;
-		}else{
-			yppd=(double) (width / (max_west-min_west));
-		}
+		yppd=ppd;
 		
 		if(debug){
 			fprintf(stderr,"ppd %lf, yppd %lf, %.4f,%.4f,%.4f,%.4f,%d x %d\n",ppd,yppd,max_north,min_west,min_north,max_west,width,height);

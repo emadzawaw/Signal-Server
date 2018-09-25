@@ -163,13 +163,10 @@ int loadLIDAR(char *filenames, int resample)
     	double TO_DEG = (180 / PI);
 	FILE *fd;
 	tile_t *tiles;
-	int eastF=0,westF=0; //flags for meridian fix
 
-#ifndef USE_OLD_CODE
 	// Initialize global variables before processing files
 	min_west = 360; // any value will be lower than this
 	max_west = 0;   // any value will be higher than this
-#endif
 
 	// test for multiple files
 	filename = strtok(filenames, " ,");
@@ -180,16 +177,11 @@ int loadLIDAR(char *filenames, int resample)
 	}
 
 	/* Allocate the tile array */
-#ifdef USE_OLD_CODE
-	if( (tiles = (tile_t*) calloc(fc+1, sizeof(tile_t))) == NULL )
-		return ENOMEM;
-#else
 	if( (tiles = (tile_t*) calloc(fc+1, sizeof(tile_t))) == NULL ) {
 		if (debug)
 			fprintf(stderr,"Could not allocate %d\n tiles",fc+1);
 		return ENOMEM;
 	}
-#endif
 
 	/* Load each tile in turn */
 	for (indx = 0; indx < fc; indx++) {
@@ -226,51 +218,14 @@ int loadLIDAR(char *filenames, int resample)
 		if (min_north == 90 || tiles[indx].min_north < min_north)
 			min_north = tiles[indx].min_north;
 
-#ifdef USE_OLD_CODE
-		if (tiles[indx].max_west > max_west)
-			max_west = tiles[indx].max_west;
-
-		if (tiles[indx].min_west < min_west)
-			min_west = tiles[indx].min_west;
-
-		if (tiles[indx].max_west > 358.0)
-			eastF=1;
-		if (tiles[indx].max_west < 2.0)
-			westF=1;
-#endif
-
-#ifdef USE_OLD_CODE
-		if (max_west == -1) {
-			max_west = tiles[indx].max_west;
-		} else {
-#endif
-			if (abs(tiles[indx].max_west - max_west) < 180) {
+			//Meridian switch. max_west=0
+			if (abs(tiles[indx].max_west - max_west) < 180 || tiles[indx].max_west < 360) {
 				if (tiles[indx].max_west > max_west)
-					max_west = tiles[indx].max_west;
+					max_west = tiles[indx].max_west; // update highest value
 			} else {
 				if (tiles[indx].max_west < max_west)
 					max_west = tiles[indx].max_west;
 			}
-#ifdef USE_OLD_CODE
-		}
-#endif
-
-#ifdef USE_OLD_CODE
-		if (tiles[indx].min_west > 359.9) {
-			min_west = tiles[indx].min_west;
-			eastF=1;
-			if(debug)
-				fprintf(stderr,"min_west set to 360\n");
-		} else {
-			if (fabs(tiles[indx].min_west - min_west) < 180.0) {
-				if (tiles[indx].min_west < min_west)
-					min_west = tiles[indx].min_west;
-			} else {
-				if (tiles[indx].min_west > min_west)
-					min_west = tiles[indx].min_west;
-			}
-		}
-#else
 		if (fabs(tiles[indx].min_west - min_west) < 180.0) {
 			if (tiles[indx].min_west < min_west)
 				min_west = tiles[indx].min_west;
@@ -278,27 +233,7 @@ int loadLIDAR(char *filenames, int resample)
 			if (tiles[indx].min_west > min_west)
 				min_west = tiles[indx].min_west;
 		}
-#endif
 	}
-
-#ifdef USE_OLD_CODE
-	// Meridian fix?
-	if(eastF && westF){
-		max_west=0; //reset
-		for (indx = 0; indx < fc; indx++) {
-			if(tiles[indx].max_west<=2.0 && tiles[indx].max_west > max_west)
-				max_west=tiles[indx].max_west;
-		}
-		max_west*=1.0;  // WGS84 to westing. -1.5 = 1.5
-
-	}
-	// -1 fix
-	if(eastF && fc>1 && min_west<=1.0001){
-		min_west=0.0;
-		if(debug)
-			fprintf(stderr,"min_west=0\n");
-	}
-#endif
 
 	/* Iterate through all of the tiles to find the smallest resolution. We will
 	 * need to rescale every tile from here on out to this value */
@@ -342,52 +277,6 @@ int loadLIDAR(char *filenames, int resample)
 	double total_height = max_north - min_north;
 	if (debug) {
 		fprintf(stderr,"totalh: %.7f - %.7f = %.7f totalw: %.7f - %.7f = %.7f fc: %d\n", max_north, min_north, total_height, max_west, min_west, total_width,fc);
-		fprintf(stderr,"mw:%lf Mnw:%lf eastF %d westF %d\n", max_west, min_west,eastF,westF);
-		//exit(0);
-	}
-
-	//detect problematic layouts eg. vertical rectangles
-	// 1x2
-	if(fc >= 2 && desired_resolution < 28 && total_height > total_width*1.2){
-		tiles[fc].max_north=max_north;
-		tiles[fc].min_north=min_north;
-		westoffset=westoffset-(total_height-total_width); // WGS84 for stdout only
-		max_west=max_west+(total_height-total_width); // Positive westing
-		tiles[fc].max_west=max_west; // Positive westing
-		tiles[fc].min_west=max_west;
-		tiles[fc].ppdy=tiles[fc-1].ppdy;
-		tiles[fc].ppdy=tiles[fc-1].ppdx;
-		tiles[fc].width=(total_height-total_width);
-		tiles[fc].height=total_height;
-		tiles[fc].data=tiles[fc-1].data;
-		fc++;
-
-		//calculate deficit
-
-		if (debug) {
-			fprintf(stderr,"deficit: %.4f cellsize: %.9f tiles needed to square: %.1f, desired_resolution %d\n", total_width-total_height,avgCellsize,(total_width-total_height)/avgCellsize,desired_resolution);
-		}	
-	}
-	// 2x1
-	if(fc >= 2 && desired_resolution < 28 && total_width > total_height*1.2){
-		tiles[fc].max_north=max_north+(total_width-total_height);
-		tiles[fc].min_north=max_north;
-		tiles[fc].max_west=max_west; // Positive westing
-		max_north=max_north+(total_width-total_height); // Positive westing
-		tiles[fc].min_west=min_west;
-		tiles[fc].ppdy=tiles[fc-1].ppdy;
-		tiles[fc].ppdy=tiles[fc-1].ppdx;
-		tiles[fc].width=total_width; 
-		tiles[fc].height=(total_width-total_height);
-		tiles[fc].data=tiles[fc-1].data;
-		fc++;
-
-		//calculate deficit
-
-		if (debug) {
-			fprintf(stderr,"deficit: %.4f cellsize: %.9f tiles needed to square: %.1f\n", total_width-total_height,avgCellsize,(total_width-total_height)/avgCellsize);
-		}
-
 	}
 
 	size_t new_height = 0;
@@ -404,27 +293,27 @@ int loadLIDAR(char *filenames, int resample)
 			new_height = north_pixel_offset + tiles[i].height;
 		if (debug)
 			fprintf(stderr,"north_pixel_offset %d west_pixel_offset %d, %d x %d\n", north_pixel_offset, west_pixel_offset,new_height,new_width);
+
+      		//sanity check!
+        	if(new_width > 39e3 || new_height > 39e3){
+                	fprintf(stdout,"Not processing a tile with these dimensions: %zu x %zu\n",new_width,new_height);
+                	exit(1);
+        	}
+
 	}
 
 	size_t new_tile_alloc = new_width * new_height;
 	short * new_tile = (short*) calloc( new_tile_alloc, sizeof(short) );
 
 	if ( new_tile == NULL ){
-#ifndef USE_OLD_CODE
 		if (debug)
 			fprintf(stderr,"Could not allocate %d bytes\n", new_tile_alloc);
-#endif
 		free(tiles);
 		return ENOMEM;
 	}
 	if (debug)
 		fprintf(stderr,"Lidar tile dimensions w:%lf(%zu) h:%lf(%zu)\n", total_width, new_width, total_height, new_height);
 
-	//sanity check!
-	if(new_width > 50e3 || new_height > 50e3){
-		fprintf(stdout,"Not processing a tile with these dimensions: %zu x %zu\n",new_width,new_height);
-		exit(1);
-	}
 	/* ...If we wanted a value other than sea level here, we would need to initialize the array... */
 	size_t prevPixelOffsetW=0;
 	size_t prevPixelOffsetN=0;
@@ -505,6 +394,10 @@ int loadLIDAR(char *filenames, int resample)
 				dem[0].data[y][x] = averageHeight(new_height,new_width,x,y);
 			}
 		}
+	}
+	if(width > 3600 * 8){
+		fprintf(stdout,"DEM fault. Contact system administrator: %d\n",width);
+		exit(1);
 	}
 
 	if (debug)
