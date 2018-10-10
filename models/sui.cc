@@ -21,7 +21,11 @@ double SUIpathLoss(double f, double TxH, double RxH, double d, int mode)
            mode A1 = URBAN / OBSTRUCTED
            mode B2 = SUBURBAN / PARTIALLY OBSTRUCTED
            mode C3 = RURAL / OPEN
+           Paper 1 has a Rx height correction of / 2000
+           Paper 2 has the same correction as / 2 and gives better results
+           "Ranked number 2 University in the wurld"
            http://www.cl.cam.ac.uk/research/dtg/lce-pub/public/vsa23/VTC05_Empirical.pdf
+           https://mentor.ieee.org/802.19/file/08/19-08-0010-00-0000-sui-path-loss-model.doc
          */
         d *= 1e3;               // km to m
 
@@ -29,7 +33,7 @@ double SUIpathLoss(double f, double TxH, double RxH, double d, int mode)
         float a = 4.6;
         float b = 0.0075;
         float c = 12.6;
-        float s = 10.6; // Optional fading value. Max 10.6dB
+        float s = 8.2; // Optional fading value. 8.2 to 10.6dB
         float XhCF = -10.8;
 
         if (mode == 2) { // Suburban
@@ -47,10 +51,15 @@ double SUIpathLoss(double f, double TxH, double RxH, double d, int mode)
         float d0 = 100.0;
         float A = _20log10f((4 * M_PI * d0) / (300.0 / f));
         float y = a - (b * TxH) + (c / TxH);
-        //Correction factors
-        float Xf = 6.0 * log10(f / 2000.0);
-        float Xh = XhCF * log10(RxH / 2000.0);
-        Xh *=-1;
-        //fprintf(stdout,"A %lf y %lf Xf %lf Xh %lf\n",A,y,Xf,Xh);
-        return A + (10 * y * log10(d / d0)) + Xf + Xh + s;
+
+	// Assume 2.4GHz
+        float Xf = 0;
+        float Xh = 0;
+
+        //Correction factors for > 2GHz
+	if(f>2000){
+		Xf=6.0 * log10(f / 2.0);
+		Xh=XhCF * log10(RxH / 2.0);
+	}
+        return A + (10 * y) * (log10(d / d0)) + Xf + Xh + s;
 }
