@@ -165,7 +165,7 @@ int loadLIDAR(char *filenames, int resample)
 	tile_t *tiles;
 
 	// Initialize global variables before processing files
-	min_west = 360; // any value will be lower than this
+	min_west = 361; // any value will be lower than this
 	max_west = 0;   // any value will be higher than this
 
 	// test for multiple files
@@ -226,14 +226,17 @@ int loadLIDAR(char *filenames, int resample)
 				if (tiles[indx].max_west < max_west)
 					max_west = tiles[indx].max_west;
 			}
-		if (fabs(tiles[indx].min_west - min_west) < 180.0 || tiles[indx].min_west < 360) {
+		if (fabs(tiles[indx].min_west - min_west) < 180.0 || tiles[indx].min_west <= 360) {
 			if (tiles[indx].min_west < min_west)
 				min_west = tiles[indx].min_west;
 		} else {
 			if (tiles[indx].min_west > min_west)
 				min_west = tiles[indx].min_west;
 		}
+		// Handle tile with 360 XUR
+		if(min_west>359) min_west=0.0;
 	}
+
 
 	/* Iterate through all of the tiles to find the smallest resolution. We will
 	 * need to rescale every tile from here on out to this value */
