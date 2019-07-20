@@ -3,6 +3,8 @@ Multi-threaded radio propagation simulator based upon SPLAT! by Alex Farrant QCV
 
 SPLAT! Project started in 1997 by John A. Magliacane, KD2BD
 
+Some additional features and fixes by Aaron A. Collins, N9OZB
+
 This server application will generate RF coverage predictions, producing either 2D profile plots (Point-to-Point) or 360 degree polar plots in WGS-84 projection as PPM Bitmaps.
 
 For detailed information and historical reference data related to this project see the SPLAT! documentation. Propagation models added to this project have been sourced from reputable academic sources and all efforts have been taken to ensure their accurate implementation. Not all models are ITU ratified and you use them entirely at your own risk.
@@ -23,27 +25,28 @@ Additional programs/scripts will be required to prepare inputs such as .hgt tile
 
 
 ## File extensions and types used by signalserver:
-.asc LIDAR topo data file in ASCII grid format.
-.jpg LIDAR topo data file in JPEG format.
-.sdf SPLAT! topo data file in SPLAT! format, lo-res 90m (from SRTM3).
-.sdf.gz topo data file in SPLAT! data format, gzip compressed, lo-res 90m.
-.sdf.bz2 topo data file in SPLAT! data format, bzip2 compressed, lo-res 90m.
--hd.sdf SPLAT! topo data file in SPLAT! format, hi-res 30m (from SRTM1).
--hd.sdf.gz topo data file in SPLAT! data format, gzip compressed, hi-res 30m.
--hd.sdf.bz2 topo data file in SPLAT! data format, bzip2 compressed, lo-res 90m.
-.scf signal level color palette file.
-.lcf loss level color palette file.
-.dcf dbm level color palette file.
-.az SPLAT! antenna pattern azimuth data file.
-.el SPLAT! antenna pattern elevation data file.
-.lrp LIDAR antenna pattern data file.
-.udt user defined terrain data clutter data text file.
-.sh  miscellaneous shell scripts and batch files.
-.ppm portable pixmap - output plot graphic rendering (native).
-.png portable network graphics - output plot graphic rendering (converted).
-.kml Google Earth Keyhole Markup Language - output viewable with Google Earth.
-.kmz Google Earth Keyhole Markup Language, compressed.
-
+```
+.asc LIDAR topo data file in ASCII grid format
+.jpg LIDAR topo data file in JPEG format
+.sdf SPLAT! topo data file in SPLAT! format, lo-res 90m (from SRTM3)
+.sdf.gz topo data file in SPLAT! data format, gzip compressed, lo-res 90m
+.sdf.bz2 topo data file in SPLAT! data format, bzip2 compressed, lo-res 90m
+-hd.sdf SPLAT! topo data file in SPLAT! format, hi-res 30m (from SRTM1)
+-hd.sdf.gz topo data file in SPLAT! data format, gzip compressed, hi-res 30m
+-hd.sdf.bz2 topo data file in SPLAT! data format, bzip2 compressed, lo-res 90m
+.scf signal level color palette file
+.lcf loss level color palette file
+.dcf dbm level color palette file
+.az SPLAT! antenna pattern azimuth data file
+.el SPLAT! antenna pattern elevation data file
+.lrp LIDAR antenna pattern data file
+.udt user defined terrain data clutter data text file
+.sh  miscellaneous shell scripts and batch files
+.ppm portable pixmap - output plot graphic rendering (native)
+.png portable network graphics - output plot graphic rendering (converted)
+.kml Google Earth Keyhole Markup Language - output viewable with Google Earth
+.kmz Google Earth Keyhole Markup Language, compressed
+```
 
 ## Installation
 ```
@@ -209,10 +212,11 @@ The remainder of the file consists of elevation angles and their radiation patte
 ./signalserverLIDAR -lid /data/LIDAR/Gloucester_2m.asc -lat 51.849 -lon -2.2299 -txh 15 -f 1800 -erp 1 -rxh 2 -rt -90 -dbm -m -o test3 -R 1 -pm 1
 ```
 ### Scripting
-By using wrapper scripts like runsig.sh and genkmz.sh, you can streamline running signalserver by pre-setting some commonly used options in the runsig.sh file.  Those options should the be ones you use every time you run signalserver, like "-m" for metric or "-sdf ./sdf_file_path", for example, so you won't have to specify those options every time you run it.  The genkmz.sh file will convert the output ppm file into a .png with transparent background, then will convert it to a Google Earth Keyhole Markup Language (KML) file, and then it compresses it for size to a (KMZ) file.  For example, using the provided sample runsig.sh and genkmz.sh:
-
+By using wrapper scripts like runsig.sh and genkmz.sh, you can streamline running signalserver by pre-setting some commonly used options in the runsig.sh file.  Those options should be the ones you use every time you run signalserver, like "-m" for metric or "-sdf ./sdf_file_path", for example, so you won't have to specify those options every time you run it.  The genkmz.sh file will convert the output ppm file into a .png with transparent background, then will convert it to a Google Earth Keyhole Markup Language (KML) file, and then it compresses it for size to a (KMZ) file.  Here is an example of using the provided sample runsig.sh and genkmz.sh:
+```
 ### Plot 70cm Service contour, 700W ERP, 300 feet AGL, DB413-B, to 150 mi:
 sudo ./runsig.sh -lat 42.428889 -lon -87.812500 -txh 300 -f 446.000 -erp 700 -R 150 -res 600 -rel 50 -rt 39 -ant antenna/DB413-B -rot 225 -color color/blue -o example-service | ./genkmz.sh
 
 ### Plot 70cm Interference contour, 700W ERP, 300 feet AGL, DB413-B, to 150 mi:
-sudo ./runsig.sh -lat 42.428889 -lon -87.812500 -txh 300 -f 446.000 -erp 700 -R 150 -res 600 -rel 10 -rt 21 -ant antenna/DB413-B -rot 225 -color color/blue -o example-service | ./genkmz.sh
+sudo ./runsig.sh -lat 42.428889 -lon -87.812500 -txh 300 -f 446.000 -erp 700 -R 150 -res 600 -rel 10 -rt 21 -ant antenna/DB413-B -rot 225 -color color/blue -o example-interferece | ./genkmz.sh
+```
