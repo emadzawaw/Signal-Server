@@ -1,4 +1,7 @@
-SIGNAL SERVER CHANGELOG 
+SIGNAL SERVER CHANGELOG
+
+3.21 Beta - 30 Jul 2019 - N9OZB Mods, minor fix
+Fixed a minor bug in the Gzip decoding routines, gzerror() not coming back NULL?
 
 3.20 Beta - 14 Jul 2019 - N9OZB Mods
 1. Added .GZ (Gzip) file processing for .sdf.gz DEM tiles.

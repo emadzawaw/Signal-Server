@@ -1,4 +1,4 @@
-double version = 3.20;
+double version = 3.21;
 /****************************************************************************\
 *  Signal Server: Radio propagation simulator by Alex Farrant QCVS, 2E0TDW   *
 ******************************************************************************

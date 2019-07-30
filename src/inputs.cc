@@ -1002,8 +1002,8 @@ char *GZfgets(char *output, gzFile gzfd, unsigned length)
 		}
 
 	}
-	if (debug && errmsg != NULL) {
-	        fprintf(stderr, "GZfgets: errmsg = [%s]\n", errmsg);
+	if (debug && (errmsg != NULL) && (gzerr != Z_OK && gzerr != Z_STREAM_END)) {
+	        fprintf(stderr, "GZfgets: gzerr = %d, errmsg = [%s]\n", gzerr, errmsg);
 		fflush(stderr);
 	}
 	return (output);
@@ -1127,8 +1127,8 @@ int LoadSDF_GZ(char *name)
 		if (gzerr != Z_OK || pos == EOF)
 		        return -errno;
 
-		if (debug && errmsg != NULL) {
-		        fprintf(stderr, "LoadSDF_GZ: errmsg = [%s]\n", errmsg);
+		if (debug && (errmsg != NULL) && (gzerr != Z_OK && gzerr != Z_STREAM_END)) {
+		        fprintf(stderr, "LoadSDF_GZ: gzerr = %d, errmsg = [%s]\n", gzerr, errmsg);
 			fflush(stderr);
 		}
 
