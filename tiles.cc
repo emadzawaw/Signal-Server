@@ -6,7 +6,7 @@
 #include "tiles.hh"
 #include "common.h"
 
-#define MAX_LINE 25000
+#define MAX_LINE 50000
 
 /* Computes the distance between two long/lat points */
 double haversine_formula(double th1, double ph1, double th2, double ph2)
@@ -16,7 +16,6 @@ double haversine_formula(double th1, double ph1, double th2, double ph2)
 	double dx, dy, dz;
 	ph1 -= ph2;
 	ph1 *= TO_RAD, th1 *= TO_RAD, th2 *= TO_RAD;
- 
 	dz = sin(th1) - sin(th2);
 	dx = cos(ph1) * cos(th1) - cos(th2);
 	dy = sin(ph1) * cos(th1);
@@ -54,7 +53,6 @@ int tile_load_lidar(tile_t *tile, char *filename){
 	tile->filename = strdup(filename);
 
 	/* Perform xur calcs */
-	// Degrees with GDAL option: -co "FORCE_CELLSIZE=YES"
 	tile->xur = tile->xll+(tile->cellsize*tile->width);
 	tile->yur = tile->yll+(tile->cellsize*tile->height);
 
@@ -63,15 +61,15 @@ int tile_load_lidar(tile_t *tile, char *filename){
 	if (tile->xll < westoffset)
 		westoffset = tile->xll;
 
-	// if (debug)
-	// 	fprintf(stderr,"%d, %d, %.7f, %.7f, %.7f, %.7f, %.7f\n",width,height,xll,yll,cellsize,yur,xur);
+	 if (debug)
+	 	fprintf(stderr,"%d, %d, %.7f, %.7f, %.7f, %.7f, %.7f\n",tile->width,tile->height,tile->xll,tile->yll,tile->cellsize,tile->yur,tile->xur);
 
 	// Greenwich straddling hack
-	// if (tile->xll <= 0 && tile->xur > 0) {
-	// 	tile->xll = (tile->xur - tile->xll); // full width
-	// 	tile->xur = 0.0; // budge it along so it's west of greenwich
-	// 	delta = eastoffset; // add to Tx longitude later
-	// } else {
+	/* if (tile->xll <= 0 && tile->xur > 0) {
+	 	tile->xll = (tile->xur - tile->xll); // full width
+	 	tile->xur = 0.0; // budge it along so it's west of greenwich
+	 	delta = eastoffset; // add to Tx longitude later
+	 } else {*/
 		// Transform WGS84 longitudes into 'west' values as society finishes east of Greenwich ;)
 		if (tile->xll >= 0)
 			tile->xll = 360-tile->xll;
@@ -120,8 +118,9 @@ int tile_load_lidar(tile_t *tile, char *filename){
 	tile->precise_resolution = (current_res_km/MAX(tile->width,tile->height)*1000);
 
 	// Round to nearest 0.5
-	tile->resolution = tile->precise_resolution < 0.5f ? 0.5f : floor((tile->precise_resolution * 2)+0.5) / 2;
+	tile->resolution = tile->precise_resolution < 0.5f ? 0.5f : ceil((tile->precise_resolution * 2)+0.5) / 2;
 
+	// Positive westing
 	tile->width_deg = tile->max_west - tile->min_west >= 0 ? tile->max_west - tile->min_west : tile->max_west + (360 - tile->min_west);
 	tile->height_deg = tile->max_north - tile->min_north;
 
@@ -235,7 +234,7 @@ int tile_resize(tile_t* tile, int resolution){
 	int current_res = (int) ceil((current_res_km/IPPD)*1000);
 	float scaling_factor = resolution / current_res;
 	if (debug)
-		fprintf(stderr, "Resampling: Current %dm Desired %dm Scale %d\n", current_res, resolution, scaling_factor);
+		fprintf(stderr, "Resampling: Current %dm Desired %dm Scale %.1f\n", current_res, resolution, scaling_factor);
 	return tile_rescale(tile, scaling_factor);
 }
 

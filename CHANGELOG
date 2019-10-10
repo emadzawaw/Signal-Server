@@ -1,5 +1,22 @@
 SIGNAL SERVER CHANGELOG 
 
+3.11 - 25 Sept 2018
+More LIDAR edge cases, tidying of many meridian hacks(!) and regression tested with different LIDAR resolutions and configurations eg. 1x2, 2x1..
+Meridian issue fixed for 30m but deliberately broken for 2m due to previous crap hacks causing a headache. Can be fixed in DEM by re-processing LIDAR tiles to NOT span the meridian.
+
+3.10 - 15 Apr 2018
+360 min_west fix 
+
+3.09 - 7 Feb 2018
+Meridian LIDAR cropping fix
+
+3.08 - 17 Dec 2017
+Proper fix for nearfield void
+More LIDAR edge cases: 1x2, 2x1...
+Removed exit() if no colour file
+Polyfilla for gaps at tile edges  
+SUI model clutter factor
+
 3.07 - 2 Sep 2017
 Bugfixes for LIDAR edge cases with mismatched tiles, missing tiles etc.
 

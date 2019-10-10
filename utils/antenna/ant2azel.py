@@ -6,7 +6,11 @@ from os.path import splitext
 
 
 def db_to_norm(db):
+<<<<<<< HEAD
     return 10**(db/10.)
+=======
+    return 10**(db/20.)
+>>>>>>> b9ca4186fe59882c5b291955e76a1d664f4aece9
 
 
 def main(argv):

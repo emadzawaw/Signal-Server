@@ -762,11 +762,9 @@ void ObstructionAnalysis(struct site xmtr, struct site rcvr, double f,
 	   of a sort of "inverse elevation angle" at the receiver.
 	   From the antenna, 0 deg. looks at the ground, and 90 deg.
 	   is parallel to the ground.
-
 	   Start at the receiver.  If this is the lowest antenna,
 	   then terrain obstructions will be nearest to it.  (Plus,
 	   that's the way ppa!'s original los() did it.)
-
 	   Calculate cosines only.  That's sufficient to compare
 	   angles and it saves the extra computational burden of
 	   acos().  However, note the inverted comparison: if
@@ -969,7 +967,6 @@ static void free_dem(void)
 {
 	int i;
 	int j;
-
 	for (i = 0; i < MAXPAGES; i++) {
 		for (j = 0; j < IPPD; j++) {
 			delete [] dem[i].data[j];

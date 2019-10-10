@@ -46,7 +46,7 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 
 	if( (success = LoadLossColors(xmtr[0])) != 0 ){
 		fprintf(stderr,"Error loading loss colors\n");
-		exit(success);
+		//exit(success);
 	}
 
 	if( filename != NULL ) {
@@ -109,11 +109,11 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 					       ((double)dem[indx].max_west,
 						lon)));
 				 // fix for multi-tile lidar
-                                if(width==10000 && (indx==1 || indx==3)){
+                              /*  if(width==10000 && (indx==1 || indx==3)){
                                         if(y0 >= 3432){ //3535
                                                 y0=y0-3432;
                                         }
-                                }
+                                }*/
 
 
 				if (x0 >= 0 && x0 <= mpi && y0 >= 0
@@ -289,7 +289,7 @@ int DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 
 	if( (success = LoadSignalColors(xmtr[0])) != 0 ){
 		fprintf(stderr,"Error loading signal colors\n");
-		return success;
+		//exit(success);
 	}
 
 	if( filename != NULL ) {
@@ -350,12 +350,12 @@ int DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 						lon)));
 
 				 // fix for multi-tile lidar
-                                if(width==10000 && (indx==1 || indx==3)){
+                           /*     if(width==10000 && (indx==1 || indx==3)){
                                         if(y0 >= 3432){ //3535
                                                 y0=y0-3432;
                                         }
                                 }
-
+				*/
 
 				if (x0 >= 0 && x0 <= mpi && y0 >= 0
 				    && y0 <= mpi)
@@ -540,7 +540,7 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 
 	if( (success = LoadDBMColors(xmtr[0], rxGain)) != 0 ){
 		fprintf(stderr,"Error loading DBM colors\n");
-		exit(success);
+		//exit(success);
 	}
 
 	if( filename != NULL ) {
@@ -1070,7 +1070,6 @@ void PathReport(struct site source, struct site destination, char *name,
 	angle1 = ElevationAngle(source, destination);
 	angle2 = ElevationAngle2(source, destination, earthradius);
 
-	if (got_azimuth_pattern || got_elevation_pattern) {
 		x = (int)rint(10.0 * (10.0 - angle2));
 
 		if (x >= 0 && x <= 1000)
@@ -1078,7 +1077,6 @@ void PathReport(struct site source, struct site destination, char *name,
 			    (double)LR.antenna_pattern[(int)rint(azimuth)][x];
 
 		patterndB = 20.0 * log10(pattern);
-	}
 
 	if (metric)
 		fprintf(fd2, "Distance to %s: %.2f kilometers\n",
@@ -1307,9 +1305,7 @@ void PathReport(struct site source, struct site destination, char *name,
 		fprintf(fd2, "\nSummary for the link between %s and %s:\n\n",
 			source.name, destination.name);
 
-		if (patterndB != 0.0)
-			fprintf(fd2,
-				"%s antenna pattern towards %s: %.3f (%.2f dB)\n",
+		fprintf(fd2, "%s antenna pattern towards %s: %.3f (%.2f dB)\n",
 				source.name, destination.name, pattern,
 				patterndB);
 
@@ -1508,8 +1504,11 @@ void PathReport(struct site source, struct site destination, char *name,
 				pattern =
 				    (double)LR.antenna_pattern[(int)azimuth][x];
 
-				if (pattern != 0.0)
+				if (pattern != 0.0){
 					patterndB = 20.0 * log10(pattern);
+				}else{
+					patterndB = 0.0;
+				}
 			}
 
 			else
@@ -1548,9 +1547,7 @@ void PathReport(struct site source, struct site destination, char *name,
 				"Attenuation due to terrain shielding: %.2f dB\n",
 				loss - free_space_loss);
 
-		if (patterndB != 0.0)
-			fprintf(fd2,
-				"Total path loss including %s antenna pattern: %.2f dB\n",
+		fprintf(fd2,"Total path loss including %s antenna pattern: %.2f dB\n",
 				source.name, total_loss);
 
 		if (LR.erp != 0.0) {

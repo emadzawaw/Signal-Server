@@ -14,6 +14,7 @@
 #include "sui.hh"
 #include "pel.hh"
 #include "egli.hh"
+#include "soil.hh"
 #include <pthread.h>
 
 #define CORES sysconf(_SC_NPROCESSORS_ONLN)
@@ -250,7 +251,7 @@ static double incidenceAngle(double opp, double adj)
  */
 static double ked(double freq, double rxh, double dkm)
 {
-	double obh, obd, rxobaoi = 0, d, dipheight = 25;
+	double obh, obd, rxobaoi = 0, d;
 
 	obh = 0;		// Obstacle height
 	obd = 0;		// Obstacle distance
@@ -263,7 +264,7 @@ static double ked(double freq, double rxh, double dkm)
 		d = (n - 2) * elev[1];	// no of points * delta = km
 
 		//Find dip(s)
-		if (elev[n] < (obh + dipheight)) {
+		if (elev[n] < obh) {
 
 			// Angle from Rx point to obstacle
 			rxobaoi =
@@ -282,9 +283,9 @@ static double ked(double freq, double rxh, double dkm)
 	}
 
 	if (rxobaoi >= 0) {
-		return rxobaoi / (300 / freq);	// Diffraction angle divided by wavelength (m)
+		return (rxobaoi / (300 / freq))+3;	// Diffraction angle divided by wavelength (m)
 	} else {
-		return 0;
+		return 1;
 	}
 }
 
@@ -594,6 +595,12 @@ void PlotPropPath(struct site source, struct site destination,
 				// Egli VHF/UHF
 				loss = EgliPathLoss(LR.frq_mhz, source.alt * METERS_PER_FOOT, (path.elevation[y] * METERS_PER_FOOT) + (destination.alt * METERS_PER_FOOT),dkm);
 				break;
+                        case 12:
+                                // Soil
+                                loss = SoilPathLoss(LR.frq_mhz, dkm, LR.eps_dielect);
+                                break;
+
+
 			default:
 				point_to_point_ITM(source.alt * METERS_PER_FOOT,
 						   destination.alt *
@@ -607,8 +614,8 @@ void PlotPropPath(struct site source, struct site destination,
 
 			}
 
-		
-			if (knifeedge == 1) {
+
+			if (knifeedge == 1 && propmodel > 1) {
 				diffloss =
 				    ked(LR.frq_mhz,
 					destination.alt * METERS_PER_FOOT, dkm);
@@ -751,8 +758,12 @@ void PlotPropPath(struct site source, struct site destination,
 	if(path.lat[y]>cropLat)
 		cropLat=path.lat[y];
 
-	if(path.lon[y]>cropLon)
-		cropLon=path.lon[y];
+	
+	if(y>cropLon)
+		cropLon=y;
+
+	//if(cropLon>180)
+	//	cropLon-=360;
 }
 
 void PlotLOSMap(struct site source, double altitude, char *plo_filename,

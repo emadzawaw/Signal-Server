@@ -1,16 +1,20 @@
 #!/bin/bash
 mkdir tests
 RAD=5
-MAXRAD=20
+MAXRAD=50
 FRQ=446
 ERP=25
 
 echo "Running 50cm LIDAR test..."
-./signalserverLIDAR -lid data/sk3587_50cm.asc -lat 53.383 -lon -1.468 -txh 8 -f 446 -erp 1 -rxh 2 -m -dbm -rt -95 -o tests/lidar_50cm -R 0.5 -t
+./signalserverLIDAR -lid data/sk3587_50cm.asc -lat 53.383 -lon -1.468 -txh 8 -f $FRQ -erp 1 -rxh 2 -m -dbm -rt -90 -o tests/1 -R 0.5 -t
 echo "Converting to PNG..."
-convert tests/lidar_50cm.ppm -transparent white -channel Alpha PNG32:tests/lidar_50cm.png
-rm tests/lidar_50cm.ppm
-rm tests/lidar_50cm.*cf
+convert tests/1.ppm -transparent white -channel Alpha PNG32:tests/1.png
+
+echo "Running 30m Meridian test..."
+./signalserverLIDAR -lid data/N051E000_AVE_DSM.tif.asc,data/N051W001_AVE_DSM.tif.asc -lat 51.472 -lon 0.0096 -txh 12 -f $FRQ -erp 5 -rxh 2 -m -dbm -rt -100 -o tests/2 -R 10 -t
+echo "Converting to PNG..."
+convert tests/2.ppm -transparent white -channel Alpha PNG32:tests/2.png
+
 
 echo "Running soak test out to $MAXRAD"
 

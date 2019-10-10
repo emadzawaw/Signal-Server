@@ -134,15 +134,13 @@ int loadLIDAR(char *filenames, int resample)
 	char *filename;
 	char *files[900]; // 20x20=400, 16x16=256 tiles
 	int indx = 0, fc = 0, hoffset = 0, voffset = 0, pos, success;
-//	double xll, yll, xur, yur, cellsize,
-	double avgCellsize = 0, smCellsize = 0;
-//	char found, 
-//	char free_page = 0, jline[20], lid_file[255],	
-//	path_plus_name[255], *junk = NULL;
-//	char line[25000];
-//	char * pch;
-//    	double TO_DEG = (180 / PI);
-//	FILE *fd;
+	double xll, yll, xur, yur, cellsize, avgCellsize = 0, smCellsize = 0;
+	char found, free_page = 0, jline[20], lid_file[255],	
+	path_plus_name[255], *junk = NULL;
+	char line[25000];
+	char * pch;
+    	double TO_DEG = (180 / PI);
+	FILE *fd;
 	tile_t *tiles;
 
 	// test for multiple files
@@ -387,7 +385,7 @@ int loadLIDAR(char *filenames, int resample)
 	if (debug)
 		fprintf(stderr, "fc %d WIDTH %d HEIGHT %d ippd %d minN %.5f maxN %.5f minW %.5f maxW %.5f avgCellsize %.5f\n", fc, width, height, ippd,min_north,max_north,min_west,max_west,avgCellsize);
 
-/* cleanup:
+cleanup:
 
 	if ( tiles != NULL ) {
 		for (size_t i = 0; i < fc-1; i++) {
@@ -395,7 +393,7 @@ int loadLIDAR(char *filenames, int resample)
 		}
 	}
 	free(tiles);
-*/
+
 	return 0;
 }
 
@@ -1512,7 +1510,7 @@ int LoadDBMColors(struct site xmtr, double rxGain)
 		x = 0;
 		s = fgets(string, 80, fd);
 
-		while (x < 255 && feof(fd) == 0) {
+		while (x < 128 && feof(fd) == 0) {
 			pointer = strchr(string, ';');
 
 			if (pointer != NULL)
@@ -1534,8 +1532,8 @@ int LoadDBMColors(struct site xmtr, double rxGain)
 				if (val[0] < -200)
 					val[0] = -200;
 
-				if (val[0] > +100)
-					val[0] = +100;
+				if (val[0] > +40)
+					val[0] = +40;
 
 				region.level[x] = val[0];
 
