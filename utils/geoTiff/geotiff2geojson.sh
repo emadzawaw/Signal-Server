@@ -3,6 +3,7 @@
 #
 # Requires:
 #   - gdal_sieve.py
+#   - gdal_polygonize.py
 #   - ogr2ogr (GDAL)
 #		- topojson (node.js)
 # obtained from: https://gist.github.com/petesaia
@@ -60,14 +61,15 @@ if [ ! -z "$ADD_COL" ]; then
   ogrinfo  "$TMP_DIR/vector.shp" -dialect SQLite -sql "UPDATE vector SET fname ='$ADD_COL'"
 fi
 
-# Change shapefile to geojson without the 0 layer, which is water. and simply to ~ 100m resolution
-echo "Change shapefile to geojson without the 0 layer, which is water."
-# and simply to ~ 100m resolution
+# Change shapefile to geojson without the 0 layer, which is water. and optionlay simply to ~ 100m resolution
+# echo "Change shapefile to geojson without the 0 layer, which is water."
+# and optionaly simply to ~ 100m resolution
 # ogr2ogr -f "GeoJSON" -where "n != 0" "$TMP_DIR/geojson.json" "$TMP_DIR/vector.shp"
+
+#Do a straight up geotiff to shpefile 
 ogr2ogr -f "GeoJSON" "$TMP_DIR/geojson.json" "$TMP_DIR/vector.shp"
 # Convert to compressed TopoJSON.
-# topojson -o $OUTPUT_FILE --no-stitch-poles -s $TOPO_COMPRESSION \
-#	-p -- "$TMP_DIR/geojson.json"
+topojson -o $OUTPUT_FILE --no-stitch-poles -s $TOPO_COMPRESSION \ -p -- "$TMP_DIR/geojson.json"
 
 # Clean up.
 #rm -rf $TMP_DIR

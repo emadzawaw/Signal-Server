@@ -1512,7 +1512,7 @@ int LoadDBMColors(struct site xmtr, double rxGain)
 		x = 0;
 		s = fgets(string, 80, fd);
 
-		while (x < 255 && feof(fd) == 0) {
+		while (x < 128 && feof(fd) == 0) {
 			pointer = strchr(string, ';');
 
 			if (pointer != NULL)
@@ -1534,8 +1534,8 @@ int LoadDBMColors(struct site xmtr, double rxGain)
 				if (val[0] < -200)
 					val[0] = -200;
 
-				if (val[0] > +100)
-					val[0] = +100;
+				if (val[0] > +40)
+					val[0] = +40;
 
 				region.level[x] = val[0];
 

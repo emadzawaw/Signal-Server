@@ -2,8 +2,8 @@ SHELL		= /bin/sh
 
 CC		= cc
 CXX		= c++
-CFLAGS		= -Wall -O3 -s -ffast-math -DCROPPING
-CXXFLAGS	= -Wall -O3 -s -ffast-math
+CFLAGS		= -Wall -O3 -ffast-math -DCROPPING
+CXXFLAGS	= -Wall -O3 -ffast-math
 LIBS		= -lm -lpthread
 
 VPATH		= models
