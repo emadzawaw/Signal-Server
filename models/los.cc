@@ -28,7 +28,7 @@ struct entry {
 };
 
 namespace {
-	pthread_t threads[64];	// must increase if system has more than 64 cores
+	pthread_t threads[64];
 	unsigned int thread_count = 0;
 	pthread_mutex_t maskMutex, queueMutex;
 	bool ***processed;
@@ -44,7 +44,7 @@ namespace {
 		int propmodel, knifeedge, pmenv;
 	};
 
-	void addToQueue(int x, int y)
+void addToQueue(int x, int y)
 	{
 		struct entry *elem;
 		elem = (entry*)malloc(sizeof(struct entry));
@@ -84,6 +84,7 @@ namespace {
 		free_path();
 		return NULL;
 	}
+
 
 	void* rangePropagation(void *parameters)
 	{
@@ -154,6 +155,18 @@ namespace {
 		has_init_processed = true;
 	}
 
+        void beginQueueThread(void *arg)
+        {
+                if(!has_init_processed)
+                        init_processed();
+
+                int rc = pthread_create(&threads[thread_count], NULL, processQueue, arg);
+                if (rc)
+                        fprintf(stderr,"ERROR; return code from pthread_create() is %d\n", rc);
+                else
+                        ++thread_count;
+        }
+
 	bool can_process(double lat, double lon)
 	{
 		/* Lines, text, markings, and coverage areas are stored in a
@@ -203,18 +216,6 @@ namespace {
 			init_processed();
 
 		int rc = pthread_create(&threads[thread_count], NULL, rangePropagation, arg);
-		if (rc)
-			fprintf(stderr,"ERROR; return code from pthread_create() is %d\n", rc);
-		else
-			++thread_count;
-	}
-
-	void beginQueueThread(void *arg)
-	{
-		if(!has_init_processed)
-			init_processed();
-
-		int rc = pthread_create(&threads[thread_count], NULL, processQueue, arg);
 		if (rc)
 			fprintf(stderr,"ERROR; return code from pthread_create() is %d\n", rc);
 		else
@@ -864,7 +865,7 @@ void PlotPropagation(struct site source, double altitude, char *plo_filename,
 	}
 	if (debug) {
 		fprintf(stderr,
-			" contours of \"%s\"\nout to a radius of %.2f %s with Rx antenna(s) at %.2f %s AGL\n",
+			" contours of \"%s\" out to a radius of %.2f %s with Rx antenna(s) at %.2f %s AGL\n",
 			source.name,
 			metric ? max_range * KM_PER_MILE : max_range,
 			metric ? "kilometers" : "miles",
@@ -886,7 +887,6 @@ void PlotPropagation(struct site source, double altitude, char *plo_filename,
 			max_west, min_west, max_north, min_north);
 	}
 
-	
 	// Add coordinates to the queue for each edge pixel
 	// Throughout this program, x is used for lat, y for lon, contrary to cartesian standards
 	for (int x = 0; x < height; x++) {
@@ -906,6 +906,7 @@ void PlotPropagation(struct site source, double altitude, char *plo_filename,
 		range->los = false;
 		range->min_west = min_west;
 		range->min_north = min_north;
+
 		range->use_threads = use_threads;
 		range->altitude = altitude;
 		range->source = source;

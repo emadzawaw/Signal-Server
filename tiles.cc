@@ -37,7 +37,7 @@ int tile_load_lidar(tile_t *tile, char *filename){
 
 	/* This is where we read the header data */
 	/* The string is split for readability but is parsed as a block */
-	if( fscanf(fd,"%*s %d\n" "%*s %d\n" "%*s %lf\n" "%*s %lf\n" "%*s %lf\n" "%*s %d\n",&tile->width,&tile->height,&tile->xll,&tile->yll,&tile->cellsize,&tile->nodata) != 6 ){
+	if( fscanf(fd,"%*s %d\n" "%*s %d\n" "%*s %lf\n" "%*s %lf\n" "%*s %lf\n" "%*s %d\n",&tile->width,&tile->height,&tile->xll,&tile->yll,&tile->cellsize,(int *)&tile->nodata) != 6 ){
 		fclose(fd);
 		return -1;
 	}
@@ -93,10 +93,10 @@ int tile_load_lidar(tile_t *tile, char *filename){
 	}
 
 	size_t loaded = 0;
-	for (size_t h = 0; h < tile->height; h++) {
+	for (size_t h = 0; h < (unsigned)tile->height; h++) {
 		if (fgets(line, MAX_LINE, fd) != NULL) {
 			pch = strtok(line, " "); // split line into values
-			for (size_t w = 0; w < tile->width && pch != NULL; w++) {
+			for (size_t w = 0; w < (unsigned)tile->width && pch != NULL; w++) {
 				/* If the data is less than a *magic* minimum, normalize it to zero */
 				nextval = atoi(pch);
 				if (nextval <= 0)
@@ -172,21 +172,18 @@ int tile_rescale(tile_t *tile, float scale){
 		copy_count = (size_t) scale;
 	}
 
-	if (debug)
-		fprintf(stderr,"Resampling tile %s [%.1f]:\n\tOld %zux%zu. New %zux%zu\n\tScale %f Skip %zu Copy %zu\n", tile->resolution, tile->filename, tile->width, tile->height, new_width, new_height, scale, skip_count, copy_count);
-
+	if (debug) {
+		fprintf(stderr,"Resampling tile %s [%.1f]:\n\tOld %dx%d. New %zux%zu\n\tScale %f Skip %zu Copy %zu\n", tile->filename, tile->resolution, tile->width, tile->height, new_width, new_height, scale, skip_count, copy_count);
+		fflush(stderr);
+	}
 	/* Nearest neighbour normalization. For each subsample of the original, simply
 	 * assign the value in the top left to the new pixel 
 	 * SOURCE: X / Y
 	 * DEST:   I / J */
 
-	for (size_t y = 0, j = 0;
-			y < tile->height && j < new_height;
-			y += skip_count, j += copy_count){
+	for (size_t y = 0, j = 0; y < (unsigned)tile->height && j < new_height; y += skip_count, j += copy_count) {
 
-		for (size_t x = 0, i = 0;
-				x < tile->width && i < new_width;
-				x += skip_count, i += copy_count) {
+		for (size_t x = 0, i = 0; x < (unsigned)tile->width && i < new_width; x += skip_count, i += copy_count) {
 		
 			/* These are for scaling up the data */
 			for (size_t copy_y = 0; copy_y < copy_count; copy_y++) {

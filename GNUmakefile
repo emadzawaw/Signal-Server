@@ -4,7 +4,7 @@ CC		= gcc
 CXX		= g++
 CFLAGS		= -Wall -O3 -s -ffast-math -DCROPPING
 CXXFLAGS	= -Wall -O3 -s -ffast-math
-LIBS		= -lm -lpthread -ldl
+LIBS		= -lm -lpthread -ldl -lz -lbz2
 
 VPATH		= models
 objects 	= main.o cost.o ecc33.o ericsson.o fspl.o hata.o itwom3.0.o \

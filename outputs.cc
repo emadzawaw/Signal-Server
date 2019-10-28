@@ -3,17 +3,19 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <bzlib.h>
+#include <zlib.h>
 
 #include "common.h"
 #include "main.hh"
 #include "inputs.hh"
-#include "models/cost.hh"
-#include "models/ecc33.hh"
-#include "models/ericsson.hh"
-#include "models/fspl.hh"
-#include "models/hata.hh"
-#include "models/itwom3.0.hh"
-#include "models/sui.hh"
+#include "cost.hh"
+#include "ecc33.hh"
+#include "ericsson.hh"
+#include "fspl.hh"
+#include "hata.hh"
+#include "itwom3.0.hh"
+#include "sui.hh"
 #include "image.hh"
 
 void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
@@ -46,7 +48,7 @@ void DoPathLoss(char *filename, unsigned char geo, unsigned char kml,
 
 	if( (success = LoadLossColors(xmtr[0])) != 0 ){
 		fprintf(stderr,"Error loading loss colors\n");
-		//exit(success);
+		exit(success);  // Now a fatal error!
 	}
 
 	if( filename != NULL ) {
@@ -511,7 +513,7 @@ int DoSigStr(char *filename, unsigned char geo, unsigned char kml,
 }
 
 void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
-	      unsigned char ngs, struct site *xmtr, unsigned char txsites, double rxGain)
+	      unsigned char ngs, struct site *xmtr, unsigned char txsites)
 {
 	/* This function generates a topographic map in Portable Pix Map
 	   (PPM) format based on the signal power level values held in the
@@ -538,9 +540,9 @@ void DoRxdPwr(char *filename, unsigned char geo, unsigned char kml,
 	    255.0 / pow((double)(max_elevation - min_elevation),
 			one_over_gamma);
 
-	if( (success = LoadDBMColors(xmtr[0], rxGain)) != 0 ){
+	if( (success = LoadDBMColors(xmtr[0])) != 0 ){
 		fprintf(stderr,"Error loading DBM colors\n");
-		//exit(success);
+		exit(success);  //Now a fatal error!
 	}
 
 	if( filename != NULL ) {
@@ -1070,6 +1072,7 @@ void PathReport(struct site source, struct site destination, char *name,
 	angle1 = ElevationAngle(source, destination);
 	angle2 = ElevationAngle2(source, destination, earthradius);
 
+	if (got_azimuth_pattern || got_elevation_pattern) {
 		x = (int)rint(10.0 * (10.0 - angle2));
 
 		if (x >= 0 && x <= 1000)
@@ -1077,6 +1080,7 @@ void PathReport(struct site source, struct site destination, char *name,
 			    (double)LR.antenna_pattern[(int)rint(azimuth)][x];
 
 		patterndB = 20.0 * log10(pattern);
+	}
 
 	if (metric)
 		fprintf(fd2, "Distance to %s: %.2f kilometers\n",
@@ -1305,7 +1309,8 @@ void PathReport(struct site source, struct site destination, char *name,
 		fprintf(fd2, "\nSummary for the link between %s and %s:\n\n",
 			source.name, destination.name);
 
-		fprintf(fd2, "%s antenna pattern towards %s: %.3f (%.2f dB)\n",
+		if (patterndB != 0.0)
+		        fprintf(fd2, "%s antenna pattern towards %s: %.3f (%.2f dB)\n",
 				source.name, destination.name, pattern,
 				patterndB);
 
@@ -1547,7 +1552,8 @@ void PathReport(struct site source, struct site destination, char *name,
 				"Attenuation due to terrain shielding: %.2f dB\n",
 				loss - free_space_loss);
 
-		fprintf(fd2,"Total path loss including %s antenna pattern: %.2f dB\n",
+		if (patterndB != 0.0)
+		        fprintf(fd2,"Total path loss including %s antenna pattern: %.2f dB\n",
 				source.name, total_loss);
 
 		if (LR.erp != 0.0) {
@@ -1744,7 +1750,6 @@ void PathReport(struct site source, struct site destination, char *name,
 void SeriesData(struct site source, struct site destination, char *name,
 		unsigned char fresnel_plot, unsigned char normalised)
 {
-
 	int x, y, z;
 	char basename[255], term[30], ext[15], profilename[255],
 	    referencename[255], cluttername[255], curvaturename[255],
@@ -1764,6 +1769,11 @@ void SeriesData(struct site source, struct site destination, char *name,
 	refangle = ElevationAngle(destination, source);
 	b = GetElevation(destination) + destination.alt + earthradius;
 
+	if (debug) {
+	        fprintf(stderr, "SeriesData: az = %lf, dist = %lf, ref = %lf, b = %lf\n", azimuth, distance, refangle, b);
+		fflush(stderr);
+	}
+	
 	if (fresnel_plot) {
 		lambda = 9.8425e8 / (LR.frq_mhz * 1e6);
 		d = FEET_PER_MILE * path.distance[path.length - 1];
