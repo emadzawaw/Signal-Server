@@ -34,9 +34,9 @@ double version = 3.21;
 #include "common.h"
 #include "inputs.hh"
 #include "outputs.hh"
-#include "itwom3.0.hh"
-#include "los.hh"
-#include "pel.hh"
+#include "models/itwom3.0.hh"
+#include "models/los.hh"
+#include "models/pel.hh"
 #include "image.hh"
 
 int MAXPAGES = 10*10;
