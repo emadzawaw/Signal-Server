@@ -1,7 +1,7 @@
 SHELL		= /bin/sh
 
-CC		= gcc
-CXX		= g++
+CC		= cc
+CXX		= c++
 CFLAGS		= -Wall -O3 -s -ffast-math -DCROPPING
 CXXFLAGS	= -Wall -O3 -s -ffast-math
 LIBS		= -lm -lpthread -ldl -lz -lbz2
