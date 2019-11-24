@@ -43,7 +43,7 @@ def main(argv):
         outfile = splitext(antfile)[0]
     if debug :
         print ("outfile " + outfile)
-        print ("downtilt " + tilt)  
+        print ("downtilt " + tilt)
     with open(antfile, 'r') as ant:
         with open(outfile + '.az', 'w') as az:
             # azimuth offset as provided by command arg or 0
