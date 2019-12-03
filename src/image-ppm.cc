@@ -26,7 +26,7 @@ int ppm_init(image_ctx_t *ctx){
 }
 
 int ppm_add_pixel(image_ctx_t *ctx,const uint8_t r,const uint8_t g,const uint8_t b,const uint8_t a){
-	register uint8_t* next;
+	uint8_t* next;
 
 	next = ctx->next_pixel;
 

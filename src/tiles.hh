@@ -30,8 +30,8 @@ typedef struct _tile_t{
 	double	cellsize;
 	long long datastart;
 	short	nodata;
-	short 	max_el;
-	short	min_el;
+	int 	max_el;
+	int	min_el;
 	short	*data;
 	float 	precise_resolution;
 	float	resolution;
