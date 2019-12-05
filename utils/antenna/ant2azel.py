@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import sys 
 import getopt
 import os.path 
@@ -36,14 +36,14 @@ def main(argv):
             direction = arg
         elif opt in ("-t", "--tilt"):
             tilt = arg
-        if antfile == '':
-            print  program + ' --debug --help -a <azimuth> -t <mechanicaldowntilt> -i <inputfile> -o <outputfile>'
-            sys.exit(2)
+    if antfile == '':
+        print  program + ' --debug --help -a <azimuth> -t <mechanicaldowntilt> -i <inputfile> -o <outputfile>'
+        sys.exit(2)
     if outfile == '' :
         outfile = splitext(antfile)[0]
     if debug :
-        print "outfile " + outfile
-        print "downtilt " + tilt     
+        print "outfile " + str(outfile)
+        print "downtilt " + str(tilt)
     with open(antfile, 'r') as ant:
         with open(outfile + '.az', 'w') as az:
             # azimuth offset as provided by command arg or 0
