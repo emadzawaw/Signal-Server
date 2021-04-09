@@ -107,15 +107,15 @@ The usgs2sdf utility takes as an argument the name of an uncompressed
 and record delimited Digital Elevation Model Data (DEM) downloaded from
 the US Geological Survey, and generates a SPLAT Data File (SDF) compatible
 with  signalserver.  usgs2sdf may be invoked manually, or via the
-postdownload script.
+postdownload.sh script.
 
 
-postdownload
-============
-postdownload is a front-end to the usgs2sdf utility.  postdownload
+postdownload.sh
+===============
+postdownload.sh is a front-end to the usgs2sdf utility.  postdownload.sh
 takes as an argument the name of the gzipped Digital Elevation Model
 (DEM) downloaded from the US Geological Survey (ie: wilmington-w.gz).
-postdownload uncompresses the DEM file, adds necessary record delimiters,
+postdownload.sh uncompresses the DEM file, adds necessary record delimiters,
 and invokes usgs2sdf to produce a SPLAT! Data File (SDF).
 
 USGS Digital Elevation Models may be downloaded from:

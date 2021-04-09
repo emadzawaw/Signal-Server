@@ -1,4 +1,30 @@
-SIGNAL SERVER CHANGELOG 
+SIGNAL SERVER CHANGELOG
+
+3.21 Beta - 30 Jul 2019 - N9OZB Mods, minor fix
+Fixed a minor bug in the Gzip decoding routines, gzerror() not coming back NULL?
+
+3.20 Beta - 14 Jul 2019 - N9OZB Mods
+1. Added .GZ (Gzip) file processing for .sdf.gz DEM tiles.
+2. Added .BZ2 (Bzip2) file processing for .sdf.bz2 DEM tiles.
+3. Added much improved Antenna file options, new command line options for:
+ a. AZ/EL file/path with a unique filename, no longer locked to output filename.
+ b. Can specify command line pattern rotation azimuth, overrides value in file.
+ c. Can specify command line pattern downtilt and direction, overrides file.
+4. Added command line option for color palette file, not locked to output name,
+   filename/path is used for .scf, .lcf and .dcf files, depending on mode.
+5. Fixed major bug in .udt file processing in West (negative) longitudes.
+6. Fixed ITM "Conf" and "Rel" options (ITM "situations" and "times") on cmdline.
+7. Increased HD Version capacity from 9 to 32 DEM tiles (.sdf files).
+8. Updated command line help msg, CHANGELOG, and README.md documentation.
+9. Removed extra unused variables, cleaned up code and fixed a few logic issues.
+10. Restructured src tree, updated Makefile.  Much cleaner directory structure.
+11. Added Antenna & UDT test file "ant-udt_test" to ./test.sh suite.
+12. Added sample color palette files in ./color.
+13. Added some conversion & postdownload scripts to ./utils/sdf.
+14. Added sample antenna file DB413-B in ./antenna.
+15. Tried to keep cmdline color/antenna and all changes backward compatible.
+16. Added base run (runsig.sh) and kmz conversion script (genkmz.sh) files.
+17. Added dandy User Manual for reference.
 
 3.11 - 25 Sept 2018
 More LIDAR edge cases, tidying of many meridian hacks(!) and regression tested with different LIDAR resolutions and configurations eg. 1x2, 2x1..
