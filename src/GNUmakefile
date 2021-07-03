@@ -1,14 +1,16 @@
 SHELL		= /bin/sh
 
-CC		= cc
-CXX		= c++
-CFLAGS		= -Wall -O3 -ffast-math -DCROPPING
-CXXFLAGS	= -Wall -O3 -ffast-math
-LIBS		= -lm -lpthread -ldl -lz -lbz2
+CC		= gcc
+CXX		= g++
+CFLAGS		= -Wall -O3 -s -ffast-math -DCROPPING
+CXXFLAGS	= -Wall -O3 -s -ffast-math
+LIBS		= -lm -lpthread -ldl -lbz2 -lz
 
+INSTALL_PATH	= ..
 VPATH		= models
 objects 	= main.o cost.o ecc33.o ericsson.o fspl.o hata.o itwom3.0.o \
-		  los.o sui.o pel.o egli.o soil.o inputs.o outputs.o image.o image-ppm.o tiles.o
+		  los.o sui.o pel.o egli.o soil.o inputs.o outputs.o image.o \
+		  image-ppm.o tiles.o
 
 GCC_MAJOR	:= $(shell $(CXX) -dumpversion 2>&1 | cut -d . -f 1)
 GCC_MINOR	:= $(shell $(CXX) -dumpversion 2>&1 | cut -d . -f 2)
@@ -37,25 +39,38 @@ signalserver: $(objects)
 	@ln -sf $@ signalserverHD
 	@echo -e " SYMLNK\tsignalserverLIDAR -> $@"
 	@ln -sf $@ signalserverLIDAR
-	
-main.o: main.cc common.h inputs.hh outputs.hh itwom3.0.hh los.hh
 
-inputs.o: inputs.cc common.h main.hh
+main.o: main.cc common.h inputs.hh outputs.hh itwom3.0.hh los.hh pel.hh \
+	image.hh
 
-outputs.o: outputs.cc common.h inputs.hh main.hh cost.hh ecc33.hh ericsson.hh \
-	   fspl.hh hata.hh itwom3.0.hh sui.hh pel.hh egli.hh soil.hh
+inputs.o: inputs.cc common.h main.hh tiles.hh
 
-image.o: image.cc image-ppm.o
+outputs.o: outputs.cc common.h main.hh inputs.hh cost.hh ecc33.hh ericsson.hh \
+	   fspl.hh hata.hh itwom3.0.hh sui.hh image.hh
 
-image-ppm.o: image-ppm.cc
+image.o: image.cc image-ppm.o image.hh image-ppm.hh
 
-los.o: los.cc common.h main.hh cost.hh ecc33.hh ericsson.hh fspl.hh hata.hh \
+image-ppm.o: image-ppm.cc image.hh
+
+los.o: los.cc los.hh main.hh cost.hh ecc33.hh ericsson.hh fspl.hh hata.hh \
        itwom3.0.hh sui.hh pel.hh egli.hh soil.hh
 
 tiles.o: tiles.cc tiles.hh common.h
 
+
+testmodels.o: testmodels.cc cost.hh ecc33.hh ericsson.hh fspl.hh hata.hh \
+	egli.hh sui.hh itwom3.0.hh
+
+testmodels: testmodels.o cost.o ecc33.o ericsson.o fspl.o hata.o egli.o sui.o itwom3.0.o
+	@echo -e "    LNK\t$@"
+	@$(CXX) testmodels.o cost.o ecc33.o ericsson.o fspl.o hata.o egli.o \
+	sui.o itwom3.0.o -o $@ ${LIBS}
+
 .PHONY: clean
 clean:
-	rm -f $(objects) signalserver signalserverHD signalserverLIDAR
+	rm -f $(objects) signalserver signalserverHD signalserverLIDAR testmodels
 
-all:	signalserver
+all: signalserver
+
+install: all
+	cp -a signalserver signalserverHD signalserverLIDAR $(INSTALL_PATH)
