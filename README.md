@@ -63,21 +63,14 @@ make install
 
 ## Parameters
 ```
-<<<<<<< HEAD
-Version: Signal Server 3.30 (Built for 100 DEM tiles at 1200 pixels)
-=======
-Version: Signal Server 3.20 (Built for 100 DEM tiles at 1200 pixels)
->>>>>>> 77bb415059863568992ffa8fc82143df8c7b3ebf
+Version: Signal Server 3.22 (Built for 100 DEM tiles at 1200 pixels)
 License: GNU General Public License (GPL) version 2
 
 Radio propagation simulator by Alex Farrant QCVS, 2E0TDW
 Based upon SPLAT! by John Magliacane, KD2BD
 Some feature enhancements/additions by Aaron A. Collins, N9OZB
-<<<<<<< HEAD
                                        Tom Hayward, KD7LXL
                                        Darcy Buskermolen, VA7DBI
-=======
->>>>>>> 77bb415059863568992ffa8fc82143df8c7b3ebf
 
 Usage: signalserver [data options] [input options] [antenna options] [output options] -o outputfile
 
