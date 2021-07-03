@@ -1,6 +1,6 @@
 SIGNAL SERVER CHANGELOG
 
-3.30 Beta - 24 Nov 2019 - VA7DBI
+3.22 Beta - 24 Nov 2019 - VA7DBI
 1. Enhance Multicore support.
    a) Auto detect # of cores, and scale to use all cores.
    b) Verifed on 2,4,16 and 48 core systems.
