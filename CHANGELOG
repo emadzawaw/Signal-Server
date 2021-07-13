@@ -1,5 +1,10 @@
 SIGNAL SERVER CHANGELOG
 
+3.22 Beta - 24 Nov 2019 - VA7DBI
+1. Enhance Multicore support.
+   a) Auto detect # of cores, and scale to use all cores.
+   b) Verifed on 2,4,16 and 48 core systems.
+
 3.21 Beta - 30 Jul 2019 - N9OZB Mods, minor fix
 Fixed a minor bug in the Gzip decoding routines, gzerror() not coming back NULL?
 

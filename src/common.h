@@ -30,6 +30,7 @@ struct dem {
 	float max_north;
 	float min_west;
 	float max_west;
+	long min_x, max_x, min_y, max_y;
 	int max_el;
 	int min_el;
 	short **data;

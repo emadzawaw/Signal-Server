@@ -20,13 +20,13 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv,"dha:i:o:t:",["debug","help","azimuth=","infile=","outfile=","tilt="])
     except getopt.GetoptError:
-        print program + '  --debug --help -a <azimuth> -t <mechanicaldowntilt> -i <inputfile> -o <outputfile>'
+        print (program + '  --debug --help -a <azimuth> -t <mechanicaldowntilt> -i <inputfile> -o <outputfile>')
         sys.exit(2)
     for opt, arg in opts:
         if opt in ("-d", "--debug"):
             debug = 1
         elif opt in ("-h", "--help"):
-            print  program + ' --debug --help -a <azimuth> -t <mechanicaldowntilt> -i <inputfile> -o <outputfile>'
+            print  (program + ' --debug --help -a <azimuth> -t <mechanicaldowntilt> -i <inputfile> -o <outputfile>')
             sys.exit(2)
         elif opt in ("-i", "--infile"):
             antfile = arg
@@ -36,20 +36,20 @@ def main(argv):
             direction = arg
         elif opt in ("-t", "--tilt"):
             tilt = arg
-    if antfile == '':
-        print  program + ' --debug --help -a <azimuth> -t <mechanicaldowntilt> -i <inputfile> -o <outputfile>'
-        sys.exit(2)
+        if antfile == '':
+            print  (program + ' --debug --help -a <azimuth> -t <mechanicaldowntilt> -i <inputfile> -o <outputfile>')
+            sys.exit(2)
     if outfile == '' :
         outfile = splitext(antfile)[0]
     if debug :
-        print "outfile " + str(outfile)
-        print "downtilt " + str(tilt)
+        print ("outfile " + outfile)
+        print ("downtilt " + tilt)
     with open(antfile, 'r') as ant:
         with open(outfile + '.az', 'w') as az:
             # azimuth offset as provided by command arg or 0
             az.write("%d\n" % float(direction))
             # Read the first 360 lines of the file
-            for i in xrange(360):
+            for i in range(360):
                 az.write("%d\t%0.4f\n" % (i, db_to_norm(float(next(ant)))))
         with open(outfile + '.el', 'w') as el:
             # mechanical downtilt, azimuth of tilt

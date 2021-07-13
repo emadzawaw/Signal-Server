@@ -4,6 +4,8 @@ Multi-threaded radio propagation simulator based upon SPLAT! by Alex Farrant QCV
 SPLAT! Project started in 1997 by John A. Magliacane, KD2BD
 
 Some additional features and fixes by Aaron A. Collins, N9OZB
+                                      Tom Hayward, KD7LXL
+                                      Darcy Buskermolen, VA7DBI
 
 This server application will generate RF coverage predictions, producing either 2D profile plots (Point-to-Point) or 360 degree polar plots in WGS-84 projection as PPM Bitmaps.
 
@@ -14,8 +16,8 @@ WARNING: The accuracy of the output is directly proportional to the accuracy of 
 
 ## Requirements
 * Linux
-* GCC,G++
-* Multicore CPU (optional)
+* GCC,G++ / clang 
+* Multicore CPU (optional but recomended)
 * ~2GB Memory
 * SRTM terrain tile(s) or ASCII Grid tile(s)
 
@@ -61,12 +63,14 @@ make install
 
 ## Parameters
 ```
-Version: Signal Server 3.20 (Built for 100 DEM tiles at 1200 pixels)
+Version: Signal Server 3.22 (Built for 100 DEM tiles at 1200 pixels)
 License: GNU General Public License (GPL) version 2
 
 Radio propagation simulator by Alex Farrant QCVS, 2E0TDW
 Based upon SPLAT! by John Magliacane, KD2BD
 Some feature enhancements/additions by Aaron A. Collins, N9OZB
+                                       Tom Hayward, KD7LXL
+                                       Darcy Buskermolen, VA7DBI
 
 Usage: signalserver [data options] [input options] [antenna options] [output options] -o outputfile
 

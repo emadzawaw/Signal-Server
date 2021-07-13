@@ -13,3 +13,6 @@ ant2azel
 -t Set the mechanical tilt of the antenna  positive numbers are downtilt.
 
 orginal version by kd7lxl, adapted to include the azimuth and tilt
+
+Utility for converting ubnt csv files into .ant files
+
