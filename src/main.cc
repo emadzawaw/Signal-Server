@@ -31,7 +31,7 @@ double version = 3.21;
 #include <bzlib.h>
 #include <zlib.h>
 
-#include "common.h"
+#include "common.hh"
 #include "inputs.hh"
 #include "outputs.hh"
 #include "models/itwom3.0.hh"

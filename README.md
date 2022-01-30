@@ -15,8 +15,15 @@ WARNING: The accuracy of the output is directly proportional to the accuracy of 
 
 
 ## Requirements
-* Linux
-* GCC,G++ / clang 
+* C++14-conformant C++ compiler (GCC,G++ / clang)
+* Build environment for C++ (linker, C++ Standard Library and so forth) 
+* CMake v3.5 or newer
+* Convert (part of ImageMagick)
+* For some additional scripts: Bash and Python interpreter
+* library pthread: POSIX threads library
+* library bz2: The bzip2 runtime library
+* library dl: Open and close a shared object - POSIX conform
+* library z: zlib is a general-purpose lossless data-compression library
 * Multicore CPU (optional but recomended)
 * ~2GB Memory
 * SRTM terrain tile(s) or ASCII Grid tile(s)
@@ -24,7 +31,6 @@ WARNING: The accuracy of the output is directly proportional to the accuracy of 
 Signal Server is a very resource intensive multicore application. Only publish it for common use if you know what you are doing and you are advised to wrap it with another script to perform input validation.
 
 Additional programs/scripts will be required to prepare inputs such as .hgt tiles (srtm2sdf.c), 3D antenna patterns (.ant) and user defined clutter (.udt) or manipulate the bitmap output (.ppm). More information can be found in the SPLAT! project.
-
 
 ## File extensions and types used by signalserver:
 ```
@@ -50,10 +56,50 @@ Additional programs/scripts will be required to prepare inputs such as .hgt tile
 .kmz Google Earth Keyhole Markup Language, compressed
 ```
 
+## Preparations
+Check your C++ build environment with this HelloWorld application:
+
+main.cc
+```
+#include <iostream>
+
+using namespace std;
+
+int main()
+{
+    cout << "Hello World!" << endl;
+    return 0;
+}
+```
+
+CMakeLists.txt
+```
+cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
+
+project(HelloWorld LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CMAKE_CXX_FLAGS "-O2")
+
+add_executable(HelloWorld main.cc)
+```
+
+```
+# cmake .
+# make
+# ./HelloWorld
+=> HelloWorld!
+```
+
 ## Installation
 ```
 cd src
-make install
+cmake .
+make
+sudo make install
 ```
 
 ## Test

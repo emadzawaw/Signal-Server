@@ -45,7 +45,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "../common.h"
+#include "../common.hh"
 
 #define THIRD (1.0/3.0)
 

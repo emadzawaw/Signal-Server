@@ -5,7 +5,7 @@
 #include <math.h>
 #include <errno.h>
 #include <limits.h>
-#include "common.h"
+#include "common.hh"
 #include "main.hh"
 #include "tiles.hh"
 #include <bzlib.h>

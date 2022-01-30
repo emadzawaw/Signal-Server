@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include "common.h"
+#include "common.hh"
 
 int ReduceAngle(double angle);
 double LonDiff(double lon1, double lon2);
