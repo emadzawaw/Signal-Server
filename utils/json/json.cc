@@ -50,7 +50,7 @@ static char *request(const char *url)
     long code;
 
     curl = curl_easy_init();
-    data = malloc(BUFFER_SIZE);
+    data = (char *) malloc(BUFFER_SIZE);
     if(!curl || !data)
         return NULL;
 

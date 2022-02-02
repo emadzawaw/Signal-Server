@@ -1,0 +1,3 @@
+signalserverHD -sdf ~/DEM/vfp -lat 46.977815 -lon 7.528691 -txh 40.0 -erp 4.0 -f 161.3 -pm 2 -rxh 1.5 -dbm -rt -90.0 -m -R 100.0 -o /tmp/REGACOM_Bantiger
+convert /tmp/REGACOM_Bantiger.ppm -transparent white /tmp/REGACOM_Bantiger.png
+

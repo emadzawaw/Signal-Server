@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Convert UBNT antenna pattern files into consolidated .ant format
 # UBNT patterns are in 2 files, have 2 different planes of resolution...

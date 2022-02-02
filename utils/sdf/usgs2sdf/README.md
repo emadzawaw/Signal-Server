@@ -9,7 +9,7 @@ splat-1.3.0/utils directory.  They include the following:
 srtm2sdf
 ========
 The srtm2sdf utility generates Data Files (SDFs) for use with Signal-Server
-from STS-99 Space Shuttle Topography Mission (SRTM) elevation data files.  
+from STS-99 Space Shuttle Topography Mission (SRTM) elevation data files.
 This data is of a much higher quality than that contained in older USGS
 Digital Elevation Models of the same resolution.  However, many SRTM
 Version 2 elevation models contain data "spikes", "voids", and "wells"
