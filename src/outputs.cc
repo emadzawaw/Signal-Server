@@ -6,7 +6,7 @@
 #include <bzlib.h>
 #include <zlib.h>
 
-#include "common.h"
+#include "common.hh"
 #include "main.hh"
 #include "inputs.hh"
 #include "models/cost.hh"

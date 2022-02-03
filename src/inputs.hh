@@ -1,7 +1,7 @@
 #ifndef _INPUTS_HH_
 #define _INPUTS_HH_
 
-#include "common.h"
+#include "common.hh"
 extern char scf_file[255];
 
 /* Resample input tiles to new resolution */

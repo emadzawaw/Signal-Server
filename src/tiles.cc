@@ -4,7 +4,7 @@
 #include <string.h>
 #include <math.h>
 #include "tiles.hh"
-#include "common.h"
+#include "common.hh"
 
 #define MAX_LINE 50000
 

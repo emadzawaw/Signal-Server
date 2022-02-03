@@ -15,8 +15,15 @@ WARNING: The accuracy of the output is directly proportional to the accuracy of 
 
 
 ## Requirements
-* Linux
-* GCC,G++ / clang 
+* C++14-conformant C++ compiler (GCC,G++ / clang)
+* Build environment for C++ (linker, C++ Standard Library and so forth) 
+* CMake v3.5 or newer
+* Convert (part of ImageMagick)
+* For some additional scripts: Bash and Python interpreter
+* library pthread: POSIX threads library
+* library bz2: The bzip2 runtime library
+* library dl: Open and close a shared object - POSIX conform
+* library z: zlib is a general-purpose lossless data-compression library
 * Multicore CPU (optional but recomended)
 * ~2GB Memory
 * SRTM terrain tile(s) or ASCII Grid tile(s)
@@ -24,7 +31,6 @@ WARNING: The accuracy of the output is directly proportional to the accuracy of 
 Signal Server is a very resource intensive multicore application. Only publish it for common use if you know what you are doing and you are advised to wrap it with another script to perform input validation.
 
 Additional programs/scripts will be required to prepare inputs such as .hgt tiles (srtm2sdf.c), 3D antenna patterns (.ant) and user defined clutter (.udt) or manipulate the bitmap output (.ppm). More information can be found in the SPLAT! project.
-
 
 ## File extensions and types used by signalserver:
 ```
@@ -50,10 +56,50 @@ Additional programs/scripts will be required to prepare inputs such as .hgt tile
 .kmz Google Earth Keyhole Markup Language, compressed
 ```
 
+## Preparations
+Check your C++ build environment with this HelloWorld application:
+
+main.cc
+```
+#include <iostream>
+
+using namespace std;
+
+int main()
+{
+    cout << "Hello World!" << endl;
+    return 0;
+}
+```
+
+CMakeLists.txt
+```
+cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
+
+project(HelloWorld LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CMAKE_CXX_FLAGS "-O2")
+
+add_executable(HelloWorld main.cc)
+```
+
+```
+# cmake .
+# make
+# ./HelloWorld
+=> HelloWorld!
+```
+
 ## Installation
 ```
 cd src
-make install
+cmake .
+make
+sudo make install
 ```
 
 ## Test
@@ -200,27 +246,30 @@ The remainder of the file consists of elevation angles and their radiation patte
 - INPUTS: 900MHz tower at 25m AGL with 5W ERP, 30km radius
 - OUTPUTS: 1200 resolution, 30km radius, -90dBm receiver threshold, Longley Rice model
 ```
- ./signalserver -sdf /data/SRTM3 -lat 51.849 -lon -2.2299 -txh 25 -f 900 -erp 5 -rxh 2 -rt -90 -dbm -m -o test1 -R 30 -res 1200 -pm 1
+signalserver -sdf /data/SRTM3 -lat 51.849 -lon -2.2299 -txh 25 -f 900 -erp 5 -rxh 2 -rt -90 -dbm -m -o test1 -R 30 -res 1200 -pm 1
 ```
 ### 30m resolution
 - INPUTS: 450MHz tower at 25f AGL with 20W ERP, 10km radius
 - OUTPUTS: 3600 resolution, 30km radius, 10dBuV receiver threshold, Hata model
 ```
-./signalserverHD -sdf /data/SRTM1 -lat 51.849 -lon -2.2299 -txh 25 -f 450 -erp 20 -rxh 2 -rt 10 -o test2 -R 10 -res 3600 -pm 3
+signalserverHD -sdf /data/SRTM1 -lat 51.849 -lon -2.2299 -txh 25 -f 450 -erp 20 -rxh 2 -rt 10 -o test2 -R 10 -res 3600 -pm 3
 ```
 
 ### 2m resolution (LIDAR)
 - INPUTS: 1800MHz tower at 15m AGL with 1W ERP, 1 km radius
 - OUTPUTS: 2m LIDAR resolution, 5km radius, -90dBm receiver threshold, Longley Rice model
 ```
-./signalserverLIDAR -lid /data/LIDAR/Gloucester_2m.asc -lat 51.849 -lon -2.2299 -txh 15 -f 1800 -erp 1 -rxh 2 -rt -90 -dbm -m -o test3 -R 1 -pm 1
+signalserverLIDAR -lid /data/LIDAR/Gloucester_2m.asc -lat 51.849 -lon -2.2299 -txh 15 -f 1800 -erp 1 -rxh 2 -rt -90 -dbm -m -o test3 -R 1 -pm 1
 ```
 ### Scripting
 By using wrapper scripts like runsig.sh and genkmz.sh, you can streamline running signalserver by pre-setting some commonly used options in the runsig.sh file.  Those options should be the ones you use every time you run signalserver, like "-m" for metric or "-sdf ./sdf_file_path", for example, so you won't have to specify those options every time you run it.  The genkmz.sh file will convert the output ppm file into a .png with transparent background, then will convert it to a Google Earth Keyhole Markup Language (KML) file, and then it compresses it for size to a (KMZ) file.  Here is an example of using the provided sample runsig.sh and genkmz.sh:
 ```
 ### Plot 70cm Service contour, 700W ERP, 300 feet AGL, DB413-B, to 150 mi:
-sudo ./runsig.sh -lat 42.428889 -lon -87.812500 -txh 300 -f 446.000 -erp 700 -R 150 -res 600 -rel 50 -rt 39 -ant antenna/DB413-B -rot 225 -color color/blue -o example-service | ./genkmz.sh
+cd output/GoogleEarth
+./runsig.sh -lat 42.428889 -lon -87.812500 -txh 300 -f 446.000 -erp 700 -R 150 -res 600 -rel 50 -rt 39 -ant ../../antenna/DB413-B -rot 225 -color ../../color/blue -o example-service | ./genkmz.sh
 
 ### Plot 70cm Interference contour, 700W ERP, 300 feet AGL, DB413-B, to 150 mi:
-sudo ./runsig.sh -lat 42.428889 -lon -87.812500 -txh 300 -f 446.000 -erp 700 -R 150 -res 600 -rel 10 -rt 21 -ant antenna/DB413-B -rot 225 -color color/blue -o example-interferece | ./genkmz.sh
+cd output/GoogleEarth
+./runsig.sh -lat 42.428889 -lon -87.812500 -txh 300 -f 446.000 -erp 700 -R 150 -res 600 -rel 10 -rt 21 -ant ../../antenna/DB413-B -rot 225 -color ../../color/blue -o example-interference | ./genkmz.sh
 ```
+

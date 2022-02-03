@@ -1,7 +1,6 @@
 /****************************************************************************
 *            USGS2SDF: USGS to SPLAT Data File Converter Utility            *
 *               Copyright John A. Magliacane, KD2BD 1997-2009               *
-*                         Last update: 14-Mar-2009                          *
 *****************************************************************************
 *                                                                           *
 * This program reads files containing delimited US Geological Survey        *
@@ -23,8 +22,6 @@
 * they represent (ie: min_north:max_north:min_west:max_west.sdf).           *
 *                                                                           *
 *****************************************************************************
-*          To compile: gcc -Wall -O6 -s splat2sdf.c -o splat2sdf            *
-*****************************************************************************
 *                                                                           *
 * This program is free software; you can redistribute it and/or modify it   *
 * under the terms of the GNU General Public License as published by the     *
@@ -41,8 +38,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-char *d2e(string)
-char *string;
+char *d2e(char *string)
 {
 	/* This function is used to replace 'D's with 'E's for proper
 	   exponential notation of numeric strings read from delimited
@@ -56,9 +52,7 @@ char *string;
 	return (string);
 }
 
-int main(argc,argv)
-int argc;
-char *argv[];
+int main(int argc, char *argv[])
 {
 	unsigned char minimum[30], maximum[30], swlong[30], swlat[30],
 		 nwlong[30], nwlat[30], nelong[30], nelat[30], selong[30],

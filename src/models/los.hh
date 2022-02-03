@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include "../common.h"
+#include "../common.hh"
 
 void PlotLOSPath(struct site source, struct site destination, char mask_value, FILE *fd);
 void PlotPropPath(struct site source, struct site destination, unsigned char mask_value, FILE *fd, int propmodel, int knifeedge,

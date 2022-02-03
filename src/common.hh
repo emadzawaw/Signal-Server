@@ -1,5 +1,5 @@
-#ifndef _COMMON_H_
-#define _COMMON_H_
+#ifndef _COMMON_HH_
+#define _COMMON_HH_
 
 #define GAMMA 		2.5
 
@@ -129,4 +129,4 @@ extern struct region region;
 
 extern int debug;
 
-#endif /* _COMMON_H_ */
+#endif /* _COMMON_HH_ */

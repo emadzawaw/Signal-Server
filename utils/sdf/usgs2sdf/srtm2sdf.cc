@@ -4,11 +4,7 @@
  **     detect and handle voids found in the SRTM data,      **
  **     SRTM-3 data in .BIL and .HGT format, and high        **
  **     resolution SRTM-1 one arc-second topography data.    **
- **************************************************************
- **                    Compile like this:                    **
- **      cc -Wall -O3 -s -lbz2 srtm2sdf.c -o srtm2sdf        **
- **              Last modification: 20-Jan-2011              **
-\**************************************************************/ 
+ **************************************************************/ 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -247,7 +243,7 @@ int LoadSDF_SDF(char *name)
 	/* This function reads uncompressed
 	   SPLAT Data Files (.sdf) into memory. */
 
-	int x, y, n, dummy;
+	int x, y, dummy;
 	char sdf_file[255], path_plus_name[512];
 	FILE *infile;
 
@@ -433,8 +429,7 @@ int ReadUSGS()
 	return (LoadSDF(usgs_filename));
 }
 
-void average_terrain(y,x,z)
-int x, y, z;
+void average_terrain(int y, int x, int z)
 {
 	long accum;
 	int temp=0, count, bad_value;
@@ -601,7 +596,7 @@ void WriteSDF(char *filename)
 	fclose(outfile);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
 	int x, y, z=0;
 	char *env=NULL, string[255], *s=NULL;
