@@ -89,7 +89,7 @@ add_executable(HelloWorld main.cc)
 
 ```
 # cmake .
-# make
+# cmake --build .
 # ./HelloWorld
 => HelloWorld!
 ```
@@ -98,8 +98,8 @@ add_executable(HelloWorld main.cc)
 ```
 cd src
 cmake .
-make
-sudo make install
+cmake --build .
+sudo cmake --build . --target install
 ```
 
 ## Test
@@ -180,7 +180,7 @@ Signal server is designed for most of the environments and climates on Planet Ea
 
 #### -sdf 
 ##### Directory containing Digital Elevation Models (DEM)
-SDF formatted tiles can be created by converting SRTM tiles (30m or 90m) in HGT format with the [srtm2sdf.c](https://www.google.co.uk/search?q=srtm2sdf.c) utility from SPLAT!. At the time of writing these tiles can be obtained for free from the [USGS website](https://dds.cr.usgs.gov/srtm/).
+SDF formatted tiles can be created by converting SRTM tiles (30m or 90m) in HGT format with the srtm2sdf or srtm2sdf-hd utility. At the time of writing these tiles can be obtained for free from the [Viewfinder Panoramas website](http://viewfinderpanoramas.org/dem3.html).
 
 Note these can be compressed using gzip or bzip2 if desired to save disk space and speed up loading the files.  For hi-res (HD) SRTM1 (30m) data, bzip2 compresses best, and for lo-res SRTM3 (90m) data, gzip seems to achieve the best compression.  Either will work fine for whichever data format and resolution is used.
 

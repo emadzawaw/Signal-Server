@@ -3,7 +3,7 @@
 			================
 
 Utilities for use with SPLAT! software are found under the
-splat-1.3.0/utils directory.  They include the following:
+/utils directory.  They include the following:
 
 
 srtm2sdf
@@ -27,11 +27,7 @@ or use with Signal-Server operating in standard definition mode.
 
 SRTM-3 Version 2 Elevation Data files may be downloaded from:
 
-    ftp://e0srp01u.ecs.nasa.gov:21/srtm/version2/
-
-Files available at this site are ZIP compressed, and must be
-uncompressed (using "unzip", or "gunzip -S .zip") prior to being
-processed by srtm2sdf.
+    http://viewfinderpanoramas.org/dem3.html
 
 The srtm2sdf utility accepts command-line options as follows:
 
@@ -94,11 +90,10 @@ srtm2sdf-hd
 ===========
 The srtm2sdf-hd utility operates in an identical manner as srtm2sdf,
 but is used to generate HD SDF files from SRTM-1 one-arc second
-resolution data files for use with signalserverHD.  SRTM-1 data files
-are available for the United States and its territories and
-possessions, and may be downloaded from:
+resolution data files for use with signalserverHD. One-arc second
+resolution data files may be downloaded from:
 
-    ftp://e0srp01u.ecs.nasa.gov:21/srtm/version2/SRTM1/
+    http://viewfinderpanoramas.org/Coverage%20map%20viewfinderpanoramas_org1.htm
 
 
 usgs2sdf
@@ -108,24 +103,4 @@ and record delimited Digital Elevation Model Data (DEM) downloaded from
 the US Geological Survey, and generates a SPLAT Data File (SDF) compatible
 with  signalserver.  usgs2sdf may be invoked manually, or via the
 postdownload.sh script.
-
-
-postdownload.sh
-===============
-postdownload.sh is a front-end to the usgs2sdf utility.  postdownload.sh
-takes as an argument the name of the gzipped Digital Elevation Model
-(DEM) downloaded from the US Geological Survey (ie: wilmington-w.gz).
-postdownload.sh uncompresses the DEM file, adds necessary record delimiters,
-and invokes usgs2sdf to produce a SPLAT! Data File (SDF).
-
-USGS Digital Elevation Models may be downloaded from:
-
-    http://edcftp.cr.usgs.gov/pub/data/DEM/250/
-
-Invoke postdownload with the name of each DEM file downloaded to
-produce a database of SPLAT Data Files.
-
----
-John A. Magliacane, KD2BD
-August 2008
 

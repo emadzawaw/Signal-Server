@@ -27,7 +27,18 @@ static __inline float _20log10f(float x)
   return(8.685889f*logf(x));
 }
 
-double FSPLpathLoss(float f, float d)
+double FSPLpathLoss(float f, float d, bool bBlock)
 {
-  return(32.44 + _20log10f(f) + _20log10f(d));
+  double dLoss = 0.0;
+
+  if (bBlock) {
+	// No line of sight
+	dLoss = 255.0;
+  }
+  else {
+    // Line of sight
+    dLoss = 32.44 + _20log10f(f) + _20log10f(d);
+  }
+
+  return(dLoss);
 }

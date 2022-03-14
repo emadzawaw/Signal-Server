@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" 
+	  href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.10.0/css/ol.css" type="text/css"
+	  integrity="sha512-Bw0A1Xfoa5A65m3mbHUvn0A7Iw2z2EnWeljpgbrnp9MYs47fS8M6w6M6I6vsmlBBC51qOHFYof/uNxX6OCiX6A=="
+	  crossorigin="anonymous">
+    </link>
+    <link rel="stylesheet" 
+	  href="https://unpkg.com/ol-layerswitcher@3.8.3/dist/ol-layerswitcher.css" type="text/css"
+	  integrity="sha512-MypO2PZIhqWcFU289e9V8MGICWwko1p/a7ETtcSjMD8iAkqgfMD+hFDcHpY6ERV1xsYL5nbo0EuwbNLg4ecpIw=="
+	  crossorigin="anonymous">
+    </link>
+    <style>
+       body {
+           margin: 0;
+           padding: 0
+       }
+      .map {
+          position: absolute;
+          width: 100%;
+          top: 0;
+          bottom: 0;  
+          z-index: 2
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.10.0/build/ol.js"
+	    integrity="sha512-GNGRl8Lxb3q2eVSIlAO1JOmJk0wSeKGRhHSrsw+LTo7wA/0ab0yUP8mEkZVkl2zNtIhXXFif6aN3gsifsrWAjQ=="
+            crossorigin="anonymous">
+    </script>
+    <script src="https://unpkg.com/ol-layerswitcher@3.8.3/dist/ol-layerswitcher.js"
+	    integrity="sha512-+cZhYSrGlO4JafMR5fEFkF+6pXr9fwMaicniLZRH76RtnJXc/+WkFpZu/9Av0rg2xDVr84M15XMA6tet1VaMrg=="
+            crossorigin="anonymous">
+    </script>
+    <title>Tests - E-channel 161.300 MHz</title>
+  </head>
+  <body>
+    <h2>Loading map...</h2>
+    <div id="map" class="map"></div>
+    <script type="text/javascript">
+
+      const center = [7.50, 47.00];
+      const transformCenter = ol.proj.transform(center, 'EPSG:4326', 'EPSG:4326');			// Transform coordinates from WGS 84 to WGS 84 (projection of view)
+
+
+      const otmLayer = new ol.layer.Tile({
+	title: 'Open Topo Map',			// LayerSwitcher
+ 	type: 'base',					// LayerSwitcher
+	visible: true,
+        source: new ol.source.OSM({
+	  crossOrigin:  'anonymous',
+          url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png',
+	  attributions: 'Powered by OpenLayers and ol-layerswitcher | Base map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
+	})
+      });
+
+      const osmLayer = new ol.layer.Tile({
+	title: 'Open Street Map',			// LayerSwitcher
+	type: 'base',					// LayerSwitcher
+	visible: false,
+        source: new ol.source.OSM({
+	  crossOrigin:  'anonymous',
+          url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+	  attributions: 'Powered by OpenLayers and ol-layerswitcher | Base map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+	})
+      });
+
+      let imageExtent = [7.001191, 46.617844, 8.056191, 47.337786];
+      let sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      let viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const newItmLayer = new ol.layer.Image({
+	title: 'ITM - New',			// LayerSwitcher
+	zIndex: 3,
+	opacity: 0.4,
+	extent: viewImageExtent, 
+	visible: false,
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_ITM_New.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [5.0, 45.0, 10.0, 49.0];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const newLosLayer = new ol.layer.Image({
+	title: 'LOS - New',			// LayerSwitcher
+	zIndex: 4,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_LOS_New.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const newHataLayer = new ol.layer.Image({
+	title: 'Hata - New',			// LayerSwitcher
+	zIndex: 5,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_Hata_New.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const newECC33Layer = new ol.layer.Image({
+	title: 'ECC33 - New',			// LayerSwitcher
+	zIndex: 6,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_ECC33_New.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const newSUILayer = new ol.layer.Image({
+	title: 'SUI - New',			// LayerSwitcher
+	zIndex: 7,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_SUI_New.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const newCostLayer = new ol.layer.Image({
+	title: 'COST-Hata - New',			// LayerSwitcher
+	zIndex: 8,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_COST-Hata_New.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const newFsplLayer = new ol.layer.Image({
+	title: 'FSPL - New',			// LayerSwitcher
+	zIndex: 9,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_FSPL_New.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [7.001191, 46.617844, 8.056191, 47.337786];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const newItwomLayer = new ol.layer.Image({
+	title: 'ITWOM - New',			// LayerSwitcher
+	zIndex: 10,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_ITWOM_New.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const newEricssonLayer = new ol.layer.Image({
+	title: 'Ericsson - New',			// LayerSwitcher
+	zIndex: 11,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_Ericsson_New.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const newPlaneEarthLayer = new ol.layer.Image({
+	title: 'Plane Earth - New',			// LayerSwitcher
+	zIndex: 12,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_Plane-Earth_New.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const newEgliLayer = new ol.layer.Image({
+	title: 'Egli - New',			// LayerSwitcher
+	zIndex: 13,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_Egli_New.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const newSoilLayer = new ol.layer.Image({
+	title: 'Soil - New',			// LayerSwitcher
+	zIndex: 14,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_Soil_New.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [7.001191, 46.617844, 8.056191, 47.337786];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const oldItmLayer = new ol.layer.Image({
+	title: 'ITM - Original',			// LayerSwitcher
+	zIndex: 15,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_ITM_Original.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [5.0, 45.0, 10.0, 49.0];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const oldLosLayer = new ol.layer.Image({
+	title: 'LOS - Original',			// LayerSwitcher
+	zIndex: 16,
+	opacity: 0.4,
+	visible: true,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_LOS_Original.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const oldHataLayer = new ol.layer.Image({
+	title: 'Hata - Original',			// LayerSwitcher
+	zIndex: 17,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_Hata_Original.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const oldECC33Layer = new ol.layer.Image({
+	title: 'ECC33 - Original',			// LayerSwitcher
+	zIndex: 18,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_ECC33_Original.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const oldSUILayer = new ol.layer.Image({
+	title: 'SUI - Original',			// LayerSwitcher
+	zIndex: 19,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_SUI_Original.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const oldCostLayer = new ol.layer.Image({
+	title: 'COST-Hata - Original',			// LayerSwitcher
+	zIndex: 20,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_COST-Hata_Original.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const oldFsplLayer = new ol.layer.Image({
+	title: 'FSPL - Original',			// LayerSwitcher
+	zIndex: 21,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_FSPL_Original.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [7.001191, 46.617844, 8.056191, 47.337786];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const oldItwomLayer = new ol.layer.Image({
+	title: 'ITWOM - Original',			// LayerSwitcher
+	zIndex: 22,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_ITWOM_Original.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const oldEricssonLayer = new ol.layer.Image({
+	title: 'Ericsson - Original',			// LayerSwitcher
+	zIndex: 23,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_Ericsson_Original.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const oldPlaneEarthLayer = new ol.layer.Image({
+	title: 'Plane Earth - Original',			// LayerSwitcher
+	zIndex: 24,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_Plane-Earth_Original.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const oldEgliLayer = new ol.layer.Image({
+	title: 'Egli - Original',			// LayerSwitcher
+	zIndex: 25,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_Egli_Original.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      imageExtent = [6.210080, 46.078371, 8.847302, 47.877259];
+      sourceImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of source)
+      viewImageExtent = ol.proj.transformExtent(imageExtent, 'EPSG:4326', 'EPSG:4326');	// Transform image corners coordinates from WGS 84 to WGS 84 (projection of view)
+
+      const oldSoilLayer = new ol.layer.Image({
+	title: 'Soil - Original',			// LayerSwitcher
+	zIndex: 26,
+	opacity: 0.4,
+	visible: false,
+	extent: viewImageExtent, 
+        source: new ol.source.ImageStatic({
+          //crossOrigin: 'anonymous',
+	  imageExtent: sourceImageExtent,
+	  projection: 'EPSG:4326',			// WGS 84
+ 	  url: 'REGACOM_Soil_Original.png',
+	  attributions: ' | Data source: Radio coverage map calculated by Signal-Server - No liability'
+	})
+      });
+
+      const map = new ol.Map({
+        target: 'map',
+        layers: [
+	  new ol.layer.Group({
+	    title: 'Base map',
+	    layers: [otmLayer, osmLayer], 
+          }),
+	  new ol.layer.Group({
+	    title: 'New version - 161.300 MHz - Emergency radio',
+	    layers: [newItmLayer, newLosLayer, newHataLayer, newECC33Layer, newSUILayer, newCostLayer, newFsplLayer, newItwomLayer, newEricssonLayer, newPlaneEarthLayer, newEgliLayer, newSoilLayer]
+	  }),
+	  new ol.layer.Group({
+	    title: 'Original version - 161.300 MHz - Emergency radio',
+	    layers: [oldItmLayer, oldLosLayer, oldHataLayer, oldECC33Layer, oldSUILayer, oldCostLayer, oldFsplLayer, oldItwomLayer, oldEricssonLayer, oldPlaneEarthLayer, oldEgliLayer, oldSoilLayer]
+	  }),
+        ],
+        view: new ol.View({
+	  projection: 'EPSG:4326',			// WGS 84
+          center: transformCenter,
+          zoom: 11
+        })
+      });
+
+      const scaleLine = new ol.control.ScaleLine({
+	bar: false
+      });
+
+      const layerSwitcher = new ol.control.LayerSwitcher({
+        groupSelectStyle: 'none',
+	reverse: false
+      });
+
+      map.addControl(scaleLine);
+      map.addControl(layerSwitcher);
+
+    </script>
+  </body>
+</html>

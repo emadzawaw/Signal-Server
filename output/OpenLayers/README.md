@@ -9,4 +9,4 @@ https://github.com/GrandDixence/CoverageMaps
 Manual for german speaking peoples:
 https://github.com/GrandDixence/CoverageMaps#readme
 
-Have a lot of fun...
+Have a lot of fun!
