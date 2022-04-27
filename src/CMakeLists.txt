@@ -50,7 +50,6 @@ find_library(z z)
 add_executable(signalserver main.cc)
 add_executable(signalserverHD main.cc)
 add_executable(signalserverLIDAR main.cc)
-add_executable(testmodels models/testmodels.cc)
 
 target_link_libraries(signalserver 
 			PUBLIC image
@@ -119,16 +118,6 @@ target_link_libraries(signalserverLIDAR
 			PUBLIC dl
 			PUBLIC pthread
 			PUBLIC z
-		  )
-
-target_link_libraries(testmodels
-			PUBLIC cost
-			PUBLIC ecc33
-			PUBLIC egli
-			PUBLIC ericsson
-			PUBLIC fspl
-			PUBLIC hata
-			PUBLIC sui
 		  )
 
 # INSTALL target (make install)

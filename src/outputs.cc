@@ -1457,7 +1457,7 @@ void PathReport(struct site source, struct site destination, char *name,
 				break;
 			case 7:
 				// ITU-R P.525 Free space path loss
-				loss = FSPLpathLoss(LR.frq_mhz, dkm);
+				loss = FSPLpathLoss(LR.frq_mhz, dkm, false);
 				break;
 			case 8:
 				// ITWOM 3.0
